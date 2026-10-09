@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ミカ書7章 ヘブル語クイズ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+Hebrew:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17140f;
+    --card:#211d16;
+    --card2:#282318;
+    --parchment:#eae0c6;
+    --parchment-dim:#a89b7c;
+    --thread:#a1442f;
+    --thread-dim:#5c2a20;
+    --gold:#b8935f;
+    --gold-dim:#7a6440;
+    --line:#3a3326;
+    --good:#7a8f5c;
+    --bad:#a1442f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, #241f16 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 110%, #1c1810 0%, transparent 55%),
+      var(--ink);
+    color:var(--parchment);
+    font-family:'Noto Sans JP',sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .app{width:100%;max-width:640px;}
+  .heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;unicode-bidi:isolate;}
+
+  .top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
+  .title{font-family:'Noto Serif JP',serif;font-weight:700;font-size:15px;letter-spacing:.14em;color:var(--gold);}
+  .counter{font-size:12px;color:var(--parchment-dim);font-variant-numeric:tabular-nums;}
+  .stitches{display:flex;gap:3px;margin:10px 0 28px;}
+  .stitch{flex:1;height:3px;background:var(--line);border-radius:1px;transition:background .25s ease;}
+  .stitch.done{background:var(--thread);}
+  .stitch.current{background:var(--gold);}
+
+  .card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:6px;padding:36px 30px 28px;position:relative;box-shadow:0 20px 40px -20px rgba(0,0,0,.6);}
+  .card::before{content:"";position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent);}
+  .cat{font-size:11px;letter-spacing:.16em;color:var(--parchment-dim);text-align:center;margin-bottom:18px;text-transform:uppercase;}
+
+  .prompt-ja{font-family:'Noto Serif JP',serif;font-size:18px;font-weight:500;color:var(--parchment);text-align:center;margin-bottom:8px;line-height:1.7;}
+  .prompt-sub{font-size:12px;color:var(--parchment-dim);text-align:center;margin-bottom:22px;}
+  .prompt-heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;font-weight:500;font-size:30px;color:var(--gold);text-align:center;margin-bottom:6px;line-height:1.5;}
+  .prompt-read{font-size:13px;color:var(--parchment-dim);text-align:center;margin-bottom:8px;letter-spacing:.03em;}
+
+  .hero{text-align:center;margin-bottom:14px;min-height:64px;display:flex;align-items:center;justify-content:center;}
+  .audio-btn{width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #c79a5f, #7a5a33 70%);border:1px solid var(--gold-dim);color:var(--ink);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -4px rgba(0,0,0,.6), inset 0 0 0 3px rgba(23,20,15,.25);transition:transform .15s ease;}
+  .audio-btn:active{transform:scale(.94);}
+  .audio-btn-slow{width:52px;height:52px;font-size:20px;}
+  .audio-hint{font-size:11px;color:var(--parchment-dim);margin-top:8px;}
+
+  .options{display:grid;gap:10px;}
+  .opt{text-align:left;background:transparent;border:1px solid var(--line);color:var(--parchment);padding:14px 16px;border-radius:4px;font-family:'Noto Sans JP',sans-serif;font-size:15px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:border-color .15s ease, background .15s ease;}
+  .opt .opt-heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;font-weight:500;font-size:19px;color:var(--gold);text-align:center;}
+  .opt .opt-read{font-size:11.5px;color:var(--parchment-dim);text-align:center;}
+  .opt .opt-jp{font-size:15px;color:var(--parchment);text-align:center;}
+  .opt:hover:not(:disabled){border-color:var(--gold-dim);}
+  .opt:disabled{cursor:default;}
+  .opt.correct{border-color:var(--good);background:rgba(122,143,92,.14);}
+  .opt.wrong{border-color:var(--bad);background:rgba(161,68,47,.14);}
+  .opt.reveal{border-color:var(--good);}
+
+  .feedback{margin-top:16px;min-height:20px;font-size:13px;text-align:center;color:var(--parchment-dim);}
+  .feedback b{color:var(--gold);font-weight:700;}
+  .feedback .fb-heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;color:var(--gold);font-size:16px;}
+
+  .nextrow{display:flex;justify-content:flex-end;margin-top:18px;}
+  .next-btn{background:var(--thread);color:var(--parchment);border:none;padding:10px 22px;border-radius:4px;font-size:14px;letter-spacing:.04em;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+  .next-btn.show{opacity:1;pointer-events:auto;}
+  .next-btn:hover{background:#b64f37;}
+
+  .center-card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:6px;padding:44px 30px;text-align:center;}
+  .mark{font-family:'Noto Serif JP',serif;font-style:italic;font-size:34px;color:var(--gold);margin-bottom:8px;}
+  h1.headline{font-family:'Noto Serif JP',serif;font-size:22px;margin:0 0 10px;font-weight:700;}
+  p.sub{color:var(--parchment-dim);font-size:13.5px;line-height:1.8;margin:0 0 28px;}
+
+  .primary-btn{background:var(--thread);color:var(--parchment);border:none;padding:14px 34px;border-radius:4px;font-size:15px;letter-spacing:.05em;cursor:pointer;}
+  .primary-btn:hover{background:#b64f37;}
+  .ghost-btn{background:transparent;border:1px solid var(--line);color:var(--parchment-dim);padding:14px 24px;border-radius:4px;font-size:14px;cursor:pointer;margin-left:10px;}
+  .ghost-btn:hover{border-color:var(--gold-dim);color:var(--parchment);}
+
+  .crumbs{font-size:11px;color:var(--parchment-dim);letter-spacing:.06em;margin-bottom:14px;}
+  .choice-row{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;text-align:left;}
+  .choice-btn{background:transparent;border:1px solid var(--line);color:var(--parchment);padding:14px 18px;border-radius:4px;font-size:14.5px;cursor:pointer;text-align:left;transition:border-color .15s ease, background .15s ease;}
+  .choice-btn:hover{border-color:var(--gold-dim);background:rgba(184,147,95,.08);}
+  .choice-btn .cb-sub{display:block;font-size:11.5px;color:var(--parchment-dim);margin-top:3px;}
+  .back-link{background:none;border:none;color:var(--parchment-dim);font-size:12px;cursor:pointer;padding:0;text-decoration:underline;}
+
+  .score-big{font-family:'Noto Serif JP',serif;font-size:52px;font-weight:700;color:var(--gold);margin:6px 0 2px;}
+  .score-label{font-size:12px;color:var(--parchment-dim);letter-spacing:.1em;margin-bottom:26px;}
+  .breakdown{text-align:left;border-top:1px solid var(--line);padding-top:18px;margin-top:8px;}
+  .bd-row{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--parchment-dim);}
+  .bd-row b{color:var(--parchment);font-weight:500;}
+  .review-list{text-align:left;margin-top:22px;max-height:280px;overflow-y:auto;border-top:1px solid var(--line);padding-top:14px;}
+  .review-item{font-size:12.5px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--parchment-dim);}
+  .review-item.is-correct{color:var(--parchment-dim);}
+  .review-item .rmark{margin-right:6px;}
+  .review-item .rprompt{color:var(--parchment);font-family:'Noto Sans Hebrew',sans-serif;}
+  .review-item .ra{color:var(--good);}
+  .review-item .rw{color:var(--bad);text-decoration:line-through;margin-right:4px;}
+  .review-item .rref{display:block;margin-top:4px;font-size:11px;color:var(--parchment-dim);opacity:.7;padding-left:20px;}
+
+  .note-box{font-size:11.5px;color:var(--parchment-dim);line-height:1.7;border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-top:22px;text-align:left;}
+
+  .hidden{display:none !important;}
+
+  @media (max-width:480px){
+    .card,.center-card{padding:26px 18px 22px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- START SCREEN -->
+  <div id="screen-start" class="center-card">
+    <div class="mark heb" style="font-size:26px;">מיכה</div>
+    <h1 class="headline">ミカ書7章 ヘブル語クイズ</h1>
+    <p class="sub">出題単位・方向・形式・問題数を選んで進む。</p>
+    <div id="wizard-panel"></div>
+    <div class="note-box">
+      注：「元の形」「動詞root」は原文表に無い情報のため、標準的なヘブル語辞書知識に基づく推定です（母音記号なし・子音表記）。リスニングはブラウザのヘブル語音声合成に対応した環境でのみ実際の発音になります（非対応の場合、音声が出ないか不正確になることがあります）。
+    </div>
+    <div style="margin-top:16px;font-size:11.5px;color:var(--parchment-dim);text-align:center;line-height:1.8;">
+      🔊 音声が流れない方へ：<a href="voice_guide.html" style="color:var(--gold);">こちら（音声インストール案内）</a><br>
+      <a href="index.html" style="color:var(--gold);">← indexに戻る</a>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="screen-quiz" class="hidden">
+    <div class="top">
+      <div class="title">ミカ書7章クイズ</div>
+      <div class="counter"><span id="qnum">1</span> / <span id="qtotal">0</span></div>
+    </div>
+    <div class="stitches" id="stitches"></div>
+
+    <div class="card">
+      <div class="cat" id="q-cat"></div>
+      <div id="q-prompt-wrap"></div>
+      <div class="hero" id="q-hero"></div>
+      <div class="options" id="q-options"></div>
+      <div class="feedback" id="q-feedback"></div>
+      <div class="nextrow">
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">次へ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="screen-result" class="center-card hidden">
+    <div class="mark" style="font-size:30px;">Done.</div>
+    <h1 class="headline">結果</h1>
+    <div class="score-big"><span id="score-num">0</span> / <span id="score-total">0</span></div>
+    <div class="score-label" id="score-pct">正答率 0%</div>
+    <div class="breakdown" id="breakdown"></div>
+    <div id="review-wrap"><div class="review-list" id="review-list"></div></div>
+    <div style="margin-top:26px;">
+      <button class="primary-btn" onclick="runQuiz(lastRun)">もう一度（同じ形式）</button>
+      <button class="ghost-btn" onclick="showStart()">最初の画面へ</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WORDDATA = {"surface": [{"heb": "הייתי", "read": "ハイィティ", "mean": "[私は]なった", "ref": "ミカ書7:1"}, {"heb": "כאספי", "read": "ケ・アスペイ", "mean": "集める者たちのように", "ref": "ミカ書7:1"}, {"heb": "קיץ", "read": "カイィツ", "mean": "夏の果物を", "ref": "ミカ書7:1"}, {"heb": "כעללת", "read": "ケ・オレロート", "mean": "残り物を摘む者たちのように", "ref": "ミカ書7:1"}, {"heb": "בציר", "read": "バツィール", "mean": "葡萄の収穫の", "ref": "ミカ書7:1"}, {"heb": "אשכול", "read": "エシュコール", "mean": "房は", "ref": "ミカ書7:1"}, {"heb": "לאכול", "read": "レ・エㇰホール", "mean": "食べる為の", "ref": "ミカ書7:1"}, {"heb": "בכורה", "read": "ビックラー", "mean": "初なりの無花果は", "ref": "ミカ書7:1"}, {"heb": "אותה", "read": "イッヴェター", "mean": "[それが]熱望する", "ref": "ミカ書7:1"}, {"heb": "נפשי", "read": "ナフシㇶ・ィー", "mean": "私の魂が", "ref": "ミカ書7:1"}, {"heb": "אבד", "read": "アヴァド", "mean": "[それは]消滅しました", "ref": "ミカ書7:2"}, {"heb": "חסיד", "read": "ㇰハシド", "mean": "信心深い[者は]", "ref": "ミカ書7:2"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "ミカ書7:2"}, {"heb": "וישר", "read": "ヴェ・ヤシャール", "mean": "そして真っ直ぐな[者は]", "ref": "ミカ書7:2"}, {"heb": "באדם", "read": "バ・アダム", "mean": "[男の]人の中に", "ref": "ミカ書7:2"}, {"heb": "כלם", "read": "クッラ・ム", "mean": "彼等のことごとくは", "ref": "ミカ書7:2"}, {"heb": "לדמים", "read": "レ・ダミーム", "mean": "諸々の血を求めて", "ref": "ミカ書7:2"}, {"heb": "יארבו", "read": "イェエローヴ", "mean": "[彼等は]待ち伏せます", "ref": "ミカ書7:2"}, {"heb": "איש", "read": "イーシュ", "mean": "各人は", "ref": "ミカ書7:2"}, {"heb": "אחיהו", "read": "アㇰヒー・フ", "mean": "彼の兄弟を", "ref": "ミカ書7:2"}, {"heb": "יצודו", "read": "ヤツゥードゥ", "mean": "[彼は]狩猟します", "ref": "ミカ書7:2"}, {"heb": "חרם", "read": "ㇰヘーレム", "mean": "網によって", "ref": "ミカ書7:2"}, {"heb": "הרע", "read": "ハ・ラー", "mean": "その悪い[こと]", "ref": "ミカ書7:3"}, {"heb": "כפים", "read": "カッパイィム", "mean": "両掌は", "ref": "ミカ書7:3"}, {"heb": "להיטיב", "read": "レ・ヘイティーヴ", "mean": "巧みに為させることを", "ref": "ミカ書7:3"}, {"heb": "השר", "read": "ハッサール", "mean": "その長は", "ref": "ミカ書7:3"}, {"heb": "שאל", "read": "ショエル", "mean": "求める[者]", "ref": "ミカ書7:3"}, {"heb": "והשפט", "read": "ヴェ・ハ・ショフェト", "mean": "そしてその裁く[者は]", "ref": "ミカ書7:3"}, {"heb": "בשלום", "read": "バ・シㇶルーム", "mean": "賄賂によって", "ref": "ミカ書7:3"}, {"heb": "והגדול", "read": "ヴェ・ハ・ッガドール", "mean": "そしてその偉い[人は]", "ref": "ミカ書7:3"}, {"heb": "דבר", "read": "ドヴェール", "mean": "語る[者]", "ref": "ミカ書7:3"}, {"heb": "הות", "read": "ハッヴァト", "mean": "欲望を", "ref": "ミカ書7:3"}, {"heb": "נפשו", "read": "ナフショ・ォー", "mean": "彼の心の", "ref": "ミカ書7:3"}, {"heb": "ויעבתוה", "read": "ヴェ・イェアッベトゥー・ハ", "mean": "そして完全に包み隠します", "ref": "ミカ書7:3"}, {"heb": "טובם", "read": "トッヴァ・ム", "mean": "彼等の良い人は", "ref": "ミカ書7:4"}, {"heb": "כחדק", "read": "ケ・ㇰヘデク", "mean": "荊のよう", "ref": "ミカ書7:4"}, {"heb": "ישר", "read": "ヤシャール", "mean": "真っすぐな[人は]", "ref": "ミカ書7:4"}, {"heb": "ממסוכה", "read": "ミ・ムメスㇰハー", "mean": "棘より", "ref": "ミカ書7:4"}, {"heb": "יום", "read": "ヨム", "mean": "日", "ref": "ミカ書7:4"}, {"heb": "מצפיך", "read": "メツァッペイ・ㇰハ", "mean": "見張る[者たちの]", "ref": "ミカ書7:4"}, {"heb": "פקדתך", "read": "ペクッダーテ・ㇰハ", "mean": "あなたの罰が", "ref": "ミカ書7:4"}, {"heb": "באה", "read": "バーア", "mean": "[それが]来る", "ref": "ミカ書7:4"}, {"heb": "תהיה", "read": "ティㇷイェ", "mean": "[それが]生じる", "ref": "ミカ書7:4"}, {"heb": "מבוכתם", "read": "メヴㇰハタ・ム", "mean": "彼等の混乱が", "ref": "ミカ書7:4"}, {"heb": "תאמינו", "read": "タアミーヌ", "mean": "[あなたたちは]信じさせる", "ref": "ミカ書7:5"}, {"heb": "ברע", "read": "ベ・レーア", "mean": "隣人を", "ref": "ミカ書7:5"}, {"heb": "תבטחו", "read": "ティヴテㇰフー", "mean": "[あなたたちは]頼る", "ref": "ミカ書7:5"}, {"heb": "באלוף", "read": "ベ・アッルフ", "mean": "指導者に", "ref": "ミカ書7:5"}, {"heb": "משכבת", "read": "ミ・ショㇰヘｰヴェト", "mean": "寝る[女]から", "ref": "ミカ書7:5"}, {"heb": "חיקך", "read": "ㇰヘイケー・ㇰハ", "mean": "あなたの懐に", "ref": "ミカ書7:5"}, {"heb": "שמר", "read": "シェモール", "mean": "[あなたは]守りなさい", "ref": "ミカ書7:5"}, {"heb": "פתחי", "read": "ピトㇰヘイ", "mean": "諸々の戸を", "ref": "ミカ書7:5"}, {"heb": "פיך", "read": "フィー・ㇰハ", "mean": "あなたの口の", "ref": "ミカ書7:5"}, {"heb": "בן", "read": "ヴェン", "mean": "息子は", "ref": "ミカ書7:6"}, {"heb": "מנבל", "read": "メナッベル", "mean": "恥の種である[者]", "ref": "ミカ書7:6"}, {"heb": "אב", "read": "アヴ", "mean": "父の", "ref": "ミカ書7:6"}, {"heb": "בת", "read": "バト", "mean": "娘は", "ref": "ミカ書7:6"}, {"heb": "קמה", "read": "カマー", "mean": "立ち上がる[女]", "ref": "ミカ書7:6"}, {"heb": "באמה", "read": "ヴェ・イムマ・ァ", "mean": "彼女の母に", "ref": "ミカ書7:6"}, {"heb": "כלה", "read": "カッラー", "mean": "嫁は", "ref": "ミカ書7:6"}, {"heb": "בחמתה", "read": "ベ・ㇰハモタ・ァ", "mean": "彼女の姑に", "ref": "ミカ書7:6"}, {"heb": "איבי", "read": "オイェヴェイ", "mean": "敵たちは", "ref": "ミカ書7:6"}, {"heb": "איש", "read": "イーシュ", "mean": "[男の]人の", "ref": "ミカ書7:6"}, {"heb": "אנשי", "read": "アンシェィ", "mean": "男たち", "ref": "ミカ書7:6"}, {"heb": "ביתו", "read": "ヴェイト・ォ", "mean": "彼の家族の", "ref": "ミカ書7:6"}, {"heb": "ביהוה", "read": "バ・ァドナイ", "mean": "主ヤㇵウェㇵを", "ref": "ミカ書7:7"}, {"heb": "אצפה", "read": "アツァッペー", "mean": "[私は]完全に注意して待ちます", "ref": "ミカ書7:7"}, {"heb": "אוחילה", "read": "オㇰヒーラ", "mean": "[私は]待ち望ませます", "ref": "ミカ書7:7"}, {"heb": "לאלהי", "read": "レ・ェロヘイ", "mean": "神を", "ref": "ミカ書7:7"}, {"heb": "ישעי", "read": "イィシュ・イ", "mean": "私の救いの", "ref": "ミカ書7:7"}, {"heb": "ישמעני", "read": "イィシュマエー・ニ", "mean": "[彼は]聞くでしょう", "ref": "ミカ書7:7"}, {"heb": "אלהי", "read": "エロハ・イ", "mean": "私の神は", "ref": "ミカ書7:7"}, {"heb": "תשמחי", "read": "ティスメㇰヒー", "mean": "[あなたは]喜ぶ", "ref": "ミカ書7:8"}, {"heb": "איבתי", "read": "オヤヴティ", "mean": "私の敵は", "ref": "ミカ書7:8"}, {"heb": "נפלתי", "read": "ナファルティー", "mean": "[私は]倒れる", "ref": "ミカ書7:8"}, {"heb": "קמתי", "read": "カムティー", "mean": "[私は]立ち上がります", "ref": "ミカ書7:8"}, {"heb": "אשב", "read": "エシェヴ", "mean": "[私は]座る", "ref": "ミカ書7:8"}, {"heb": "בחשך", "read": "バ・ㇰホーシェㇰフ", "mean": "暗闇の中に", "ref": "ミカ書7:8"}, {"heb": "יהוה", "read": "アドナイ", "mean": "主ヤㇵウェㇵは", "ref": "ミカ書7:8"}, {"heb": "אור", "read": "オール", "mean": "光", "ref": "ミカ書7:8"}, {"heb": "זעף", "read": "ザァアフ", "mean": "激怒を", "ref": "ミカ書7:9"}, {"heb": "אשא", "read": "エッサー", "mean": "[私は]負うでしょう", "ref": "ミカ書7:9"}, {"heb": "חטאתי", "read": "ㇰハターティ", "mean": "[私は]罪を犯した", "ref": "ミカ書7:9"}, {"heb": "יריב", "read": "ヤリーヴ", "mean": "[彼が]主張する", "ref": "ミカ書7:9"}, {"heb": "ריבי", "read": "リヴ・ィー", "mean": "私の主張を", "ref": "ミカ書7:9"}, {"heb": "ועשה", "read": "ヴェ・アサー", "mean": "そして為す", "ref": "ミカ書7:9"}, {"heb": "משפטי", "read": "ミシュパテ・ィー", "mean": "私の正しい裁きを", "ref": "ミカ書7:9"}, {"heb": "יוציאני", "read": "ヨツィエー・ニ", "mean": "出て来させるでしょう", "ref": "ミカ書7:9"}, {"heb": "לאור", "read": "ラ・オール", "mean": "光に", "ref": "ミカ書7:9"}, {"heb": "אראה", "read": "エルエー", "mean": "[私は]見るでしょう", "ref": "ミカ書7:9"}, {"heb": "בצדקתו", "read": "ベ・ツィドカト・ォ", "mean": "彼の義を", "ref": "ミカ書7:9"}, {"heb": "ותרא", "read": "ヴェ・テレー", "mean": "そして見るでしょう", "ref": "ミカ書7:10"}, {"heb": "ותכסה", "read": "ウ・テㇰハッセーハ", "mean": "そして覆うでしょう", "ref": "ミカ書7:10"}, {"heb": "בושה", "read": "ヴーシャー", "mean": "恥が", "ref": "ミカ書7:10"}, {"heb": "תראינה", "read": "ティルエイナー", "mean": "[それらは]見るでしょう", "ref": "ミカ書7:10"}, {"heb": "תהיה", "read": "ティフイェ", "mean": "[それは]なるでしょう", "ref": "ミカ書7:10"}, {"heb": "למרמס", "read": "レ・ミルマス", "mean": "踏みにじられるものに", "ref": "ミカ書7:10"}, {"heb": "כטיט", "read": "ケ・ティト", "mean": "泥のように", "ref": "ミカ書7:10"}, {"heb": "חוצות", "read": "ㇰフツォート", "mean": "諸々の通りの", "ref": "ミカ書7:10"}, {"heb": "לבנות", "read": "リ・ヴノート", "mean": "建てること", "ref": "ミカ書7:11"}, {"heb": "גדריך", "read": "ゲデライィ・ㇰフ", "mean": "あなたの城壁を", "ref": "ミカ書7:11"}, {"heb": "ירחק", "read": "イィルㇰハク", "mean": "遠くになります", "ref": "ミカ書7:11"}, {"heb": "חק", "read": "ㇰホク", "mean": "国境は", "ref": "ミカ書7:11"}, {"heb": "יבוא", "read": "ヤヴォー", "mean": "やって来る", "ref": "ミカ書7:12"}, {"heb": "אשור", "read": "アシュール", "mean": "アッシリア", "ref": "ミカ書7:12"}, {"heb": "וערי", "read": "ヴェ・アレイ", "mean": "そして町々", "ref": "ミカ書7:12"}, {"heb": "נהר", "read": "ナハール", "mean": "川", "ref": "ミカ書7:12"}, {"heb": "וים", "read": "ヴェ・ヤム", "mean": "そして海", "ref": "ミカ書7:12"}, {"heb": "והר", "read": "ヴェ・ハール", "mean": "そして山", "ref": "ミカ書7:12"}, {"heb": "והיתה", "read": "ヴェ・ハイェター", "mean": "なります", "ref": "ミカ書7:13"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地は", "ref": "ミカ書7:13"}, {"heb": "לשממה", "read": "リ・シュママー", "mean": "荒廃に", "ref": "ミカ書7:13"}, {"heb": "ישביה", "read": "ヨシェヴェイ・ハー", "mean": "住む[者たちの]", "ref": "ミカ書7:13"}, {"heb": "מפרי", "read": "ミ・ッペリー", "mean": "実によって", "ref": "ミカ書7:13"}, {"heb": "מעלליהם", "read": "マアルレイ・ヘム", "mean": "彼等の行為の", "ref": "ミカ書7:13"}, {"heb": "רעה", "read": "レエー", "mean": "牧して下さい", "ref": "ミカ書7:14"}, {"heb": "עמך", "read": "アムメ・ㇰハー", "mean": "あなたの民を", "ref": "ミカ書7:14"}, {"heb": "בשבטך", "read": "ヴェ・シㇶヴテー・ㇰハ", "mean": "あなたの杖によって", "ref": "ミカ書7:14"}, {"heb": "צאן", "read": "ツォーン", "mean": "羊の群れを", "ref": "ミカ書7:14"}, {"heb": "נחלתך", "read": "ナㇰハラテー・ㇰハ", "mean": "あなたの所有の", "ref": "ミカ書7:14"}, {"heb": "שכני", "read": "ショㇰヘニー", "mean": "住む[者を]", "ref": "ミカ書7:14"}, {"heb": "יער", "read": "ヤーアル", "mean": "森に", "ref": "ミカ書7:14"}, {"heb": "כרמל", "read": "カルメル", "mean": "カルメル", "ref": "ミカ書7:14"}, {"heb": "ירעו", "read": "イィルウー", "mean": "草を食う", "ref": "ミカ書7:14"}, {"heb": "בשן", "read": "バシャン", "mean": "バシャン", "ref": "ミカ書7:14"}, {"heb": "וגלעד", "read": "ヴェ・ギルアード", "mean": "ギレアド", "ref": "ミカ書7:14"}, {"heb": "כימי", "read": "キ・メイ", "mean": "日々のように", "ref": "ミカ書7:14"}, {"heb": "עולם", "read": "オラーム", "mean": "昔の", "ref": "ミカ書7:14"}, {"heb": "צאתך", "read": "ツェテ・ㇰハー", "mean": "あなたが出た時", "ref": "ミカ書7:15"}, {"heb": "מארץ", "read": "メ・エーレツ", "mean": "地から", "ref": "ミカ書7:15"}, {"heb": "מצרים", "read": "ミツライィム", "mean": "エジプト", "ref": "ミカ書7:15"}, {"heb": "אראנו", "read": "アルエ・ンヌ", "mean": "見させるでしょう", "ref": "ミカ書7:15"}, {"heb": "נפלאות", "read": "ニフラオート", "mean": "驚かされる[諸々のことを]", "ref": "ミカ書7:15"}, {"heb": "יראו", "read": "イィルウー", "mean": "見ます", "ref": "ミカ書7:16"}, {"heb": "גוים", "read": "ゴイーム", "mean": "諸国の民は", "ref": "ミカ書7:16"}, {"heb": "ויבשו", "read": "ヴェ・イェヴォーシュ", "mean": "恥じます", "ref": "ミカ書7:16"}, {"heb": "גבורתם", "read": "ゲヴラター・ム", "mean": "彼等の力の", "ref": "ミカ書7:16"}, {"heb": "ישימו", "read": "ヤシーム", "mean": "置きます", "ref": "ミカ書7:16"}, {"heb": "יד", "read": "ヤード", "mean": "手を", "ref": "ミカ書7:16"}, {"heb": "פה", "read": "ペー", "mean": "口", "ref": "ミカ書7:16"}, {"heb": "אזניהם", "read": "アズネイ・ヘム", "mean": "彼等の耳は", "ref": "ミカ書7:16"}, {"heb": "תחרשנה", "read": "テㇰヘラシュナー", "mean": "聾になります", "ref": "ミカ書7:16"}, {"heb": "ילחכו", "read": "イェラㇰハㇰフー", "mean": "舐めます", "ref": "ミカ書7:17"}, {"heb": "עפר", "read": "アファール", "mean": "塵を", "ref": "ミカ書7:17"}, {"heb": "כנחש", "read": "カ・ンナㇰハーシュ", "mean": "蛇のように", "ref": "ミカ書7:17"}, {"heb": "כזחלי", "read": "ケ・ゾㇰハレイ", "mean": "這う[ものたち]のように", "ref": "ミカ書7:17"}, {"heb": "ארץ", "read": "エーレツ", "mean": "地を", "ref": "ミカ書7:17"}, {"heb": "ירגזו", "read": "イィルゲズー", "mean": "震えて出て来ます", "ref": "ミカ書7:17"}, {"heb": "ממסגרתיהם", "read": "ミ・ミスゲロテイ・ヘム", "mean": "彼等の隠れ場所から", "ref": "ミカ書7:17"}, {"heb": "יפחדו", "read": "イィフㇰハードゥ", "mean": "恐れます", "ref": "ミカ書7:17"}, {"heb": "ויראו", "read": "ヴェ・イィルウー", "mean": "そして畏れます", "ref": "ミカ書7:17"}, {"heb": "אל", "read": "エル", "mean": "神は", "ref": "ミカ書7:18"}, {"heb": "נשא", "read": "ノセー", "mean": "許す[者]", "ref": "ミカ書7:18"}, {"heb": "עון", "read": "アヴォン", "mean": "咎を", "ref": "ミカ書7:18"}, {"heb": "ועבר", "read": "ヴェ・オヴェール", "mean": "通り過ぎる[者]", "ref": "ミカ書7:18"}, {"heb": "פשע", "read": "ペーシャ", "mean": "罪", "ref": "ミカ書7:18"}, {"heb": "לשארית", "read": "リ・シュエリート", "mean": "残りの者に対して", "ref": "ミカ書7:18"}, {"heb": "החזיק", "read": "ヘㇰヘズィーク", "mean": "堅持させる", "ref": "ミカ書7:18"}, {"heb": "אפו", "read": "アポ・ォー", "mean": "彼の怒りを", "ref": "ミカ書7:18"}, {"heb": "חפץ", "read": "ㇰハフェツ", "mean": "喜び楽しむ[者]", "ref": "ミカ書7:18"}, {"heb": "חסד", "read": "ㇰヘーセド", "mean": "慈しみを", "ref": "ミカ書7:18"}, {"heb": "ישוב", "read": "ヤシューヴ", "mean": "再び戻ります", "ref": "ミカ書7:19"}, {"heb": "ירחמנו", "read": "イェラㇰハメ・ンヌ", "mean": "完全に憐れみます", "ref": "ミカ書7:19"}, {"heb": "יכבש", "read": "イィㇰフヴォーシュ", "mean": "抑えます", "ref": "ミカ書7:19"}, {"heb": "עונתינו", "read": "アヴォノテイ・ヌー", "mean": "私たちの不正を", "ref": "ミカ書7:19"}, {"heb": "ותשליך", "read": "ヴェ・タシュリ・ㇰフ", "mean": "投げ入れさせます", "ref": "ミカ書7:19"}, {"heb": "במצלות", "read": "ビ・ムツゥロート", "mean": "淵に", "ref": "ミカ書7:19"}, {"heb": "ים", "read": "ヤム", "mean": "海の", "ref": "ミカ書7:19"}, {"heb": "חטאותם", "read": "ㇰハットタ・ム", "mean": "彼等の罪の", "ref": "ミカ書7:19"}, {"heb": "תתן", "read": "ティッテーン", "mean": "与えます", "ref": "ミカ書7:20"}, {"heb": "אמת", "read": "エメト", "mean": "真実を", "ref": "ミカ書7:20"}, {"heb": "ליעקב", "read": "レ・ヤアコーヴ", "mean": "ヤコブに", "ref": "ミカ書7:20"}, {"heb": "לאברהם", "read": "レ・アヴラハーム", "mean": "アブラハムに", "ref": "ミカ書7:20"}, {"heb": "נשבעת", "read": "ニシュバータ", "mean": "誓いを立てさせられた", "ref": "ミカ書7:20"}, {"heb": "מימי", "read": "ミ・メイ", "mean": "日々から", "ref": "ミカ書7:20"}, {"heb": "קדם", "read": "ケーデム", "mean": "昔の", "ref": "ミカ書7:20"}], "citation": [{"heb": "אסף", "read": "アサフ", "mean": "集める、集める者"}, {"heb": "קיץ", "read": "カイツ", "mean": "夏の果物"}, {"heb": "עללות", "read": "オレロート", "mean": "摘み残しの実"}, {"heb": "בציר", "read": "バツィール", "mean": "ぶどうの収穫"}, {"heb": "אשכול", "read": "エシュコール", "mean": "房"}, {"heb": "אכל", "read": "アㇰホール", "mean": "食べる"}, {"heb": "בכורה", "read": "ビックラー", "mean": "初なりの実"}, {"heb": "אוה", "read": "アヴァー", "mean": "熱望する"}, {"heb": "נפש", "read": "ネフェシュ", "mean": "魂・心"}, {"heb": "אבד", "read": "アヴァド", "mean": "消滅する、滅びる"}, {"heb": "חסיד", "read": "ㇰハシード", "mean": "信心深い者"}, {"heb": "ארץ", "read": "エレツ", "mean": "地"}, {"heb": "ישר", "read": "ヤシャール", "mean": "真っ直ぐな"}, {"heb": "אדם", "read": "アダム", "mean": "人"}, {"heb": "כל", "read": "コル", "mean": "すべて"}, {"heb": "דם", "read": "ダム", "mean": "血"}, {"heb": "ארב", "read": "アラヴ", "mean": "待ち伏せする"}, {"heb": "איש", "read": "イーシュ", "mean": "人・各人"}, {"heb": "אח", "read": "アㇰフ", "mean": "兄弟"}, {"heb": "צוד", "read": "ツード", "mean": "狩る"}, {"heb": "חרם", "read": "ㇰヘーレム", "mean": "網"}, {"heb": "רע", "read": "ラー", "mean": "悪い"}, {"heb": "כף", "read": "カフ", "mean": "手のひら"}, {"heb": "יטב", "read": "ヤタヴ", "mean": "巧みに行う"}, {"heb": "שר", "read": "サル", "mean": "長・首長"}, {"heb": "שאל", "read": "シャアル", "mean": "求める・尋ねる"}, {"heb": "שפט", "read": "ショフェト", "mean": "裁く者"}, {"heb": "שלום", "read": "シャローム", "mean": "報い・平和"}, {"heb": "גדול", "read": "ガドール", "mean": "偉大な"}, {"heb": "דבר", "read": "ダヴァール", "mean": "語る者"}, {"heb": "הוה", "read": "ハッヴァー", "mean": "欲望"}, {"heb": "עבת", "read": "アヴァト", "mean": "完全に包み隠す"}, {"heb": "טוב", "read": "トーヴ", "mean": "良い"}, {"heb": "חדק", "read": "ㇰヘデク", "mean": "茨"}, {"heb": "משוכה", "read": "メスㇰハー", "mean": "生け垣"}, {"heb": "יום", "read": "ヨーム", "mean": "日"}, {"heb": "צפה", "read": "ツォフェー", "mean": "見張る者"}, {"heb": "פקדה", "read": "ペクッダー", "mean": "罰・訪れ"}, {"heb": "בוא", "read": "ボー", "mean": "来る"}, {"heb": "היה", "read": "ハヤー", "mean": "なる・ある"}, {"heb": "מבוכה", "read": "メヴㇰハー", "mean": "混乱"}, {"heb": "אמן", "read": "アマン", "mean": "信じさせる"}, {"heb": "בטח", "read": "バタㇰフ", "mean": "頼る"}, {"heb": "אלוף", "read": "アッルフ", "mean": "指導者・友"}, {"heb": "שכב", "read": "ショㇰヘヴ", "mean": "寝る者"}, {"heb": "חיק", "read": "ㇰヘイク", "mean": "懐"}, {"heb": "שמר", "read": "シェモール", "mean": "守る"}, {"heb": "פתח", "read": "ペタㇰフ", "mean": "戸口"}, {"heb": "פה", "read": "ペー", "mean": "口"}, {"heb": "בן", "read": "ベン", "mean": "息子"}, {"heb": "נבל", "read": "ナヴァル", "mean": "恥の種とする者"}, {"heb": "אב", "read": "アヴ", "mean": "父"}, {"heb": "בת", "read": "バト", "mean": "娘"}, {"heb": "קום", "read": "クーム", "mean": "立ち上がる"}, {"heb": "אם", "read": "エム", "mean": "母"}, {"heb": "כלה", "read": "カッラー", "mean": "嫁"}, {"heb": "חמות", "read": "ㇰハモート", "mean": "姑"}, {"heb": "איב", "read": "オイェヴ", "mean": "敵"}, {"heb": "בית", "read": "バイト", "mean": "家"}, {"heb": "יהוה", "read": "アドナイ", "mean": "主（固有名）"}, {"heb": "יחל", "read": "ヤㇰハル", "mean": "待ち望む"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神"}, {"heb": "ישע", "read": "イェシャ", "mean": "救い"}, {"heb": "שמע", "read": "シャマ", "mean": "聞く"}, {"heb": "שמח", "read": "サマㇰフ", "mean": "喜ぶ"}, {"heb": "איבת", "read": "オイェヴェト", "mean": "女の敵"}, {"heb": "נפל", "read": "ナファル", "mean": "倒れる"}, {"heb": "ישב", "read": "ヤシャヴ", "mean": "座る・住む"}, {"heb": "חשך", "read": "ㇰホーシェㇰフ", "mean": "暗闇"}, {"heb": "אור", "read": "オール", "mean": "光"}, {"heb": "זעף", "read": "ザァアフ", "mean": "激怒"}, {"heb": "נשא", "read": "ナサー", "mean": "負う・運ぶ"}, {"heb": "חטא", "read": "ㇰハタ", "mean": "罪を犯す"}, {"heb": "ריב", "read": "リーヴ", "mean": "争う・主張する"}, {"heb": "עשה", "read": "アサー", "mean": "行う"}, {"heb": "משפט", "read": "ミシュパト", "mean": "裁き"}, {"heb": "יצא", "read": "ヤツァー", "mean": "出て来させる"}, {"heb": "ראה", "read": "ラアー", "mean": "見る"}, {"heb": "צדקה", "read": "ツェダカー", "mean": "義"}, {"heb": "כסה", "read": "キサー", "mean": "覆う"}, {"heb": "בושה", "read": "ヴーシャー", "mean": "恥"}, {"heb": "מרמס", "read": "ミルマス", "mean": "踏みにじられる物"}, {"heb": "טיט", "read": "ティト", "mean": "泥"}, {"heb": "חוץ", "read": "ㇰフツ", "mean": "通り"}, {"heb": "בנה", "read": "バナー", "mean": "建てる"}, {"heb": "גדר", "read": "ガデル", "mean": "城壁"}, {"heb": "רחק", "read": "ラㇰハク", "mean": "遠くなる"}, {"heb": "חק", "read": "ㇰホク", "mean": "国境・掟"}, {"heb": "אשור", "read": "アシュール", "mean": "アッシリア（固有名）"}, {"heb": "עיר", "read": "イール", "mean": "町"}, {"heb": "נהר", "read": "ナハール", "mean": "川"}, {"heb": "ים", "read": "ヤム", "mean": "海"}, {"heb": "הר", "read": "ハール", "mean": "山"}, {"heb": "שממה", "read": "シェママー", "mean": "荒廃"}, {"heb": "פרי", "read": "ペリー", "mean": "実"}, {"heb": "מעלל", "read": "マアラル", "mean": "行為"}, {"heb": "רעה", "read": "ラアー", "mean": "牧する"}, {"heb": "עם", "read": "アム", "mean": "民"}, {"heb": "שבט", "read": "シェヴェト", "mean": "杖"}, {"heb": "צאן", "read": "ツォーン", "mean": "羊の群れ"}, {"heb": "נחלה", "read": "ナㇰハラー", "mean": "所有・嗣業"}, {"heb": "שכן", "read": "シャㇰハン", "mean": "住む者"}, {"heb": "יער", "read": "ヤーアル", "mean": "森"}, {"heb": "כרמל", "read": "カルメル", "mean": "カルメル（固有名）"}, {"heb": "בשן", "read": "バシャン", "mean": "バシャン（固有名）"}, {"heb": "גלעד", "read": "ギルアード", "mean": "ギレアド（固有名）"}, {"heb": "עולם", "read": "オラーム", "mean": "永遠・昔"}, {"heb": "מצרים", "read": "ミツライィム", "mean": "エジプト（固有名）"}, {"heb": "פלא", "read": "ペレ", "mean": "驚くべきこと"}, {"heb": "גוי", "read": "ゴイ", "mean": "国民"}, {"heb": "בוש", "read": "ボーシュ", "mean": "恥じる"}, {"heb": "גבורה", "read": "ゲヴラー", "mean": "力"}, {"heb": "שים", "read": "スィーム", "mean": "置く"}, {"heb": "יד", "read": "ヤド", "mean": "手"}, {"heb": "אזן", "read": "オゼン", "mean": "耳"}, {"heb": "חרש", "read": "ㇰヘレシュ", "mean": "聾になる"}, {"heb": "לחך", "read": "ラㇰハㇰフ", "mean": "舐める"}, {"heb": "עפר", "read": "アファール", "mean": "塵"}, {"heb": "נחש", "read": "ナㇰハーシュ", "mean": "蛇"}, {"heb": "זחל", "read": "ザㇰハル", "mean": "這う者"}, {"heb": "רגז", "read": "ラガズ", "mean": "震える"}, {"heb": "מסגרת", "read": "ミスゲレト", "mean": "隠れ場所"}, {"heb": "פחד", "read": "パㇰハド", "mean": "恐れる"}, {"heb": "ירא", "read": "ヤレー", "mean": "畏れる"}, {"heb": "אל", "read": "エル", "mean": "神"}, {"heb": "עון", "read": "アヴォン", "mean": "咎"}, {"heb": "עבר", "read": "オヴェール", "mean": "通り過ぎる者"}, {"heb": "פשע", "read": "ペーシャ", "mean": "罪"}, {"heb": "שארית", "read": "シェエリート", "mean": "残りの者"}, {"heb": "חזק", "read": "ㇰハザク", "mean": "堅持させる"}, {"heb": "אף", "read": "アフ", "mean": "怒り・鼻"}, {"heb": "חפץ", "read": "ㇰハフェツ", "mean": "喜び楽しむ"}, {"heb": "חסד", "read": "ㇰヘセド", "mean": "慈しみ"}, {"heb": "שוב", "read": "シューヴ", "mean": "再び戻る"}, {"heb": "רחם", "read": "ラㇰハム", "mean": "憐れむ"}, {"heb": "כבש", "read": "カヴァシュ", "mean": "抑える"}, {"heb": "שלך", "read": "シャラㇰフ", "mean": "投げ入れる"}, {"heb": "מצולה", "read": "メツォラー", "mean": "淵"}, {"heb": "חטאת", "read": "ㇰハッタト", "mean": "罪"}, {"heb": "נתן", "read": "ナタン", "mean": "与える"}, {"heb": "אמת", "read": "エメト", "mean": "真実"}, {"heb": "יעקב", "read": "ヤアコーヴ", "mean": "ヤコブ（固有名）"}, {"heb": "אברהם", "read": "アヴラハーム", "mean": "アブラハム（固有名）"}, {"heb": "שבע", "read": "シャヴァ", "mean": "誓う"}, {"heb": "קדם", "read": "ケデム", "mean": "昔"}], "root": [{"heb": "אסף", "read": "アサフ", "mean": "集める"}, {"heb": "אכל", "read": "アㇰハル", "mean": "食べる"}, {"heb": "אוה", "read": "アヴァー", "mean": "熱望する"}, {"heb": "אבד", "read": "アヴァド", "mean": "滅びる"}, {"heb": "ארב", "read": "アラヴ", "mean": "待ち伏せする"}, {"heb": "צוד", "read": "ツード", "mean": "狩る"}, {"heb": "יטב", "read": "ヤタヴ", "mean": "善くする"}, {"heb": "שאל", "read": "シャアル", "mean": "求める"}, {"heb": "שפט", "read": "シャファト", "mean": "裁く"}, {"heb": "דבר", "read": "ディベル", "mean": "語る"}, {"heb": "עבת", "read": "アヴァト", "mean": "縄で結ぶ・包み隠す"}, {"heb": "צפה", "read": "ツァファー", "mean": "見張る"}, {"heb": "בוא", "read": "ボー", "mean": "来る"}, {"heb": "היה", "read": "ハヤー", "mean": "なる"}, {"heb": "אמן", "read": "アマン", "mean": "信じる・確かにする"}, {"heb": "בטח", "read": "バタㇰフ", "mean": "信頼する"}, {"heb": "שכב", "read": "シャㇰハヴ", "mean": "横たわる"}, {"heb": "שמר", "read": "シャマル", "mean": "守る"}, {"heb": "נבל", "read": "ナヴァル", "mean": "愚かなことをする・辱める"}, {"heb": "קום", "read": "クーム", "mean": "立つ"}, {"heb": "איב", "read": "アヤヴ", "mean": "敵対する"}, {"heb": "יחל", "read": "ヤㇰハル", "mean": "待ち望む"}, {"heb": "שמע", "read": "シャマ", "mean": "聞く"}, {"heb": "שמח", "read": "サマㇰフ", "mean": "喜ぶ"}, {"heb": "נפל", "read": "ナファル", "mean": "倒れる"}, {"heb": "ישב", "read": "ヤシャヴ", "mean": "座る"}, {"heb": "נשא", "read": "ナサー", "mean": "運ぶ・負う"}, {"heb": "חטא", "read": "ㇰハタ", "mean": "罪を犯す"}, {"heb": "ריב", "read": "リーヴ", "mean": "争う"}, {"heb": "עשה", "read": "アサー", "mean": "行う・なす"}, {"heb": "יצא", "read": "ヤツァー", "mean": "出る"}, {"heb": "ראה", "read": "ラアー", "mean": "見る"}, {"heb": "כסה", "read": "キサー", "mean": "覆う"}, {"heb": "בנה", "read": "バナー", "mean": "建てる"}, {"heb": "רחק", "read": "ラㇰハク", "mean": "遠い"}, {"heb": "רעה", "read": "ラアー", "mean": "牧する"}, {"heb": "שכן", "read": "シャㇰハン", "mean": "住む"}, {"heb": "פלא", "read": "パラー", "mean": "不思議である"}, {"heb": "בוש", "read": "ボーシュ", "mean": "恥じる"}, {"heb": "שים", "read": "スィーム", "mean": "置く"}, {"heb": "חרש", "read": "ㇰハラシュ", "mean": "黙る・聾になる"}, {"heb": "לחך", "read": "ラㇰハㇰフ", "mean": "舐める"}, {"heb": "זחל", "read": "ザㇰハル", "mean": "這う"}, {"heb": "רגז", "read": "ラガズ", "mean": "震える"}, {"heb": "פחד", "read": "パㇰハド", "mean": "恐れる"}, {"heb": "ירא", "read": "ヤレー", "mean": "恐れる"}, {"heb": "עבר", "read": "アヴァル", "mean": "通り過ぎる"}, {"heb": "חזק", "read": "ㇰハザク", "mean": "強い・堅く保つ"}, {"heb": "חפץ", "read": "ㇰハフェツ", "mean": "喜び望む"}, {"heb": "שוב", "read": "シューヴ", "mean": "戻る"}, {"heb": "רחם", "read": "ラㇰハム", "mean": "憐れむ"}, {"heb": "כבש", "read": "カヴァシュ", "mean": "征服する・抑える"}, {"heb": "שלך", "read": "シャラㇰフ", "mean": "投げる"}, {"heb": "נתן", "read": "ナタン", "mean": "与える"}, {"heb": "שבע", "read": "シャヴァ", "mean": "誓う"}]};
+</script>
+<script>
+/* =========================================================
+   データソース：WORDDATA = {surface:[...], citation:[...], root:[...]}
+   各要素: {heb, read, mean} （surfaceのみ ref 付き）
+   ========================================================= */
+
+const CAT_LABEL = {surface:'本文の単語', citation:'単語（元の形）', root:'動詞（root）'};
+
+let wizardState = {cat:null, direction:null, format:null};
+let order=[], current=0, score=0, results=[], currentOptions=[], answeredThis=false, lastRun=null;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function pickN(pool, n, excludeIdx){
+  const p = pool.filter((_,i)=>i!==excludeIdx);
+  return shuffle(p).slice(0,n);
+}
+
+function choiceButton(label, sub, onclick){
+  const b = document.createElement('button');
+  b.className='choice-btn';
+  b.innerHTML = label + (sub? '<span class="cb-sub">'+sub+'</span>' : '');
+  b.onclick = onclick;
+  return b;
+}
+function backLink(onclick){
+  const b = document.createElement('button');
+  b.className='back-link';
+  b.textContent='← 戻る';
+  b.onclick = onclick;
+  return b;
+}
+
+function renderWizard(){
+  const panel = document.getElementById('wizard-panel');
+  panel.innerHTML='';
+  const crumbs = document.createElement('div');
+  crumbs.className='crumbs';
+  const parts=[];
+  if(wizardState.cat) parts.push(CAT_LABEL[wizardState.cat]);
+  if(wizardState.direction) parts.push(wizardState.direction==='h2j' ? 'ヘブル語→日本語' : '日本語→ヘブル語');
+  if(wizardState.format) parts.push(wizardState.format==='reading'?'リーディング':'リスニング');
+  crumbs.textContent = parts.length ? parts.join(' / ') : '出題単位を選択';
+  panel.appendChild(crumbs);
+
+  const row = document.createElement('div');
+  row.className='choice-row';
+
+  if(!wizardState.cat){
+    row.appendChild(choiceButton('単語（元の形）','辞書に載る基本形（推定）', ()=>{wizardState.cat='citation'; renderWizard();}));
+    row.appendChild(choiceButton('動詞（root）','語根（3文字の基本形・推定）', ()=>{wizardState.cat='root'; renderWizard();}));
+    row.appendChild(choiceButton('本文の単語','ミカ書7章に実際に現れる形', ()=>{wizardState.cat='surface'; renderWizard();}));
+    panel.appendChild(row);
+    return;
+  }
+  if(!wizardState.direction){
+    row.appendChild(choiceButton('ヘブル語→日本語','ヘブル語を見て意味を選ぶ', ()=>{wizardState.direction='h2j'; renderWizard();}));
+    row.appendChild(choiceButton('日本語→ヘブル語','日本語を見てヘブル語を選ぶ', ()=>{wizardState.direction='j2h'; renderWizard();}));
+    panel.appendChild(row);
+    panel.appendChild(backLink(()=>{wizardState.cat=null; renderWizard();}));
+    return;
+  }
+  if(!wizardState.format){
+    row.appendChild(choiceButton('リーディング','文字を見て答える', ()=>{wizardState.format='reading'; renderWizard();}));
+    row.appendChild(choiceButton('リスニング','音声を聞いて答える', ()=>{wizardState.format='listening'; renderWizard();}));
+    panel.appendChild(row);
+    panel.appendChild(backLink(()=>{wizardState.direction=null; renderWizard();}));
+    return;
+  }
+
+  const pool = WORDDATA[wizardState.cat];
+  const max = pool.length;
+  const counts = [10,20,max].filter((v,i,a)=>v<=max && a.indexOf(v)===i);
+  counts.forEach(c=>{
+    const label = (c===max) ? ('全'+max+'問') : (c+'問');
+    row.appendChild(choiceButton(label,'', ()=>runQuiz({cat:wizardState.cat, direction:wizardState.direction, format:wizardState.format, count:c})));
+  });
+  panel.appendChild(row);
+  panel.appendChild(backLink(()=>{wizardState.format=null; renderWizard();}));
+}
+
+function showStart(){
+  wizardState = {cat:null, direction:null, format:null};
+  renderWizard();
+  document.getElementById('screen-start').classList.remove('hidden');
+  document.getElementById('screen-quiz').classList.add('hidden');
+  document.getElementById('screen-result').classList.add('hidden');
+}
+
+function buildQuestions(spec){
+  const pool = WORDDATA[spec.cat];
+  const idxs = shuffle(pool.map((_,i)=>i)).slice(0, spec.count);
+  return idxs.map(i=>{
+    const w = pool[i];
+    return {
+      cat: CAT_LABEL[spec.cat],
+      direction: spec.direction,
+      format: spec.format,
+      heb: w.heb, read: w.read, mean: w.mean, ref: w.ref||null,
+      poolIdx: i
+    };
+  });
+}
+
+function runQuiz(spec){
+  lastRun = spec;
+  const qs = buildQuestions(spec);
+  beginQuiz(qs, spec);
+}
+
+let activePool = [];
+
+function beginQuiz(qs, spec){
+  activePool = WORDDATA[spec.cat];
+  order = qs;
+  current = 0; score = 0; results = [];
+
+  document.getElementById('screen-start').classList.add('hidden');
+  document.getElementById('screen-result').classList.add('hidden');
+  document.getElementById('screen-quiz').classList.remove('hidden');
+
+  document.getElementById('qtotal').textContent = order.length;
+  buildStitches();
+  renderQuestion();
+}
+
+function buildStitches(){
+  const wrap = document.getElementById('stitches');
+  wrap.innerHTML='';
+  for(let i=0;i<order.length;i++){
+    const d = document.createElement('div');
+    d.className='stitch'; d.id='stitch-'+i;
+    wrap.appendChild(d);
+  }
+}
+function updateStitches(){
+  for(let i=0;i<order.length;i++){
+    const el = document.getElementById('stitch-'+i);
+    if(!el) continue;
+    el.classList.remove('done','current');
+    if(i<current) el.classList.add('done');
+    else if(i===current) el.classList.add('current');
+  }
+}
+
+function speakHebrew(text, rate){
+  try{
+    speechSynthesis.cancel();
+    setTimeout(()=>{
+      const u = new SpeechSynthesisUtterance(text);
+      const voices = speechSynthesis.getVoices();
+      const heVoice = voices.find(v=>v.lang && v.lang.toLowerCase().startsWith('he'));
+      if(heVoice) u.voice = heVoice;
+      u.lang = 'he-IL';
+      u.rate = rate || 0.9;
+      speechSynthesis.speak(u);
+    }, 60);
+  }catch(e){ /* 音声合成非対応環境 */ }
+}
+
+function renderQuestion(){
+  answeredThis = false;
+  const q = order[current];
+  document.getElementById('qnum').textContent = current+1;
+  updateStitches();
+  document.getElementById('q-cat').textContent = q.cat + '　' + (q.direction==='h2j'?'ヘブル語→日本語':'日本語→ヘブル語');
+
+  const promptWrap = document.getElementById('q-prompt-wrap');
+  promptWrap.innerHTML='';
+  const hero = document.getElementById('q-hero');
+  hero.innerHTML='';
+
+  const isListening = (q.format==='listening');
+  const isH2J = (q.direction==='h2j');
+
+  if(isH2J){
+    if(isListening){
+      const col = document.createElement('div');
+      col.style.cssText='display:flex;flex-direction:column;align-items:center;';
+      const row = document.createElement('div');
+      row.style.cssText='display:flex;gap:14px;align-items:center;justify-content:center;';
+      const btn = document.createElement('button');
+      btn.className='audio-btn'; btn.textContent='🔊';
+      btn.onclick=()=>speakHebrew(q.heb, 0.9);
+      const slowBtn = document.createElement('button');
+      slowBtn.className='audio-btn audio-btn-slow'; slowBtn.textContent='🐢';
+      slowBtn.title='ゆっくり再生';
+      slowBtn.onclick=()=>speakHebrew(q.heb, 0.45);
+      row.appendChild(btn); row.appendChild(slowBtn);
+      const hint = document.createElement('div');
+      hint.className='audio-hint'; hint.textContent='タップして発音を聞く（🐢=ゆっくり）';
+      col.appendChild(row); col.appendChild(hint);
+      hero.appendChild(col);
+      setTimeout(()=>speakHebrew(q.heb, 0.9), 300);
+      const sub = document.createElement('div');
+      sub.className='prompt-sub'; sub.textContent='聞こえた語の意味はどれ？';
+      promptWrap.appendChild(sub);
+    } else {
+      const hebEl = document.createElement('div');
+      hebEl.className='prompt-heb'; hebEl.textContent = q.heb;
+      const readEl = document.createElement('div');
+      readEl.className='prompt-read'; readEl.textContent = q.read;
+      const sub = document.createElement('div');
+      sub.className='prompt-sub'; sub.textContent='この語の意味はどれ？';
+      promptWrap.appendChild(hebEl); promptWrap.appendChild(readEl); promptWrap.appendChild(sub);
+    }
+  } else {
+    const jaEl = document.createElement('div');
+    jaEl.className='prompt-ja'; jaEl.textContent = q.mean;
+    const sub = document.createElement('div');
+    sub.className='prompt-sub'; sub.textContent = isListening ? '意味に合うヘブル語の発音はどれ？（選択肢は文字表示）' : 'この意味に合うヘブル語はどれ？';
+    promptWrap.appendChild(jaEl); promptWrap.appendChild(sub);
+  }
+
+  const chosenWrongs = pickN(activePool, 3, q.poolIdx);
+  currentOptions = shuffle([
+    {heb:q.heb, read:q.read, mean:q.mean, correct:true},
+    ...chosenWrongs.map(w=>({heb:w.heb, read:w.read, mean:w.mean, correct:false}))
+  ]);
+
+  const optWrap = document.getElementById('q-options');
+  optWrap.innerHTML='';
+  currentOptions.forEach(opt=>{
+    const b = document.createElement('button');
+    b.className='opt';
+    if(isH2J){
+      const jp = document.createElement('span');
+      jp.className='opt-jp'; jp.textContent = opt.mean;
+      b.appendChild(jp);
+    } else {
+      const heb = document.createElement('span');
+      heb.className='opt-heb'; heb.textContent = opt.heb;
+      const read = document.createElement('span');
+      read.className='opt-read'; read.textContent = opt.read;
+      b.appendChild(heb); b.appendChild(read);
+    }
+    b.onclick = ()=>selectOption(b, opt, q);
+    optWrap.appendChild(b);
+  });
+
+  document.getElementById('q-feedback').innerHTML='';
+  document.getElementById('next-btn').classList.remove('show');
+}
+
+function selectOption(btn, opt, q){
+  if(answeredThis) return;
+  answeredThis = true;
+  const allBtns = document.querySelectorAll('#q-options .opt');
+  allBtns.forEach(b=>b.disabled=true);
+
+  const isH2J = (q.direction==='h2j');
+  const fb = document.getElementById('q-feedback');
+
+  if(opt.correct){
+    btn.classList.add('correct');
+    score++;
+    fb.innerHTML = '<b>正解。</b>';
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b=>{
+      const isCorrectBtn = isH2J
+        ? (b.querySelector('.opt-jp') && b.querySelector('.opt-jp').textContent===q.mean)
+        : (b.querySelector('.opt-heb') && b.querySelector('.opt-heb').textContent===q.heb);
+      if(isCorrectBtn) b.classList.add('reveal');
+    });
+    fb.innerHTML = isH2J
+      ? ('不正解。正解: <b>'+q.mean+'</b>')
+      : ('不正解。正解: <b class="fb-heb">'+q.heb+'</b>　'+q.read);
+  }
+  if(!isH2J || q.format!=='listening'){
+    fb.innerHTML += '<div style="margin-top:8px;" class="fb-heb">'+q.heb+'　<span style="color:var(--parchment-dim);font-size:11px;">'+q.read+'</span></div>';
+  }
+  if(q.ref){
+    fb.innerHTML += '<div style="margin-top:4px;font-size:11px;color:var(--parchment-dim);">'+q.ref+'</div>';
+  }
+
+  results.push({
+    cat:q.cat, direction:q.direction, heb:q.heb, read:q.read, mean:q.mean,
+    chosenMean:opt.mean, chosenHeb:opt.heb, correct:opt.correct, ref:q.ref
+  });
+  document.getElementById('next-btn').classList.add('show');
+}
+
+function nextQuestion(){
+  current++;
+  if(current>=order.length) showResult();
+  else renderQuestion();
+}
+
+function showResult(){
+  document.getElementById('screen-quiz').classList.add('hidden');
+  document.getElementById('screen-result').classList.remove('hidden');
+
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-total').textContent = order.length;
+  const pct = Math.round((score/order.length)*100);
+  document.getElementById('score-pct').textContent = '正答率 ' + pct + '%';
+
+  const byCat = {};
+  results.forEach(r=>{
+    if(!byCat[r.cat]) byCat[r.cat]={correct:0,total:0};
+    byCat[r.cat].total++;
+    if(r.correct) byCat[r.cat].correct++;
+  });
+  const bd = document.getElementById('breakdown');
+  bd.innerHTML='';
+  Object.keys(byCat).forEach(cat=>{
+    const row = document.createElement('div');
+    row.className='bd-row';
+    row.innerHTML = '<span>'+cat+'</span><b>'+byCat[cat].correct+' / '+byCat[cat].total+'</b>';
+    bd.appendChild(row);
+  });
+
+  const rl = document.getElementById('review-list');
+  rl.innerHTML='';
+  const h = document.createElement('div');
+  h.style.cssText='font-size:12px;color:var(--parchment-dim);margin-bottom:10px;';
+  h.textContent = '解答一覧（全'+results.length+'問）';
+  rl.appendChild(h);
+
+  results.forEach(r=>{
+    const item = document.createElement('div');
+    item.className='review-item' + (r.correct?' is-correct':' is-wrong');
+    if(r.correct){
+      item.innerHTML = '<span class="rmark">✅</span><span class="rprompt">'+r.heb+'</span>　<span class="ra">'+r.mean+'</span>';
+    } else {
+      item.innerHTML = '<span class="rmark">❌</span><span class="rprompt">'+r.heb+'</span>　'+
+        '<span class="rw">'+(r.direction==='h2j'?r.chosenMean:r.chosenHeb)+'</span>'+
+        '<span class="ra">→ '+r.mean+'</span>';
+    }
+    if(r.ref){
+      const refEl = document.createElement('span');
+      refEl.className='rref'; refEl.textContent = r.ref;
+      item.appendChild(refEl);
+    }
+    rl.appendChild(item);
+  });
+}
+
+showStart();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音声インストール案内 — ヘブル語クイズ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17140f; --card:#211d16; --card2:#282318;
+    --parchment:#eae0c6; --parchment-dim:#a89b7c;
+    --thread:#a1442f; --gold:#b8935f; --gold-dim:#7a6440; --line:#3a3326;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse at 20% -10%, #241f16 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 110%, #1c1810 0%, transparent 55%), var(--ink);
+    color:var(--parchment); font-family:'Noto Sans JP',sans-serif;
+    min-height:100vh; display:flex; align-items:flex-start; justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .app{width:100%;max-width:640px;}
+  .card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:6px;padding:32px 26px;box-shadow:0 20px 40px -20px rgba(0,0,0,.6);}
+  h1{font-family:'Noto Serif JP',serif;font-size:20px;margin:0 0 6px;color:var(--gold);}
+  p.lead{font-size:13px;color:var(--parchment-dim);line-height:1.8;margin:0 0 24px;}
+  h2{font-family:'Noto Serif JP',serif;font-size:15px;color:var(--gold);margin:26px 0 8px;border-top:1px solid var(--line);padding-top:18px;}
+  h2:first-of-type{border-top:none;padding-top:0;}
+  p, li{font-size:13px;line-height:1.85;color:var(--parchment);}
+  ul{margin:6px 0 0;padding-left:20px;}
+  a{color:var(--gold);}
+  .note-box{font-size:11.5px;color:var(--parchment-dim);line-height:1.8;border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-top:24px;}
+  .back-btn{display:inline-block;margin-bottom:24px;background:var(--thread);color:var(--parchment);border:none;padding:10px 20px;border-radius:4px;font-size:13.5px;text-decoration:none;letter-spacing:.03em;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+  .back-btn:hover{background:#b64f37;}
+</style>
+</head>
+<body>
+<div class="app">
+  <button class="back-btn" onclick="history.back()">← 前のページに戻る</button>
+  <div class="card">
+    <h1>🔊 音声インストール案内</h1>
+    <p class="lead">このクイズはブラウザの音声合成機能（Web Speech API）でヘブライ語の発音を再生する。端末にヘブライ語音声が入っていない場合、音声が再生されない、または発音が不正確になることがある。以下を参考に、お使いの端末にヘブライ語音声を追加できる。</p>
+
+    <h2>Windows</h2>
+    <p><a href="https://support.microsoft.com/ja-jp/topic/windows-10-用の音声合成言語をダウンロードする方法-d5a6b612-b3ae-423f-afa5-4f6caf1ec5d3" target="_blank" rel="noopener">音声合成言語のダウンロード方法（Microsoft サポート）</a></p>
+    <p style="color:var(--parchment-dim);font-size:11.5px;">※対応言語一覧にヘブライ語が明示されているかは環境（Windowsのバージョン等）により異なり、未確認。手順に沿って「言語の追加」からヘブライ語を検索し、音声機能があるか確認するのが確実。</p>
+
+    <h2>Mac</h2>
+    <p><a href="https://support.apple.com/ja-jp/guide/mac-help/mchlp2290/mac" target="_blank" rel="noopener">読み上げに使う声を追加する（Apple サポート）</a></p>
+    <p>システム設定 ＞ アクセシビリティ ＞ 読み上げコンテンツ ＞「声を管理」からヘブライ語の声を探してダウンロードする。</p>
+
+    <h2>iPhone / iPad</h2>
+    <p>設定 ＞ アクセシビリティ ＞ VoiceOver、または「読み上げコンテンツ」から声を追加できる。</p>
+
+    <h2>Android</h2>
+    <p>設定 ＞ 言語と入力 ＞ テキスト読み上げの出力 ＞ Google TTSエンジンの設定 ＞ 音声データでヘブライ語をダウンロードする。</p>
+
+    <div class="note-box">
+      ※音声が再生されない環境でも、クイズはローマ字・カタカナ表記で学習を継続できる。
+    </div>
+  </div>
+</div>
+</body>
+</html>

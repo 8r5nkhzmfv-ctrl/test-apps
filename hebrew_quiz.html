@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ヘブライ語クイズ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17140f;
+    --card:#211d16;
+    --card2:#282318;
+    --parchment:#eae0c6;
+    --parchment-dim:#a89b7c;
+    --thread:#a1442f;
+    --thread-dim:#5c2a20;
+    --gold:#b8935f;
+    --gold-dim:#7a6440;
+    --line:#3a3326;
+    --good:#7a8f5c;
+    --bad:#a1442f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, #241f16 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 110%, #1c1810 0%, transparent 55%),
+      var(--ink);
+    color:var(--parchment);
+    font-family:'Noto Sans JP',sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .app{width:100%;max-width:640px;}
+
+  /* ---------- header / progress (signature element) ---------- */
+  .top{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:6px;
+  }
+  .title{
+    font-family:'Noto Serif JP',serif;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:.14em;
+    color:var(--gold);
+  }
+  .counter{
+    font-size:12px;
+    color:var(--parchment-dim);
+    font-variant-numeric:tabular-nums;
+  }
+  .stitches{
+    display:flex;
+    gap:3px;
+    margin:10px 0 28px;
+  }
+  .stitch{
+    flex:1;
+    height:3px;
+    background:var(--line);
+    border-radius:1px;
+    transition:background .25s ease;
+  }
+  .stitch.done{background:var(--thread);}
+  .stitch.current{background:var(--gold);}
+
+  /* ---------- card ---------- */
+  .card{
+    background:linear-gradient(180deg,var(--card2),var(--card));
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:36px 30px 28px;
+    position:relative;
+    box-shadow:0 20px 40px -20px rgba(0,0,0,.6);
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    top:0;left:24px;right:24px;
+    height:1px;
+    background:linear-gradient(90deg,transparent,var(--gold-dim),transparent);
+  }
+  .cat{
+    font-size:11px;
+    letter-spacing:.16em;
+    color:var(--parchment-dim);
+    text-align:center;
+    margin-bottom:18px;
+    text-transform:uppercase;
+  }
+
+  .prompt-ja{
+    font-family:'Noto Serif JP',serif;
+    font-size:16px;
+    font-weight:500;
+    color:var(--parchment);
+    text-align:center;
+    margin-bottom:22px;
+    line-height:1.7;
+  }
+
+  .hero{
+    text-align:center;
+    margin-bottom:26px;
+    min-height:64px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .hero-hebrew{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:700;
+    font-size:56px;
+    color:var(--gold);
+    direction:rtl;
+    letter-spacing:.02em;
+  }
+  .hero-hebrew.small{font-size:38px;}
+
+  .audio-btn{
+    width:76px;height:76px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #c79a5f, #7a5a33 70%);
+    border:1px solid var(--gold-dim);
+    color:var(--ink);
+    font-size:26px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 14px -4px rgba(0,0,0,.6), inset 0 0 0 3px rgba(23,20,15,.25);
+    transition:transform .15s ease;
+  }
+  .audio-btn:active{transform:scale(.94);}
+  .audio-hint{
+    font-size:11px;
+    color:var(--parchment-dim);
+    margin-top:8px;
+  }
+
+  .options{
+    display:grid;
+    gap:10px;
+  }
+  .opt{
+    text-align:left;
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--parchment);
+    padding:14px 16px;
+    border-radius:4px;
+    font-family:'Noto Sans JP',sans-serif;
+    font-size:15px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .opt .opt-heb{
+    font-family:'Frank Ruhl Libre',serif;
+    font-size:19px;
+    color:var(--gold);
+    direction:rtl;
+  }
+  .opt:hover:not(:disabled){border-color:var(--gold-dim);}
+  .opt:disabled{cursor:default;}
+  .opt.correct{border-color:var(--good);background:rgba(122,143,92,.14);}
+  .opt.wrong{border-color:var(--bad);background:rgba(161,68,47,.14);}
+  .opt.reveal{border-color:var(--good);}
+
+  .feedback{
+    margin-top:16px;
+    min-height:20px;
+    font-size:13px;
+    text-align:center;
+    color:var(--parchment-dim);
+  }
+  .feedback b{color:var(--gold);font-weight:700;}
+
+  .nextrow{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:18px;
+  }
+  .next-btn{
+    background:var(--thread);
+    color:var(--parchment);
+    border:none;
+    padding:10px 22px;
+    border-radius:4px;
+    font-size:14px;
+    letter-spacing:.04em;
+    cursor:pointer;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .next-btn.show{opacity:1;pointer-events:auto;}
+  .next-btn:hover{background:#b64f37;}
+
+  /* ---------- start / result screens ---------- */
+  .center-card{
+    background:linear-gradient(180deg,var(--card2),var(--card));
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:44px 30px;
+    text-align:center;
+  }
+  .hebrew-mark{
+    font-family:'Frank Ruhl Libre',serif;
+    font-size:64px;
+    color:var(--gold);
+    direction:rtl;
+    margin-bottom:8px;
+  }
+  h1.headline{
+    font-family:'Noto Serif JP',serif;
+    font-size:22px;
+    margin:0 0 10px;
+    font-weight:700;
+  }
+  p.sub{
+    color:var(--parchment-dim);
+    font-size:13.5px;
+    line-height:1.8;
+    margin:0 0 28px;
+  }
+  .range-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-bottom:28px;
+  }
+  .range-cell{
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:12px 8px;
+    font-size:12px;
+    color:var(--parchment-dim);
+  }
+  .range-cell b{
+    display:block;
+    font-family:'Noto Serif JP',serif;
+    font-size:20px;
+    color:var(--gold);
+    font-weight:700;
+    margin-bottom:2px;
+  }
+  .primary-btn{
+    background:var(--thread);
+    color:var(--parchment);
+    border:none;
+    padding:14px 34px;
+    border-radius:4px;
+    font-size:15px;
+    letter-spacing:.05em;
+    cursor:pointer;
+  }
+  .primary-btn:hover{background:#b64f37;}
+  .ghost-btn{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--parchment-dim);
+    padding:14px 24px;
+    border-radius:4px;
+    font-size:14px;
+    cursor:pointer;
+    margin-left:10px;
+  }
+  .ghost-btn:hover{border-color:var(--gold-dim);color:var(--parchment);}
+
+  .score-big{
+    font-family:'Noto Serif JP',serif;
+    font-size:52px;
+    font-weight:700;
+    color:var(--gold);
+    margin:6px 0 2px;
+  }
+  .score-label{
+    font-size:12px;
+    color:var(--parchment-dim);
+    letter-spacing:.1em;
+    margin-bottom:26px;
+  }
+  .breakdown{
+    text-align:left;
+    border-top:1px solid var(--line);
+    padding-top:18px;
+    margin-top:8px;
+  }
+  .bd-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    padding:7px 0;
+    border-bottom:1px solid var(--line);
+    color:var(--parchment-dim);
+  }
+  .bd-row b{color:var(--parchment);font-weight:500;}
+  .review-list{
+    text-align:left;
+    margin-top:22px;
+    max-height:260px;
+    overflow-y:auto;
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+  .review-item{
+    font-size:12.5px;
+    padding:9px 0;
+    border-bottom:1px solid var(--line);
+    color:var(--parchment-dim);
+  }
+  .review-item .rh{
+    font-family:'Frank Ruhl Libre',serif;
+    color:var(--gold);
+    font-size:15px;
+    direction:rtl;
+    margin-right:6px;
+  }
+  .review-item .ra{color:var(--good);}
+  .review-item .rw{color:var(--bad);text-decoration:line-through;margin-right:4px;}
+
+  .hidden{display:none !important;}
+
+  @media (max-width:480px){
+    .card,.center-card{padding:26px 18px 22px;}
+    .hero-hebrew{font-size:44px;}
+    .range-grid{grid-template-columns:repeat(3,1fr);}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- START SCREEN -->
+  <div id="screen-start" class="center-card">
+    <div class="hebrew-mark">אָלֶף בֵּית</div>
+    <h1 class="headline">ヘブライ語クイズ</h1>
+    <p class="sub">アレフベート・基礎語彙・文法を四択で学ぶ。<br>問題順・選択肢の配置は毎回ランダム。</p>
+    <div class="range-grid">
+      <div class="range-cell"><b id="cnt-letters">-</b>文字</div>
+      <div class="range-cell"><b id="cnt-vocab">-</b>語彙</div>
+      <div class="range-cell"><b id="cnt-grammar">-</b>文法</div>
+    </div>
+    <button class="primary-btn" onclick="startQuiz()">開始する</button>
+    <div style="margin-top:20px;font-size:11.5px;color:var(--parchment-dim);text-align:center;line-height:1.8;">
+      🔊 音声が流れない方へ：<a href="voice_guide.html" style="color:var(--gold);">こちら（音声インストール案内）</a><br>
+      <a href="index.html" style="color:var(--gold);">← indexに戻る</a>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="screen-quiz" class="hidden">
+    <div class="top">
+      <div class="title">ヘブライ語クイズ</div>
+      <div class="counter"><span id="qnum">1</span> / <span id="qtotal">0</span></div>
+    </div>
+    <div class="stitches" id="stitches"></div>
+
+    <div class="card">
+      <div class="cat" id="q-cat"></div>
+      <div class="prompt-ja" id="q-prompt"></div>
+      <div class="hero" id="q-hero"></div>
+      <div class="options" id="q-options"></div>
+      <div class="feedback" id="q-feedback"></div>
+      <div class="nextrow">
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">次へ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="screen-result" class="center-card hidden">
+    <div class="hebrew-mark" style="font-size:40px;">סִיּוּם</div>
+    <h1 class="headline">結果</h1>
+    <div class="score-big"><span id="score-num">0</span> / <span id="score-total">0</span></div>
+    <div class="score-label" id="score-pct">正答率 0%</div>
+
+    <div class="breakdown" id="breakdown"></div>
+
+    <div id="review-wrap">
+      <div class="review-list" id="review-list"></div>
+    </div>
+
+    <div style="margin-top:26px;">
+      <button class="primary-btn" onclick="startQuiz()">もう一度</button>
+      <button class="ghost-btn" onclick="showStart()">最初の画面へ</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =========================================================
+   1. データソース（正誤の元となる唯一の情報源）
+   ========================================================= */
+
+// --- アレフベート 22文字（最終形を持つ文字は final を付与） ---
+const LETTERS = [
+  {name:"アレフ", char:"א", sound:"（無音／声門閉鎖）", value:1},
+  {name:"ベート", char:"ב", sound:"b / v", value:2},
+  {name:"ギメル", char:"ג", sound:"g", value:3},
+  {name:"ダレット", char:"ד", sound:"d", value:4},
+  {name:"ヘー", char:"ה", sound:"h", value:5},
+  {name:"ヴァヴ", char:"ו", sound:"v / w", value:6},
+  {name:"ザイン", char:"ז", sound:"z", value:7},
+  {name:"ヘット", char:"ח", sound:"ḥ（無声咽頭摩擦音）", value:8},
+  {name:"テット", char:"ט", sound:"t", value:9},
+  {name:"ヨッド", char:"י", sound:"y", value:10},
+  {name:"カフ", char:"כ", sound:"k / kh", value:20, final:"ך"},
+  {name:"ラメッド", char:"ל", sound:"l", value:30},
+  {name:"メム", char:"מ", sound:"m", value:40, final:"ם"},
+  {name:"ヌン", char:"נ", sound:"n", value:50, final:"ן"},
+  {name:"サメフ", char:"ס", sound:"s", value:60},
+  {name:"アイン", char:"ע", sound:"（無音／咽頭音）", value:70},
+  {name:"ペー", char:"פ", sound:"p / f", value:80, final:"ף"},
+  {name:"ツァディ", char:"צ", sound:"ts", value:90, final:"ץ"},
+  {name:"クォフ", char:"ק", sound:"q", value:100},
+  {name:"レーシュ", char:"ר", sound:"r", value:200},
+  {name:"シン／シーン", char:"ש", sound:"sh / s", value:300},
+  {name:"タヴ", char:"ת", sound:"t", value:400},
+];
+
+// --- 基礎語彙（品詞つき） ---
+const VOCAB = [
+  {heb:"אֱלֹהִים",mean:"神（複数形の語形で用いる単数概念）",pos:"名詞"},
+  {heb:"יהוה",mean:"主（神の固有名・テトラグラマトン）",pos:"固有名"},
+  {heb:"אָדָם",mean:"人／アダム",pos:"名詞"},
+  {heb:"אִשָּׁה",mean:"女",pos:"名詞"},
+  {heb:"אֶרֶץ",mean:"地／大地",pos:"名詞"},
+  {heb:"שָׁמַיִם",mean:"天",pos:"名詞"},
+  {heb:"מַיִם",mean:"水",pos:"名詞"},
+  {heb:"אוֹר",mean:"光",pos:"名詞"},
+  {heb:"חֹשֶׁךְ",mean:"闇",pos:"名詞"},
+  {heb:"יוֹם",mean:"日／昼",pos:"名詞"},
+  {heb:"לַיְלָה",mean:"夜",pos:"名詞"},
+  {heb:"מֶלֶךְ",mean:"王",pos:"名詞"},
+  {heb:"מַלְכָּה",mean:"女王",pos:"名詞"},
+  {heb:"עֶבֶד",mean:"僕／奴隷",pos:"名詞"},
+  {heb:"בֵּן",mean:"息子",pos:"名詞"},
+  {heb:"בַּת",mean:"娘",pos:"名詞"},
+  {heb:"אָב",mean:"父",pos:"名詞"},
+  {heb:"אֵם",mean:"母",pos:"名詞"},
+  {heb:"אָח",mean:"兄弟",pos:"名詞"},
+  {heb:"אָחוֹת",mean:"姉妹",pos:"名詞"},
+  {heb:"בַּיִת",mean:"家",pos:"名詞"},
+  {heb:"עִיר",mean:"町／都市",pos:"名詞"},
+  {heb:"דֶּרֶךְ",mean:"道",pos:"名詞"},
+  {heb:"לֵב",mean:"心",pos:"名詞"},
+  {heb:"נֶפֶשׁ",mean:"魂／いのち",pos:"名詞"},
+  {heb:"רוּחַ",mean:"霊／風",pos:"名詞"},
+  {heb:"דָּבָר",mean:"言葉／こと",pos:"名詞"},
+  {heb:"שֵׁם",mean:"名前",pos:"名詞"},
+  {heb:"שָׁלוֹם",mean:"平和",pos:"名詞"},
+  {heb:"אַהֲבָה",mean:"愛",pos:"名詞"},
+  {heb:"חֶסֶד",mean:"恵み／慈しみ",pos:"名詞"},
+  {heb:"אֱמֶת",mean:"真理",pos:"名詞"},
+  {heb:"צֶדֶק",mean:"義",pos:"名詞"},
+  {heb:"מִשְׁפָּט",mean:"公正／裁き",pos:"名詞"},
+  {heb:"תּוֹרָה",mean:"律法／教え",pos:"名詞"},
+  {heb:"בְּרִית",mean:"契約",pos:"名詞"},
+  {heb:"קוֹל",mean:"声",pos:"名詞"},
+  {heb:"פָּנִים",mean:"顔",pos:"名詞"},
+  {heb:"יָד",mean:"手",pos:"名詞"},
+  {heb:"רֶגֶל",mean:"足",pos:"名詞"},
+  {heb:"עַיִן",mean:"目",pos:"名詞"},
+  {heb:"אֹזֶן",mean:"耳",pos:"名詞"},
+  {heb:"פֶּה",mean:"口",pos:"名詞"},
+  {heb:"לֶחֶם",mean:"パン",pos:"名詞"},
+  {heb:"יַיִן",mean:"ぶどう酒",pos:"名詞"},
+  {heb:"עֵץ",mean:"木",pos:"名詞"},
+  {heb:"פְּרִי",mean:"実／果実",pos:"名詞"},
+  {heb:"חַיִּים",mean:"いのち",pos:"名詞"},
+  {heb:"מָוֶת",mean:"死",pos:"名詞"},
+  {heb:"כָּבוֹד",mean:"栄光／重さ",pos:"名詞"},
+  {heb:"קֹדֶשׁ",mean:"聖／聖なるもの",pos:"名詞"},
+  {heb:"עוֹלָם",mean:"永遠／世",pos:"名詞"},
+  {heb:"גּוֹי",mean:"国民／異邦の民",pos:"名詞"},
+  {heb:"עַם",mean:"民",pos:"名詞"},
+  {heb:"כֹּהֵן",mean:"祭司",pos:"名詞"},
+  {heb:"נָבִיא",mean:"預言者",pos:"名詞"},
+  {heb:"מִזְבֵּחַ",mean:"祭壇",pos:"名詞"},
+  {heb:"הֵיכָל",mean:"宮／神殿",pos:"名詞"},
+  {heb:"שָׁמַע",mean:"聞く",pos:"動詞"},
+  {heb:"רָאָה",mean:"見る",pos:"動詞"},
+  {heb:"אָמַר",mean:"言う",pos:"動詞"},
+  {heb:"הָלַךְ",mean:"歩く／行く",pos:"動詞"},
+  {heb:"בָּא",mean:"来る",pos:"動詞"},
+  {heb:"יָשַׁב",mean:"座る／住む",pos:"動詞"},
+  {heb:"עָשָׂה",mean:"行う／作る",pos:"動詞"},
+  {heb:"נָתַן",mean:"与える",pos:"動詞"},
+  {heb:"לָקַח",mean:"取る",pos:"動詞"},
+  {heb:"אָהַב",mean:"愛する",pos:"動詞"},
+  {heb:"יָדַע",mean:"知る",pos:"動詞"},
+  {heb:"קָרָא",mean:"呼ぶ／読む",pos:"動詞"},
+  {heb:"כָּתַב",mean:"書く",pos:"動詞"},
+  {heb:"שָׁמַר",mean:"守る",pos:"動詞"},
+  {heb:"בָּרָא",mean:"創造する",pos:"動詞"},
+  {heb:"גָּדוֹל",mean:"大きい",pos:"形容詞"},
+  {heb:"קָטֹן",mean:"小さい",pos:"形容詞"},
+  {heb:"טוֹב",mean:"良い",pos:"形容詞"},
+  {heb:"רַע",mean:"悪い",pos:"形容詞"},
+  {heb:"חָדָשׁ",mean:"新しい",pos:"形容詞"},
+  {heb:"זָקֵן",mean:"年老いた",pos:"形容詞"},
+];
+
+// --- 文法事項（question / answer のペア。answer 同士が互いの誤答候補になる） ---
+const GRAMMAR = [
+  {q:"定冠詞（英語の the）はどう表される？", a:"ה + 直後の子音への強めのダゲッシュ"},
+  {q:"接続詞「そして」はどう表される？", a:"接頭辞 ו（ヴァヴ）"},
+  {q:"前置詞「〜に／〜で」はどう表される？", a:"接頭辞 ב"},
+  {q:"前置詞「〜のように」はどう表される？", a:"接頭辞 כ"},
+  {q:"前置詞「〜へ／〜のために」はどう表される？", a:"接頭辞 ל"},
+  {q:"男性複数名詞の典型的な語尾は？", a:"ים"},
+  {q:"女性単数名詞の典型的な語尾は？", a:"ה または ת"},
+  {q:"女性複数名詞の典型的な語尾は？", a:"ות"},
+  {q:"ヘブライ語動詞の基本単位は何からなる？", a:"3つの子音からなる語根（root）"},
+  {q:"動詞の基本形（最も単純な幹）を何と呼ぶ？", a:"カル（Qal）形"},
+  {q:"完了形（perfect）が主に表す時制は？", a:"完了した行為（多くは過去）"},
+  {q:"未完了形（imperfect）が主に表す時制は？", a:"未完了・未来の行為"},
+  {q:"「〜の」という所有関係を名詞の連結で表す形を何と呼ぶ？", a:"連語形（סמיכות, construct state）"},
+  {q:"ヘブライ語の文字の書字方向は？", a:"右から左"},
+  {q:"母音記号（ニクード）はいつ付加されたと考えられている？", a:"子音文字の成立後に、後代に付加された"},
+  {q:"形容詞が名詞を修飾する語順は？", a:"名詞の後に置かれ、性・数が一致する"},
+  {q:"疑問詞「誰」を表す語は？", a:"מִי"},
+  {q:"疑問詞「何」を表す語は？", a:"מָה"},
+  {q:"否定「〜ない」を表す語は？", a:"לֹא"},
+  {q:"数詞「1」の男性形は？", a:"אֶחָד"},
+  {q:"数詞「1」の女性形は？", a:"אַחַת"},
+  {q:"ヘブライ語アルファベットの文字数は？", a:"22文字"},
+  {q:"語末で形が変わる「最終形（ソフィート）」を持つ文字はいくつある？", a:"5つ（כ ם ן ף ץ）"},
+  {q:"子音の重複（二重化）を示す記号は？", a:"強めのダゲッシュ（דגש חזק）"},
+  {q:"שׁ と שׂ の違いは何によって示される？", a:"文字上の点の位置（右上=シン、左上=スィン）"},
+  {q:"聖書朗読における抑揚・区切りを示す記号体系を何と呼ぶ？", a:"トロープ（タアミーム）"},
+  {q:"人称代名詞「私」は？", a:"אֲנִי"},
+  {q:"人称代名詞「あなた（男性）」は？", a:"אַתָּה"},
+  {q:"人称代名詞「彼」は？", a:"הוּא"},
+  {q:"現存する聖書ヘブライ語本文の標準的な基盤とされるものは？", a:"マソラ本文（Masoretic Text）"},
+];
+
+/* =========================================================
+   2. 問題生成（データから自動生成。手打ちの誤答は作らない）
+   ========================================================= */
+
+function shuffle(arr){
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function pickN(pool, n){
+  return shuffle(pool).slice(0, Math.min(n, pool.length));
+}
+function sample(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+let ALL_QUESTIONS = [];
+
+function buildQuestions(){
+  const qs = [];
+
+  // ---- 文字：文字 → 名称 ----
+  LETTERS.forEach(l=>{
+    const wrong = pickN(LETTERS.filter(x=>x!==l).map(x=>x.name), 7);
+    qs.push({
+      cat:"アレフベート", type:"letter-name",
+      prompt:"この文字の名称は？",
+      hero:{kind:"hebrew-big", text:l.char},
+      answer:l.name, wrongPool:wrong
+    });
+  });
+
+  // ---- 文字：文字 → 数価（ゲマトリア） ----
+  LETTERS.forEach(l=>{
+    const wrong = pickN(LETTERS.filter(x=>x!==l).map(x=>String(x.value)), 7);
+    qs.push({
+      cat:"アレフベート／数価", type:"letter-value",
+      prompt:"この文字が持つ数価（ゲマトリア値）は？",
+      hero:{kind:"hebrew-big", text:l.char},
+      answer:String(l.value), wrongPool:wrong
+    });
+  });
+
+  // ---- 語彙：ヘブライ語 → 意味（全語）----
+  VOCAB.forEach(v=>{
+    const wrong = pickN(VOCAB.filter(x=>x!==v).map(x=>x.mean), 7);
+    qs.push({
+      cat:`語彙（${v.pos}）`, type:"vocab-mean",
+      prompt:"この単語の意味は？",
+      hero:{kind:"hebrew-big small", text:v.heb},
+      answer:v.mean, wrongPool:wrong
+    });
+  });
+
+  // ---- 語彙：意味 → ヘブライ語（一部）----
+  const vocabForReverse = pickN(VOCAB, 40);
+  vocabForReverse.forEach(v=>{
+    const wrong = pickN(VOCAB.filter(x=>x!==v).map(x=>x.heb), 7);
+    qs.push({
+      cat:`語彙（${v.pos}）`, type:"vocab-heb",
+      prompt:`「${v.mean}」を意味する語はどれ？`,
+      hero:{kind:"none"},
+      answer:v.heb, wrongPool:wrong, isHebOption:true
+    });
+  });
+
+  // ---- 語彙：音声 → 意味（一部）----
+  const vocabForAudio = pickN(VOCAB, 30);
+  vocabForAudio.forEach(v=>{
+    const wrong = pickN(VOCAB.filter(x=>x!==v).map(x=>x.mean), 7);
+    qs.push({
+      cat:`語彙（音声）`, type:"vocab-audio",
+      prompt:"読み上げられた単語の意味は？",
+      hero:{kind:"audio", text:v.heb},
+      answer:v.mean, wrongPool:wrong
+    });
+  });
+
+  // ---- 文法 ----
+  GRAMMAR.forEach(g=>{
+    const wrong = pickN(GRAMMAR.filter(x=>x!==g).map(x=>x.a), 7);
+    qs.push({
+      cat:"文法", type:"grammar",
+      prompt:g.q,
+      hero:{kind:"none"},
+      answer:g.a, wrongPool:wrong
+    });
+  });
+
+  return qs;
+}
+
+/* =========================================================
+   3. クイズ進行ロジック
+   ========================================================= */
+
+let order = [];
+let current = 0;
+let score = 0;
+let results = []; // {q, chosen, correct}
+let answeredThis = false;
+let currentOptions = [];
+
+function showStart(){
+  document.getElementById('screen-start').classList.remove('hidden');
+  document.getElementById('screen-quiz').classList.add('hidden');
+  document.getElementById('screen-result').classList.add('hidden');
+}
+
+function initCounts(){
+  document.getElementById('cnt-letters').textContent = LETTERS.length;
+  document.getElementById('cnt-vocab').textContent = VOCAB.length;
+  document.getElementById('cnt-grammar').textContent = GRAMMAR.length;
+}
+
+function startQuiz(){
+  ALL_QUESTIONS = buildQuestions();
+  order = shuffle(ALL_QUESTIONS);
+  current = 0;
+  score = 0;
+  results = [];
+
+  document.getElementById('screen-start').classList.add('hidden');
+  document.getElementById('screen-result').classList.add('hidden');
+  document.getElementById('screen-quiz').classList.remove('hidden');
+
+  document.getElementById('qtotal').textContent = order.length;
+  buildStitches();
+  renderQuestion();
+}
+
+function buildStitches(){
+  const wrap = document.getElementById('stitches');
+  wrap.innerHTML = '';
+  const n = order.length;
+  for(let i=0;i<n;i++){
+    const d = document.createElement('div');
+    d.className = 'stitch';
+    d.id = 'stitch-'+i;
+    wrap.appendChild(d);
+  }
+}
+
+function updateStitches(){
+  for(let i=0;i<order.length;i++){
+    const el = document.getElementById('stitch-'+i);
+    if(!el) continue;
+    el.classList.remove('done','current');
+    if(i < current) el.classList.add('done');
+    else if(i === current) el.classList.add('current');
+  }
+}
+
+function speakHebrew(text){
+  try{
+    const u = new SpeechSynthesisUtterance(text);
+    const voices = speechSynthesis.getVoices();
+    const heVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('he'));
+    if(heVoice) u.voice = heVoice;
+    u.lang = 'he-IL';
+    u.rate = 0.85;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  }catch(e){ /* 音声合成非対応環境ではボタンのみ表示 */ }
+}
+
+function renderQuestion(){
+  answeredThis = false;
+  const q = order[current];
+  document.getElementById('qnum').textContent = current+1;
+  updateStitches();
+
+  document.getElementById('q-cat').textContent = q.cat;
+  document.getElementById('q-prompt').textContent = q.prompt;
+
+  const hero = document.getElementById('q-hero');
+  hero.innerHTML = '';
+  if(q.hero.kind === 'hebrew-big'){
+    const s = document.createElement('div');
+    s.className = 'hero-hebrew';
+    s.textContent = q.hero.text;
+    hero.appendChild(s);
+  } else if(q.hero.kind === 'hebrew-big small'){
+    const s = document.createElement('div');
+    s.className = 'hero-hebrew small';
+    s.textContent = q.hero.text;
+    hero.appendChild(s);
+  } else if(q.hero.kind === 'audio'){
+    const btn = document.createElement('button');
+    btn.className = 'audio-btn';
+    btn.textContent = '🔊';
+    btn.onclick = ()=>speakHebrew(q.hero.text);
+    const box = document.createElement('div');
+    box.appendChild(btn);
+    const hint = document.createElement('div');
+    hint.className = 'audio-hint';
+    hint.textContent = 'タップして発音を聞く';
+    const col = document.createElement('div');
+    col.style.display='flex';col.style.flexDirection='column';col.style.alignItems='center';
+    col.appendChild(btn);col.appendChild(hint);
+    hero.appendChild(col);
+    setTimeout(()=>speakHebrew(q.hero.text), 300);
+  }
+
+  // 選択肢: 正解 + wrongPoolから3つ をシャッフルして4つ表示
+  const chosenWrongs = pickN(q.wrongPool, 3);
+  currentOptions = shuffle([{text:q.answer, correct:true}, ...chosenWrongs.map(w=>({text:w, correct:false}))]);
+
+  const optWrap = document.getElementById('q-options');
+  optWrap.innerHTML = '';
+  currentOptions.forEach(opt=>{
+    const b = document.createElement('button');
+    b.className = 'opt';
+    if(q.isHebOption){
+      const span = document.createElement('span');
+      span.className = 'opt-heb';
+      span.textContent = opt.text;
+      b.appendChild(span);
+    } else {
+      b.textContent = opt.text;
+    }
+    b.onclick = ()=>selectOption(b, opt, q);
+    optWrap.appendChild(b);
+  });
+
+  document.getElementById('q-feedback').innerHTML = '';
+  document.getElementById('next-btn').classList.remove('show');
+}
+
+function selectOption(btn, opt, q){
+  if(answeredThis) return;
+  answeredThis = true;
+
+  const allBtns = document.querySelectorAll('#q-options .opt');
+  allBtns.forEach(b=>b.disabled = true);
+
+  if(opt.correct){
+    btn.classList.add('correct');
+    score++;
+    document.getElementById('q-feedback').innerHTML = '<b>正解。</b>';
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b=>{
+      if(b.textContent === q.answer || (q.isHebOption && b.querySelector('.opt-heb') && b.querySelector('.opt-heb').textContent === q.answer)){
+        b.classList.add('reveal');
+      }
+    });
+    document.getElementById('q-feedback').innerHTML = '不正解。正解: <b>'+q.answer+'</b>';
+  }
+
+  results.push({cat:q.cat, prompt:q.prompt, answer:q.answer, chosen:opt.text, correct:opt.correct});
+  document.getElementById('next-btn').classList.add('show');
+}
+
+function nextQuestion(){
+  current++;
+  if(current >= order.length){
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResult(){
+  document.getElementById('screen-quiz').classList.add('hidden');
+  document.getElementById('screen-result').classList.remove('hidden');
+
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-total').textContent = order.length;
+  const pct = Math.round((score/order.length)*100);
+  document.getElementById('score-pct').textContent = '正答率 ' + pct + '%';
+
+  // カテゴリ別集計
+  const byCat = {};
+  results.forEach(r=>{
+    if(!byCat[r.cat]) byCat[r.cat] = {correct:0, total:0};
+    byCat[r.cat].total++;
+    if(r.correct) byCat[r.cat].correct++;
+  });
+  const bd = document.getElementById('breakdown');
+  bd.innerHTML = '';
+  Object.keys(byCat).forEach(cat=>{
+    const row = document.createElement('div');
+    row.className = 'bd-row';
+    row.innerHTML = '<span>'+cat+'</span><b>'+byCat[cat].correct+' / '+byCat[cat].total+'</b>';
+    bd.appendChild(row);
+  });
+
+  // 間違えた問題の一覧
+  const wrongOnes = results.filter(r=>!r.correct);
+  const rl = document.getElementById('review-list');
+  rl.innerHTML = '';
+  if(wrongOnes.length){
+    const h = document.createElement('div');
+    h.style.fontSize='12px';
+    h.style.color='var(--parchment-dim)';
+    h.style.marginBottom='8px';
+    h.textContent = '間違えた問題（'+wrongOnes.length+'件）';
+    rl.appendChild(h);
+    wrongOnes.forEach(r=>{
+      const item = document.createElement('div');
+      item.className = 'review-item';
+      item.innerHTML = r.prompt+'　<span class="rw">'+r.chosen+'</span><span class="ra">→ '+r.answer+'</span>';
+      rl.appendChild(item);
+    });
+  }
+}
+
+initCounts();
+</script>
+</body>
+</html>

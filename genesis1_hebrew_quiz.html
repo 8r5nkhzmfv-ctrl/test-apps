@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>創世記1章〜2:3 ヘブル語クイズ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+Hebrew:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#17140f;
+    --card:#211d16;
+    --card2:#282318;
+    --parchment:#eae0c6;
+    --parchment-dim:#a89b7c;
+    --thread:#a1442f;
+    --thread-dim:#5c2a20;
+    --gold:#b8935f;
+    --gold-dim:#7a6440;
+    --line:#3a3326;
+    --good:#7a8f5c;
+    --bad:#a1442f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at 20% -10%, #241f16 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 110%, #1c1810 0%, transparent 55%),
+      var(--ink);
+    color:var(--parchment);
+    font-family:'Noto Sans JP',sans-serif;
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .app{width:100%;max-width:640px;}
+  .heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;unicode-bidi:isolate;}
+
+  .top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;}
+  .title{font-family:'Noto Serif JP',serif;font-weight:700;font-size:15px;letter-spacing:.14em;color:var(--gold);}
+  .counter{font-size:12px;color:var(--parchment-dim);font-variant-numeric:tabular-nums;}
+  .stitches{display:flex;gap:3px;margin:10px 0 28px;}
+  .stitch{flex:1;height:3px;background:var(--line);border-radius:1px;transition:background .25s ease;}
+  .stitch.done{background:var(--thread);}
+  .stitch.current{background:var(--gold);}
+
+  .card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:6px;padding:36px 30px 28px;position:relative;box-shadow:0 20px 40px -20px rgba(0,0,0,.6);}
+  .card::before{content:"";position:absolute;top:0;left:24px;right:24px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim),transparent);}
+  .cat{font-size:11px;letter-spacing:.16em;color:var(--parchment-dim);text-align:center;margin-bottom:18px;text-transform:uppercase;}
+
+  .prompt-ja{font-family:'Noto Serif JP',serif;font-size:18px;font-weight:500;color:var(--parchment);text-align:center;margin-bottom:8px;line-height:1.7;}
+  .prompt-sub{font-size:12px;color:var(--parchment-dim);text-align:center;margin-bottom:22px;}
+  .prompt-heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;font-weight:500;font-size:30px;color:var(--gold);text-align:center;margin-bottom:6px;line-height:1.5;}
+  .prompt-read{font-size:13px;color:var(--parchment-dim);text-align:center;margin-bottom:8px;letter-spacing:.03em;}
+
+  .hero{text-align:center;margin-bottom:14px;min-height:64px;display:flex;align-items:center;justify-content:center;}
+  .audio-btn{width:76px;height:76px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #c79a5f, #7a5a33 70%);border:1px solid var(--gold-dim);color:var(--ink);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px -4px rgba(0,0,0,.6), inset 0 0 0 3px rgba(23,20,15,.25);transition:transform .15s ease;}
+  .audio-btn:active{transform:scale(.94);}
+  .audio-btn-slow{width:52px;height:52px;font-size:20px;}
+  .audio-hint{font-size:11px;color:var(--parchment-dim);margin-top:8px;}
+
+  .options{display:grid;gap:10px;}
+  .opt{text-align:left;background:transparent;border:1px solid var(--line);color:var(--parchment);padding:14px 16px;border-radius:4px;font-family:'Noto Sans JP',sans-serif;font-size:15px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:border-color .15s ease, background .15s ease;}
+  .opt .opt-heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;font-weight:500;font-size:19px;color:var(--gold);text-align:center;}
+  .opt .opt-read{font-size:11.5px;color:var(--parchment-dim);text-align:center;}
+  .opt .opt-jp{font-size:15px;color:var(--parchment);text-align:center;}
+  .opt:hover:not(:disabled){border-color:var(--gold-dim);}
+  .opt:disabled{cursor:default;}
+  .opt.correct{border-color:var(--good);background:rgba(122,143,92,.14);}
+  .opt.wrong{border-color:var(--bad);background:rgba(161,68,47,.14);}
+  .opt.reveal{border-color:var(--good);}
+
+  .feedback{margin-top:16px;min-height:20px;font-size:13px;text-align:center;color:var(--parchment-dim);}
+  .feedback b{color:var(--gold);font-weight:700;}
+  .feedback .fb-heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;color:var(--gold);font-size:16px;}
+
+  .nextrow{display:flex;justify-content:flex-end;margin-top:18px;}
+  .next-btn{background:var(--thread);color:var(--parchment);border:none;padding:10px 22px;border-radius:4px;font-size:14px;letter-spacing:.04em;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+  .next-btn.show{opacity:1;pointer-events:auto;}
+  .next-btn:hover{background:#b64f37;}
+
+  .center-card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:6px;padding:44px 30px;text-align:center;}
+  .mark{font-family:'Noto Serif JP',serif;font-style:italic;font-size:34px;color:var(--gold);margin-bottom:8px;}
+  h1.headline{font-family:'Noto Serif JP',serif;font-size:22px;margin:0 0 10px;font-weight:700;}
+  p.sub{color:var(--parchment-dim);font-size:13.5px;line-height:1.8;margin:0 0 28px;}
+
+  .primary-btn{background:var(--thread);color:var(--parchment);border:none;padding:14px 34px;border-radius:4px;font-size:15px;letter-spacing:.05em;cursor:pointer;}
+  .primary-btn:hover{background:#b64f37;}
+  .ghost-btn{background:transparent;border:1px solid var(--line);color:var(--parchment-dim);padding:14px 24px;border-radius:4px;font-size:14px;cursor:pointer;margin-left:10px;}
+  .ghost-btn:hover{border-color:var(--gold-dim);color:var(--parchment);}
+
+  .crumbs{font-size:11px;color:var(--parchment-dim);letter-spacing:.06em;margin-bottom:14px;}
+  .choice-row{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;text-align:left;}
+  .choice-btn{background:transparent;border:1px solid var(--line);color:var(--parchment);padding:14px 18px;border-radius:4px;font-size:14.5px;cursor:pointer;text-align:left;transition:border-color .15s ease, background .15s ease;}
+  .choice-btn:hover{border-color:var(--gold-dim);background:rgba(184,147,95,.08);}
+  .choice-btn .cb-sub{display:block;font-size:11.5px;color:var(--parchment-dim);margin-top:3px;}
+  .back-link{background:none;border:none;color:var(--parchment-dim);font-size:12px;cursor:pointer;padding:0;text-decoration:underline;}
+
+  .score-big{font-family:'Noto Serif JP',serif;font-size:52px;font-weight:700;color:var(--gold);margin:6px 0 2px;}
+  .score-label{font-size:12px;color:var(--parchment-dim);letter-spacing:.1em;margin-bottom:26px;}
+  .breakdown{text-align:left;border-top:1px solid var(--line);padding-top:18px;margin-top:8px;}
+  .bd-row{display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--parchment-dim);}
+  .bd-row b{color:var(--parchment);font-weight:500;}
+  .review-list{text-align:left;margin-top:22px;max-height:280px;overflow-y:auto;border-top:1px solid var(--line);padding-top:14px;}
+  .review-item{font-size:12.5px;padding:10px 0;border-bottom:1px solid var(--line);color:var(--parchment-dim);}
+  .review-item.is-correct{color:var(--parchment-dim);}
+  .review-item .rmark{margin-right:6px;}
+  .review-item .rprompt{color:var(--parchment);font-family:'Noto Sans Hebrew',sans-serif;}
+  .review-item .ra{color:var(--good);}
+  .review-item .rw{color:var(--bad);text-decoration:line-through;margin-right:4px;}
+  .review-item .rref{display:block;margin-top:4px;font-size:11px;color:var(--parchment-dim);opacity:.7;padding-left:20px;}
+
+  .note-box{font-size:11.5px;color:var(--parchment-dim);line-height:1.7;border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-top:22px;text-align:left;}
+
+  .hidden{display:none !important;}
+
+  @media (max-width:480px){
+    .card,.center-card{padding:26px 18px 22px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- START SCREEN -->
+  <div id="screen-start" class="center-card">
+    <div class="mark heb" style="font-size:26px;">בראשית</div>
+    <h1 class="headline">創世記1章〜2章3節 ヘブル語クイズ</h1>
+    <p class="sub">出題単位・方向・形式・問題数を選んで進む。</p>
+    <div id="wizard-panel"></div>
+    <div class="note-box">
+      注：「元の形」「動詞root」は原文表に無い情報のため、標準的なヘブル語辞書知識に基づく推定です（母音記号なし・子音表記）。特に弱変化動詞の語根同定は解釈の余地があります。リスニングはブラウザのヘブル語音声合成に対応した環境でのみ実際の発音になります（非対応の場合、音声が出ないか不正確になることがあります）。対象範囲は創世記1:1〜2:3。
+    </div>
+    <div style="margin-top:16px;font-size:11.5px;color:var(--parchment-dim);text-align:center;line-height:1.8;">
+      🔊 音声が流れない方へ：<a href="voice_guide.html" style="color:var(--gold);">こちら（音声インストール案内）</a><br>
+      <a href="index.html" style="color:var(--gold);">← indexに戻る</a>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="screen-quiz" class="hidden">
+    <div class="top">
+      <div class="title">創世記1〜2:3クイズ</div>
+      <div class="counter"><span id="qnum">1</span> / <span id="qtotal">0</span></div>
+    </div>
+    <div class="stitches" id="stitches"></div>
+
+    <div class="card">
+      <div class="cat" id="q-cat"></div>
+      <div id="q-prompt-wrap"></div>
+      <div class="hero" id="q-hero"></div>
+      <div class="options" id="q-options"></div>
+      <div class="feedback" id="q-feedback"></div>
+      <div class="nextrow">
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">次へ →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="screen-result" class="center-card hidden">
+    <div class="mark" style="font-size:30px;">Done.</div>
+    <h1 class="headline">結果</h1>
+    <div class="score-big"><span id="score-num">0</span> / <span id="score-total">0</span></div>
+    <div class="score-label" id="score-pct">正答率 0%</div>
+    <div class="breakdown" id="breakdown"></div>
+    <div id="review-wrap"><div class="review-list" id="review-list"></div></div>
+    <div style="margin-top:26px;">
+      <button class="primary-btn" onclick="runQuiz(lastRun)">もう一度（同じ形式）</button>
+      <button class="ghost-btn" onclick="showStart()">最初の画面へ</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WORDDATA = {"surface": [{"heb": "בראשית", "read": "ベ・レシート", "mean": "初めに", "ref": "創世記1:1"}, {"heb": "ברא", "read": "バラー", "mean": "[彼は]創りました", "ref": "創世記1:1"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:1"}, {"heb": "השמים", "read": "ハ・シャマイィム", "mean": "その諸々の天", "ref": "創世記1:1"}, {"heb": "ואת", "read": "ヴェ・エト", "mean": "そして～を", "ref": "創世記1:1"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "創世記1:1"}, {"heb": "והארץ", "read": "ヴェ・ハ・アーレツ", "mean": "そしてこの地は", "ref": "創世記1:2"}, {"heb": "היתה", "read": "ハイェター", "mean": "[それは]～でした", "ref": "創世記1:2"}, {"heb": "תהו", "read": "トーフ", "mean": "混沌状態", "ref": "創世記1:2"}, {"heb": "ובהו", "read": "ヴァ・ヴォーフ", "mean": "そして空虚", "ref": "創世記1:2"}, {"heb": "וחשך", "read": "ヴェ・ㇰホーシェクフ", "mean": "そして暗闇が", "ref": "創世記1:2"}, {"heb": "על", "read": "アル・", "mean": "～の上に", "ref": "創世記1:2"}, {"heb": "פני", "read": "ペネイ", "mean": "諸々の面", "ref": "創世記1:2"}, {"heb": "תהום", "read": "テホーム", "mean": "深い淵の", "ref": "創世記1:2"}, {"heb": "ורוח", "read": "ヴェ・ルーアㇰフ", "mean": "そして霊が", "ref": "創世記1:2"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]の", "ref": "創世記1:2"}, {"heb": "מרחפת", "read": "メラㇰヘーフェト", "mean": "完全に舞っている[もの]", "ref": "創世記1:2"}, {"heb": "על", "read": "アル・", "mean": "～の上を", "ref": "創世記1:2"}, {"heb": "פני", "read": "ペネイ", "mean": "諸々の面", "ref": "創世記1:2"}, {"heb": "המים", "read": "ハ・ムマーイィム", "mean": "その諸々の水の", "ref": "創世記1:2"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:3"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:3"}, {"heb": "יהי", "read": "イェヒー", "mean": "[それが]在る(ようになりなさい)", "ref": "創世記1:3"}, {"heb": "אור", "read": "オール", "mean": "光が", "ref": "創世記1:3"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "すると[それが]在りました", "ref": "創世記1:3"}, {"heb": "אור", "read": "オール", "mean": "光が", "ref": "創世記1:3"}, {"heb": "וירא", "read": "ヴァ・ヤール", "mean": "そして[彼は]見ました", "ref": "創世記1:4"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:4"}, {"heb": "האור", "read": "ハ・オール", "mean": "その光", "ref": "創世記1:4"}, {"heb": "כי", "read": "キー・", "mean": "それは～こと", "ref": "創世記1:4"}, {"heb": "טוב", "read": "トーヴ", "mean": "良い[もの]", "ref": "創世記1:4"}, {"heb": "ויבדל", "read": "ヴァ・ヤヴデール", "mean": "そして[彼は]分けさせました", "ref": "創世記1:4"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:4"}, {"heb": "בין", "read": "ベイン", "mean": "～の間を", "ref": "創世記1:4"}, {"heb": "האור", "read": "ハ・オール", "mean": "その光", "ref": "創世記1:4"}, {"heb": "ובין", "read": "ウ・ヴェイン", "mean": "そして～の間を", "ref": "創世記1:4"}, {"heb": "החשך", "read": "ハ・ㇰホーシェク", "mean": "その暗闇", "ref": "創世記1:4"}, {"heb": "ויקרא", "read": "ヴァ・イィクラー", "mean": "そして[彼は]～と呼びました", "ref": "創世記1:5"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:5"}, {"heb": "לאור", "read": "ラ・オール", "mean": "光を", "ref": "創世記1:5"}, {"heb": "יום", "read": "ヨム", "mean": "昼", "ref": "創世記1:5"}, {"heb": "ולחשך", "read": "ヴェ・ラ・ㇰホーシェㇰフ", "mean": "そして暗闇を", "ref": "創世記1:5"}, {"heb": "קרא", "read": "カーラ", "mean": "[彼は]～と呼びました", "ref": "創世記1:5"}, {"heb": "לילה", "read": "ライラ", "mean": "夜", "ref": "創世記1:5"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:5"}, {"heb": "ערב", "read": "エーレヴ", "mean": "夕暮れが", "ref": "創世記1:5"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:5"}, {"heb": "בקר", "read": "ヴォーケル", "mean": "朝が", "ref": "創世記1:5"}, {"heb": "יום", "read": "ヨム", "mean": "日", "ref": "創世記1:5"}, {"heb": "אחד", "read": "エㇰハッド", "mean": "第一", "ref": "創世記1:5"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:6"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:6"}, {"heb": "יהי", "read": "イェヒー", "mean": "[それが]在る(ようになりなさい)", "ref": "創世記1:6"}, {"heb": "רקיע", "read": "ラキーア", "mean": "天空が", "ref": "創世記1:6"}, {"heb": "בתוך", "read": "ベ・トㇰフ", "mean": "～の真ん中に", "ref": "創世記1:6"}, {"heb": "המים", "read": "ハ・ムマーイィム", "mean": "その諸々の水", "ref": "創世記1:6"}, {"heb": "ויהי", "read": "ヴィ・ヒー", "mean": "そして[それが]～になる(ようになりなさい)", "ref": "創世記1:6"}, {"heb": "מבדיל", "read": "マヴディール", "mean": "分けさせる[もの]", "ref": "創世記1:6"}, {"heb": "בין", "read": "ベイン", "mean": "～の間を", "ref": "創世記1:6"}, {"heb": "מים", "read": "マーイィム", "mean": "諸々の水", "ref": "創世記1:6"}, {"heb": "למים", "read": "ラ・マーイィム", "mean": "諸々の水と", "ref": "創世記1:6"}, {"heb": "ויעש", "read": "ヴァ・ヤーアス", "mean": "そして[彼は]造りました", "ref": "創世記1:7"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:7"}, {"heb": "הרקיע", "read": "ハ・ラキーア", "mean": "その天空", "ref": "創世記1:7"}, {"heb": "ויבדל", "read": "ヴァ・ヤヴデール", "mean": "そして[彼は]分けさせました", "ref": "創世記1:7"}, {"heb": "בין", "read": "ベイン", "mean": "～の間を", "ref": "創世記1:7"}, {"heb": "המים", "read": "ハ・ムマーイィム", "mean": "その諸々の水", "ref": "創世記1:7"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～もの", "ref": "創世記1:7"}, {"heb": "מתחת", "read": "ミ・ッタㇰハット", "mean": "～下に", "ref": "創世記1:7"}, {"heb": "לרקיע", "read": "ラ・ラキーア", "mean": "天空に対して", "ref": "創世記1:7"}, {"heb": "ובין", "read": "ウ・ヴェイン", "mean": "そして～の間を", "ref": "創世記1:7"}, {"heb": "המים", "read": "ハ・ムマーイィム", "mean": "その諸々の水", "ref": "創世記1:7"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～もの", "ref": "創世記1:7"}, {"heb": "מעל", "read": "メ・アル", "mean": "～上に", "ref": "創世記1:7"}, {"heb": "לרקיע", "read": "ラ・ラキーア", "mean": "天空に対して", "ref": "創世記1:7"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それは]なりました", "ref": "創世記1:7"}, {"heb": "כן", "read": "ㇰヘン", "mean": "そのように", "ref": "創世記1:7"}, {"heb": "ויקרא", "read": "ヴァ・イィクラー", "mean": "そして[彼は]～と呼びました", "ref": "創世記1:8"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:8"}, {"heb": "לרקיע", "read": "ラ・ラキーア", "mean": "天空を", "ref": "創世記1:8"}, {"heb": "שמים", "read": "シャマーイィム", "mean": "諸々の天", "ref": "創世記1:8"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:8"}, {"heb": "ערב", "read": "エーレヴ", "mean": "夕暮れが", "ref": "創世記1:8"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:8"}, {"heb": "בקר", "read": "ヴォーケル", "mean": "朝が", "ref": "創世記1:8"}, {"heb": "יום", "read": "ヨム", "mean": "日", "ref": "創世記1:8"}, {"heb": "שני", "read": "シェニー", "mean": "第二", "ref": "創世記1:8"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:9"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:9"}, {"heb": "יקוו", "read": "イィッカヴー", "mean": "[それらは]集められる(ようになりなさい)", "ref": "創世記1:9"}, {"heb": "המים", "read": "ハ・ムマーイィム", "mean": "その諸々の水は", "ref": "創世記1:9"}, {"heb": "מתחת", "read": "ミ・ッタㇰハット", "mean": "～の下から", "ref": "創世記1:9"}, {"heb": "השמים", "read": "ハ・シャマーイィム", "mean": "その諸々の天", "ref": "創世記1:9"}, {"heb": "אל", "read": "エル・", "mean": "～に", "ref": "創世記1:9"}, {"heb": "מקום", "read": "マコム", "mean": "所", "ref": "創世記1:9"}, {"heb": "אחד", "read": "エㇰハッド", "mean": "一つの", "ref": "創世記1:9"}, {"heb": "ותראה", "read": "ヴェ・テラエー", "mean": "そして[それが]現される(ようになりなさい)", "ref": "創世記1:9"}, {"heb": "היבשה", "read": "ハ・ヤッバシャー", "mean": "この乾いた地が", "ref": "創世記1:9"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それは]なりました", "ref": "創世記1:9"}, {"heb": "כן", "read": "ㇰヘン", "mean": "そのように", "ref": "創世記1:9"}, {"heb": "ויקרא", "read": "ヴァ・イィクラー", "mean": "そして[彼は]～と呼びました", "ref": "創世記1:10"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:10"}, {"heb": "ליבשה", "read": "ラ・ヤッバシャー", "mean": "乾いた所を", "ref": "創世記1:10"}, {"heb": "ארץ", "read": "エーレツ", "mean": "地", "ref": "創世記1:10"}, {"heb": "ולמקוה", "read": "ウ・レ・ミクヴェー", "mean": "そして集まった所を", "ref": "創世記1:10"}, {"heb": "המים", "read": "ハ・ムマーイィム", "mean": "その諸々の水の", "ref": "創世記1:10"}, {"heb": "קרא", "read": "カラー", "mean": "[彼は]～と呼びました", "ref": "創世記1:10"}, {"heb": "ימים", "read": "ヤムミーム", "mean": "諸々の海", "ref": "創世記1:10"}, {"heb": "וירא", "read": "ヴァ・ヤール", "mean": "そして[彼は]見ました", "ref": "創世記1:10"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:10"}, {"heb": "כי", "read": "キー・", "mean": "それは～もの", "ref": "創世記1:10"}, {"heb": "טוב", "read": "トーヴ", "mean": "良い", "ref": "創世記1:10"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:11"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:11"}, {"heb": "תדשא", "read": "タドシェー", "mean": "[それは]産み出させる(ようにしなさい)", "ref": "創世記1:11"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地は", "ref": "創世記1:11"}, {"heb": "דשא", "read": "デーシェ", "mean": "青い草を", "ref": "創世記1:11"}, {"heb": "עשב", "read": "エーセヴ", "mean": "緑の草を", "ref": "創世記1:11"}, {"heb": "מזריע", "read": "マズリア", "mean": "生じさせる[もの]", "ref": "創世記1:11"}, {"heb": "זרע", "read": "ゼーラ", "mean": "種を", "ref": "創世記1:11"}, {"heb": "עץ", "read": "エツ", "mean": "木を", "ref": "創世記1:11"}, {"heb": "פרי", "read": "ペリー", "mean": "果物の", "ref": "創世記1:11"}, {"heb": "עשה", "read": "オーセ", "mean": "結ぶ[もの]", "ref": "創世記1:11"}, {"heb": "פרי", "read": "ペリー", "mean": "実を", "ref": "創世記1:11"}, {"heb": "למינו", "read": "レミノー", "mean": "それの種類に応じて", "ref": "創世記1:11"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～もの", "ref": "創世記1:11"}, {"heb": "זרעו", "read": "ザル・オー・", "mean": "それの種が", "ref": "創世記1:11"}, {"heb": "בו", "read": "ヴ・ォー", "mean": "それの中に", "ref": "創世記1:11"}, {"heb": "על", "read": "アル・", "mean": "～の上に", "ref": "創世記1:11"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "創世記1:11"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それは]なりました", "ref": "創世記1:11"}, {"heb": "כן", "read": "ㇰヘン", "mean": "そのように", "ref": "創世記1:11"}, {"heb": "ותוצא", "read": "ヴァ・ットツェー", "mean": "そして[それは]出させました", "ref": "創世記1:12"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地は", "ref": "創世記1:12"}, {"heb": "דשא", "read": "デーシェ", "mean": "青い草を", "ref": "創世記1:12"}, {"heb": "עשב", "read": "エーセヴ", "mean": "緑の草を", "ref": "創世記1:12"}, {"heb": "מזריע", "read": "マヴリーア", "mean": "生じさせる[もの]", "ref": "創世記1:12"}, {"heb": "זרע", "read": "ゼーラ", "mean": "種を", "ref": "創世記1:12"}, {"heb": "למינהו", "read": "レ・ミネー・フ", "mean": "それの種類に応じて", "ref": "創世記1:12"}, {"heb": "ועץ", "read": "ヴェ・エーツ", "mean": "そして木を", "ref": "創世記1:12"}, {"heb": "עשה", "read": "オーセ", "mean": "結ぶ[もの]", "ref": "創世記1:12"}, {"heb": "פרי", "read": "ペリー", "mean": "実を", "ref": "創世記1:12"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～もの", "ref": "創世記1:12"}, {"heb": "זרעו", "read": "ザル・オー・", "mean": "それの種が", "ref": "創世記1:12"}, {"heb": "בו", "read": "ヴ・ォー", "mean": "それの中に", "ref": "創世記1:12"}, {"heb": "למינהו", "read": "レ・ミネー・フ", "mean": "それの種類に応じて", "ref": "創世記1:12"}, {"heb": "וירא", "read": "ヴァ・ヤール", "mean": "そして[彼は]見ました", "ref": "創世記1:12"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:12"}, {"heb": "כי", "read": "キー・", "mean": "それは～もの(である)", "ref": "創世記1:12"}, {"heb": "טוב", "read": "トーヴ", "mean": "良い", "ref": "創世記1:12"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:13"}, {"heb": "ערב", "read": "エーレヴ", "mean": "夕暮れが", "ref": "創世記1:13"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:13"}, {"heb": "בקר", "read": "ヴォーケル", "mean": "朝が", "ref": "創世記1:13"}, {"heb": "יום", "read": "ヨム", "mean": "日", "ref": "創世記1:13"}, {"heb": "שלישי", "read": "シェリシー", "mean": "第三の", "ref": "創世記1:13"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:14"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:14"}, {"heb": "יהי", "read": "イェヒー", "mean": "[それが]在る（ようにしなさい)", "ref": "創世記1:14"}, {"heb": "מארת", "read": "メオロート", "mean": "諸々の光り輝くものが", "ref": "創世記1:14"}, {"heb": "ברקיע", "read": "ビ・ルキーア", "mean": "天空の中に", "ref": "創世記1:14"}, {"heb": "השמים", "read": "ハ・シャマーイィム", "mean": "その諸々の天の", "ref": "創世記1:14"}, {"heb": "להבדיל", "read": "レ・ハヴディール", "mean": "分けさせる為", "ref": "創世記1:14"}, {"heb": "בין", "read": "ベイン", "mean": "～の間を", "ref": "創世記1:14"}, {"heb": "היום", "read": "ハ・ヨーム", "mean": "その昼", "ref": "創世記1:14"}, {"heb": "ובין", "read": "ウ・ヴェイン", "mean": "そして～の間を", "ref": "創世記1:14"}, {"heb": "הלילה", "read": "ハ・ライラ", "mean": "その夜", "ref": "創世記1:14"}, {"heb": "והיו", "read": "ヴェ・ハユー", "mean": "そして[それらが]在る(ようにしなさい)", "ref": "創世記1:14"}, {"heb": "לאתת", "read": "レ・オトート", "mean": "諸々の徴のために", "ref": "創世記1:14"}, {"heb": "ולמועדים", "read": "ウ・レ・モアディーム", "mean": "そして諸々の季節の為に", "ref": "創世記1:14"}, {"heb": "ולימים", "read": "ウ・レ・ヤミーム", "mean": "そして諸々の日の為に", "ref": "創世記1:14"}, {"heb": "ושנים", "read": "ヴェ・シャニーム", "mean": "そして諸々の年の為に", "ref": "創世記1:14"}, {"heb": "והיו", "read": "ヴェ・ハユー", "mean": "そして[それらが]在る(ようにしなさい)", "ref": "創世記1:15"}, {"heb": "למאורת", "read": "リ・ムオロト", "mean": "諸々の光り輝くものが", "ref": "創世記1:15"}, {"heb": "ברקיע", "read": "ビ・ルキーア", "mean": "天空の中に", "ref": "創世記1:15"}, {"heb": "השמים", "read": "ハ・シャマーイィム", "mean": "諸々の天の", "ref": "創世記1:15"}, {"heb": "להאיר", "read": "レ・ハイール", "mean": "照らさせる為に", "ref": "創世記1:15"}, {"heb": "על", "read": "アル・", "mean": "～の上を", "ref": "創世記1:15"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "創世記1:15"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それは]なりました", "ref": "創世記1:15"}, {"heb": "כן", "read": "ㇰヘン", "mean": "そのように", "ref": "創世記1:15"}, {"heb": "ויעש", "read": "ヴァ・ヤーアス", "mean": "そして[彼は]造りました", "ref": "創世記1:16"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:16"}, {"heb": "שני", "read": "シェネィ", "mean": "二つ", "ref": "創世記1:16"}, {"heb": "המארת", "read": "ハ・ムメオロト", "mean": "その諸々の光り輝くもの", "ref": "創世記1:16"}, {"heb": "הגדלים", "read": "ハ・ッゲドリーム", "mean": "その大きな[諸々のもの]", "ref": "創世記1:16"}, {"heb": "המאור", "read": "ハ・ムマオール", "mean": "その光り輝くもの", "ref": "創世記1:16"}, {"heb": "הגדל", "read": "ハ・ッガドール", "mean": "その大きな[もの]", "ref": "創世記1:16"}, {"heb": "לממשלת", "read": "レ・メムシェレト", "mean": "支配の為に", "ref": "創世記1:16"}, {"heb": "היום", "read": "ハ・ヨム", "mean": "その昼の", "ref": "創世記1:16"}, {"heb": "ואת", "read": "ヴェ・エト・", "mean": "そして～を", "ref": "創世記1:16"}, {"heb": "המאור", "read": "ハ・ムマオール", "mean": "その光り輝くもの", "ref": "創世記1:16"}, {"heb": "הקטן", "read": "ハ・ッカトーン", "mean": "その小さな[もの]", "ref": "創世記1:16"}, {"heb": "לממשלת", "read": "レ・メムシェレト", "mean": "支配の為に", "ref": "創世記1:16"}, {"heb": "הלילה", "read": "ハ・ッライラ", "mean": "その夜の", "ref": "創世記1:16"}, {"heb": "ואת", "read": "ヴェ・エト", "mean": "そして～を", "ref": "創世記1:16"}, {"heb": "הכוכבים", "read": "ハ・ッコㇰハヴィーム", "mean": "その星々", "ref": "創世記1:16"}, {"heb": "ויתן", "read": "ヴァ・イィテン", "mean": "そして[彼は]置きました", "ref": "創世記1:17"}, {"heb": "אתם", "read": "オター・ム", "mean": "それらを", "ref": "創世記1:17"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:17"}, {"heb": "ברקיע", "read": "ビ・ルキーア", "mean": "天空の中に", "ref": "創世記1:17"}, {"heb": "השמים", "read": "ハ・シャマーイィム", "mean": "諸々の天の", "ref": "創世記1:17"}, {"heb": "להאיר", "read": "レ・ハイール", "mean": "照らさせる為に", "ref": "創世記1:17"}, {"heb": "על", "read": "アル・", "mean": "～の上を", "ref": "創世記1:17"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "創世記1:17"}, {"heb": "ולמשל", "read": "ヴェ・リ・ムショール", "mean": "そして支配する為に", "ref": "創世記1:18"}, {"heb": "ביום", "read": "バ・ヨーム", "mean": "昼の中を", "ref": "創世記1:18"}, {"heb": "ובלילה", "read": "ウ・ヴァ・ッライラ", "mean": "そして夜の中を", "ref": "創世記1:18"}, {"heb": "ולהבדיל", "read": "ウ・ラ・ハヴディール", "mean": "そして分けさせる為に", "ref": "創世記1:18"}, {"heb": "בין", "read": "ベイン", "mean": "～の間を", "ref": "創世記1:18"}, {"heb": "האור", "read": "ハ・オール", "mean": "その光", "ref": "創世記1:18"}, {"heb": "ובין", "read": "ウ・ヴェイン", "mean": "そして～の間を", "ref": "創世記1:18"}, {"heb": "החשך", "read": "ハ・ㇰホーシェク", "mean": "その暗闇", "ref": "創世記1:18"}, {"heb": "וירא", "read": "ヴァ・ヤール", "mean": "そして[彼は]見ました", "ref": "創世記1:18"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:18"}, {"heb": "כי", "read": "キー・", "mean": "それは～もの", "ref": "創世記1:18"}, {"heb": "טוב", "read": "トーヴ", "mean": "良い", "ref": "創世記1:18"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:19"}, {"heb": "ערב", "read": "エーレヴ", "mean": "夕暮れが", "ref": "創世記1:19"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:19"}, {"heb": "בקר", "read": "ヴォーケル", "mean": "朝が", "ref": "創世記1:19"}, {"heb": "יום", "read": "ヨム", "mean": "日", "ref": "創世記1:19"}, {"heb": "רביעי", "read": "レヴィイー", "mean": "第四の", "ref": "創世記1:19"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:20"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:20"}, {"heb": "ישרצו", "read": "イィシュレツー", "mean": "[それらは]群らがらせる(ようにしなさい)", "ref": "創世記1:20"}, {"heb": "המים", "read": "ハ・ムマーイィム", "mean": "その諸々の水は", "ref": "創世記1:20"}, {"heb": "שרץ", "read": "シェーレツ", "mean": "群れを", "ref": "創世記1:20"}, {"heb": "נפש", "read": "ネフェシュ", "mean": "生き物の", "ref": "創世記1:20"}, {"heb": "חיה", "read": "ㇰハヤー", "mean": "命ある[もの]", "ref": "創世記1:20"}, {"heb": "ועוף", "read": "ヴェ・オーフ", "mean": "そして鳥は", "ref": "創世記1:20"}, {"heb": "יעופף", "read": "イェオフェフ", "mean": "[それは]完全に飛び回る(ようにしなさい)", "ref": "創世記1:20"}, {"heb": "על", "read": "アル・", "mean": "～の上を", "ref": "創世記1:20"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "創世記1:20"}, {"heb": "על", "read": "アル・", "mean": "～の上を", "ref": "創世記1:20"}, {"heb": "פני", "read": "ペネイ", "mean": "諸々の表面", "ref": "創世記1:20"}, {"heb": "רקיע", "read": "レキーア", "mean": "天空の", "ref": "創世記1:20"}, {"heb": "השמים", "read": "ハ・シャマーイィム", "mean": "その諸々の天の", "ref": "創世記1:20"}, {"heb": "ויברא", "read": "ヴァ・イィヴラー", "mean": "そして[彼は]創りました", "ref": "創世記1:21"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:21"}, {"heb": "התנינם", "read": "ハ・ッタンニニーム", "mean": "その海獣たち", "ref": "創世記1:21"}, {"heb": "הגדלים", "read": "ハ・ッゲドリーム", "mean": "その大きな[ものたち]", "ref": "創世記1:21"}, {"heb": "ואת", "read": "ヴェ・エト", "mean": "そして～を", "ref": "創世記1:21"}, {"heb": "כל", "read": "コル・", "mean": "ことごとく", "ref": "創世記1:21"}, {"heb": "נפש", "read": "ネーフェシュ", "mean": "生き物の", "ref": "創世記1:21"}, {"heb": "החיה", "read": "ハ・ㇰハヤー", "mean": "その命ある[もの]", "ref": "創世記1:21"}, {"heb": "הרמשת", "read": "ハ・ロメーセット", "mean": "その這い回る[もの]", "ref": "創世記1:21"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～もの", "ref": "創世記1:21"}, {"heb": "שרצו", "read": "シャールツ", "mean": "[それらが]群がらせる", "ref": "創世記1:21"}, {"heb": "המים", "read": "ハ・ムマーイィム", "mean": "その諸々の水が", "ref": "創世記1:21"}, {"heb": "למינהם", "read": "レ・ミネ・ヘム", "mean": "それらの種類に応じて", "ref": "創世記1:21"}, {"heb": "ואת", "read": "ヴェ・エト", "mean": "そして～を", "ref": "創世記1:21"}, {"heb": "כל", "read": "コル・", "mean": "ことごとく", "ref": "創世記1:21"}, {"heb": "עוף", "read": "オフ", "mean": "鳥の", "ref": "創世記1:21"}, {"heb": "כנף", "read": "カナーフ", "mean": "翼の", "ref": "創世記1:21"}, {"heb": "למינהו", "read": "レ・ミネー・フ", "mean": "その種類に応じて", "ref": "創世記1:21"}, {"heb": "וירא", "read": "ヴァ・ヤール", "mean": "そして[彼は]見ました", "ref": "創世記1:21"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:21"}, {"heb": "כי", "read": "キー・", "mean": "それは～もの", "ref": "創世記1:21"}, {"heb": "טוב", "read": "トーヴ", "mean": "良い", "ref": "創世記1:21"}, {"heb": "ויברך", "read": "ヴァ・イェヴァーレㇰフ", "mean": "そして[彼は]完全に祝福しました", "ref": "創世記1:22"}, {"heb": "אתם", "read": "オター・ム", "mean": "それらを", "ref": "創世記1:22"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:22"}, {"heb": "לאמר", "read": "レ・モール", "mean": "こう言って", "ref": "創世記1:22"}, {"heb": "פרו", "read": "ペルー", "mean": "[あなたたちは]産みなさい", "ref": "創世記1:22"}, {"heb": "ורבו", "read": "ウ・レヴー", "mean": "そして[あなたたちは]増えなさい", "ref": "創世記1:22"}, {"heb": "ומלאו", "read": "ウ・ミルウー", "mean": "そして[あなたたちは]満ちなさい", "ref": "創世記1:22"}, {"heb": "המים", "read": "ハ・ムマーイィム", "mean": "その諸々の水", "ref": "創世記1:22"}, {"heb": "בימים", "read": "バ・ヤムミム", "mean": "諸々の海の中で", "ref": "創世記1:22"}, {"heb": "והעוף", "read": "ヴェ・ハ・オフ", "mean": "そしてその鳥は", "ref": "創世記1:22"}, {"heb": "ירב", "read": "イィレヴ", "mean": "[それは]増える(ようにしなさい)", "ref": "創世記1:22"}, {"heb": "בארץ", "read": "バ・アーレツ", "mean": "地において", "ref": "創世記1:22"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:23"}, {"heb": "ערב", "read": "エーレヴ", "mean": "夕暮れが", "ref": "創世記1:23"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:23"}, {"heb": "בקר", "read": "ヴォーケル", "mean": "朝が", "ref": "創世記1:23"}, {"heb": "יום", "read": "ヨム", "mean": "日", "ref": "創世記1:23"}, {"heb": "חמישי", "read": "ㇰハミシー", "mean": "第五の", "ref": "創世記1:23"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:24"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:24"}, {"heb": "תוצא", "read": "トツェー", "mean": "[それは]出させる(ようにしなさい)", "ref": "創世記1:24"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地は", "ref": "創世記1:24"}, {"heb": "נפש", "read": "ネフェシュ", "mean": "生き物を", "ref": "創世記1:24"}, {"heb": "חיה", "read": "ㇰハヤー", "mean": "命ある[もの]", "ref": "創世記1:24"}, {"heb": "למינה", "read": "レ・ミナ・ァ", "mean": "その種類に応じて", "ref": "創世記1:24"}, {"heb": "בהמה", "read": "ベヘマー", "mean": "家畜を", "ref": "創世記1:24"}, {"heb": "ורמש", "read": "ヴァ・レーメス", "mean": "そして這い回るものを", "ref": "創世記1:24"}, {"heb": "וחיתו", "read": "ヴェ・ㇰハイト・", "mean": "そして獣を", "ref": "創世記1:24"}, {"heb": "ארץ", "read": "エーレツ", "mean": "地の", "ref": "創世記1:24"}, {"heb": "למינה", "read": "レ・ミナ・ァ", "mean": "その種類に応じて", "ref": "創世記1:24"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "すると[それは]なりました", "ref": "創世記1:24"}, {"heb": "כן", "read": "ㇰヘン", "mean": "そのように", "ref": "創世記1:24"}, {"heb": "ויעש", "read": "ヴァ・ヤーアス", "mean": "そして[彼は]造りました", "ref": "創世記1:25"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:25"}, {"heb": "חית", "read": "ㇰハヤット", "mean": "獣", "ref": "創世記1:25"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地の", "ref": "創世記1:25"}, {"heb": "למינה", "read": "レ・ミナ・ァ", "mean": "その種類に応じて", "ref": "創世記1:25"}, {"heb": "ואת", "read": "ヴェ・エト・", "mean": "そして～を", "ref": "創世記1:25"}, {"heb": "הבהמה", "read": "ハ・ッベヘマー", "mean": "その家畜", "ref": "創世記1:25"}, {"heb": "למינה", "read": "レ・ミナ・ァ", "mean": "その種類に応じて", "ref": "創世記1:25"}, {"heb": "ואת", "read": "ヴェ・エト", "mean": "そして～を", "ref": "創世記1:25"}, {"heb": "כל", "read": "コル・", "mean": "ことごとく", "ref": "創世記1:25"}, {"heb": "רמש", "read": "レーメス", "mean": "這い回るものの", "ref": "創世記1:25"}, {"heb": "האדמה", "read": "ハ・アダマー", "mean": "この土を", "ref": "創世記1:25"}, {"heb": "למינהו", "read": "レ・ミネー・フ", "mean": "その種類に応じて", "ref": "創世記1:25"}, {"heb": "וירא", "read": "ヴァ・ヤール", "mean": "そして[彼は]見ました", "ref": "創世記1:25"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:25"}, {"heb": "כי", "read": "キー・", "mean": "それは～もの(である)", "ref": "創世記1:25"}, {"heb": "טוב", "read": "トーヴ", "mean": "良い", "ref": "創世記1:25"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:26"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:26"}, {"heb": "נעשה", "read": "ナアセー", "mean": "[私たちは]造ります", "ref": "創世記1:26"}, {"heb": "אדם", "read": "アダーム", "mean": "[男の]人を", "ref": "創世記1:26"}, {"heb": "בצלמנו", "read": "ベ・ツァルメー・ヌ", "mean": "私たちの姿形に", "ref": "創世記1:26"}, {"heb": "כדמותנו", "read": "キ・ドムテー・ヌ", "mean": "私たちの似たものに", "ref": "創世記1:26"}, {"heb": "וירדו", "read": "ヴェ・イィルドゥー", "mean": "そして[彼等は]支配します", "ref": "創世記1:26"}, {"heb": "בדגת", "read": "ヴィ・ドガット", "mean": "魚を", "ref": "創世記1:26"}, {"heb": "הים", "read": "ハ・ヤーム", "mean": "その海の", "ref": "創世記1:26"}, {"heb": "ובעוף", "read": "ウ・ヴェ・オフ", "mean": "そして鳥を", "ref": "創世記1:26"}, {"heb": "השמים", "read": "ハ・シャマーイィム", "mean": "あの諸々の天の", "ref": "創世記1:26"}, {"heb": "ובבהמה", "read": "ウ・ヴァ・ッベヘマー", "mean": "そして家畜を", "ref": "創世記1:26"}, {"heb": "ובכל", "read": "ウ・ヴェ・ㇰホル・", "mean": "そしてことごとくを", "ref": "創世記1:26"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地の", "ref": "創世記1:26"}, {"heb": "ובכל", "read": "ウ・ヴェ・ㇰホル・", "mean": "そしてことごとくを", "ref": "創世記1:26"}, {"heb": "הרמש", "read": "ハ・レーメス", "mean": "その這うものの", "ref": "創世記1:26"}, {"heb": "הרמש", "read": "ハ・ロメス", "mean": "その這い回る[もの]", "ref": "創世記1:26"}, {"heb": "על", "read": "アル・", "mean": "～の上を", "ref": "創世記1:26"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "創世記1:26"}, {"heb": "ויברא", "read": "ヴァ・イィヴラー", "mean": "そして[彼は]創りました", "ref": "創世記1:27"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:27"}, {"heb": "האדם", "read": "ハ・アダム", "mean": "その[男の]人", "ref": "創世記1:27"}, {"heb": "בצלמו", "read": "ベ・ツァルモー", "mean": "彼の似姿に", "ref": "創世記1:27"}, {"heb": "בצלם", "read": "ベ・ツェーレム", "mean": "似姿に", "ref": "創世記1:27"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]の", "ref": "創世記1:27"}, {"heb": "ברא", "read": "バラー", "mean": "[彼は]創りました", "ref": "創世記1:27"}, {"heb": "אתו", "read": "オト・ォー", "mean": "彼を", "ref": "創世記1:27"}, {"heb": "זכר", "read": "ザㇰハール", "mean": "男性に", "ref": "創世記1:27"}, {"heb": "ונקבה", "read": "ウ・ネケヴァー", "mean": "そして女性に", "ref": "創世記1:27"}, {"heb": "ברא", "read": "バラー", "mean": "[彼は]創りました", "ref": "創世記1:27"}, {"heb": "אתם", "read": "オター・ム", "mean": "彼等を", "ref": "創世記1:27"}, {"heb": "ויברך", "read": "ヴァ・イェヴァーレㇰフ", "mean": "そして[彼は]完全に祝福しました", "ref": "創世記1:28"}, {"heb": "אתם", "read": "オター・ム", "mean": "彼等を", "ref": "創世記1:28"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:28"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:28"}, {"heb": "להם", "read": "ラ・ヘム", "mean": "彼等に", "ref": "創世記1:28"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:28"}, {"heb": "פרו", "read": "ペルー", "mean": "[あなたたちは]子を産みなさい", "ref": "創世記1:28"}, {"heb": "ורבו", "read": "ウ・レヴー", "mean": "そして[あなたたちは]多くなりなさい", "ref": "創世記1:28"}, {"heb": "ומלאו", "read": "ウ・ミルー", "mean": "そして[あなたたちは]満ちなさい", "ref": "創世記1:28"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "創世記1:28"}, {"heb": "וכבשה", "read": "ヴェ・ㇰヒヴシュー・ハ", "mean": "そして[あなたたちは]従えなさい、それを", "ref": "創世記1:28"}, {"heb": "ורדו", "read": "ウ・レドゥー", "mean": "そして[あなたたちは]支配しなさい", "ref": "創世記1:28"}, {"heb": "בדגת", "read": "ビ・ドガット", "mean": "魚を", "ref": "創世記1:28"}, {"heb": "הים", "read": "ハ・ヤーム", "mean": "その海の", "ref": "創世記1:28"}, {"heb": "ובעוף", "read": "ウ・ヴェ・オフ", "mean": "そして鳥を", "ref": "創世記1:28"}, {"heb": "השמים", "read": "ハ・シャマーイィム", "mean": "あの諸々の天の", "ref": "創世記1:28"}, {"heb": "ובכל", "read": "ウ・ヴェ・ㇰホル・", "mean": "そしてことごとくを", "ref": "創世記1:28"}, {"heb": "חיה", "read": "ㇰハヤー", "mean": "生き物の", "ref": "創世記1:28"}, {"heb": "הרמשת", "read": "ハ・ロメーセット", "mean": "その這い回る[もの]", "ref": "創世記1:28"}, {"heb": "על", "read": "アル・", "mean": "～の上を", "ref": "創世記1:28"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "創世記1:28"}, {"heb": "ויאמר", "read": "ヴァ・ヨーメル", "mean": "そして[彼は]言いました", "ref": "創世記1:29"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:29"}, {"heb": "הנה", "read": "ヒンネ", "mean": "見なさい", "ref": "創世記1:29"}, {"heb": "נתתי", "read": "ナタッティ", "mean": "[私は]与えます", "ref": "創世記1:29"}, {"heb": "לכם", "read": "ラ・ㇰヘム", "mean": "あなたたちに", "ref": "創世記1:29"}, {"heb": "כל", "read": "コル・", "mean": "ことごとく", "ref": "創世記1:29"}, {"heb": "עשב", "read": "エーセヴ", "mean": "草の", "ref": "創世記1:29"}, {"heb": "זרע", "read": "ゾレア", "mean": "生じる[もの]", "ref": "創世記1:29"}, {"heb": "זרע", "read": "ゼーラ", "mean": "種を", "ref": "創世記1:29"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～もの", "ref": "創世記1:29"}, {"heb": "על", "read": "アル・", "mean": "～の上に(ある)", "ref": "創世記1:29"}, {"heb": "פני", "read": "ペネイ", "mean": "諸々の面", "ref": "創世記1:29"}, {"heb": "כל", "read": "ㇰホル・", "mean": "ことごとくの", "ref": "創世記1:29"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地の", "ref": "創世記1:29"}, {"heb": "ואת", "read": "ヴェ・エト・", "mean": "そして～を", "ref": "創世記1:29"}, {"heb": "כל", "read": "コル・", "mean": "ことごとく", "ref": "創世記1:29"}, {"heb": "העץ", "read": "ハ・エーツ", "mean": "その木の", "ref": "創世記1:29"}, {"heb": "אשר", "read": "アシェル・", "mean": "それは～もの", "ref": "創世記1:29"}, {"heb": "בו", "read": "ボ・ォー", "mean": "その中に", "ref": "創世記1:29"}, {"heb": "פרי", "read": "フェリー・", "mean": "実が", "ref": "創世記1:29"}, {"heb": "עץ", "read": "エーツ", "mean": "木の", "ref": "創世記1:29"}, {"heb": "זרע", "read": "ゾレア", "mean": "生じる[もの]", "ref": "創世記1:29"}, {"heb": "זרע", "read": "ザーラ", "mean": "種を", "ref": "創世記1:29"}, {"heb": "לכם", "read": "ラ・ㇰヘム", "mean": "あなたたちの為に", "ref": "創世記1:29"}, {"heb": "יהיה", "read": "イィフイェ", "mean": "[それは]～[に]なります", "ref": "創世記1:29"}, {"heb": "לאכלה", "read": "レ・アㇰフラー", "mean": "食べ物に", "ref": "創世記1:29"}, {"heb": "ולכל", "read": "ウ・レ・ㇰホル・", "mean": "そしてことごとくに", "ref": "創世記1:30"}, {"heb": "חית", "read": "ㇰハヤット", "mean": "獣の", "ref": "創世記1:30"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地の", "ref": "創世記1:30"}, {"heb": "ולכל", "read": "ウ・レ・ㇰホル・", "mean": "そしてことごとくに", "ref": "創世記1:30"}, {"heb": "עוף", "read": "オフ", "mean": "鳥の", "ref": "創世記1:30"}, {"heb": "השמים", "read": "ハ・シャマーイィム", "mean": "あの諸々の天の", "ref": "創世記1:30"}, {"heb": "ולכל", "read": "ウ・レ・ㇰホル", "mean": "そしてことごとくに", "ref": "創世記1:30"}, {"heb": "רומש", "read": "ロメス", "mean": "這い回るものの", "ref": "創世記1:30"}, {"heb": "על", "read": "アル・", "mean": "～の上を", "ref": "創世記1:30"}, {"heb": "הארץ", "read": "ハ・アーレツ", "mean": "この地", "ref": "創世記1:30"}, {"heb": "אשר", "read": "アシェル・", "mean": "それは～もの", "ref": "創世記1:30"}, {"heb": "בו", "read": "ボ・ォー", "mean": "それの中に", "ref": "創世記1:30"}, {"heb": "נפש", "read": "ネフェシュ", "mean": "命が", "ref": "創世記1:30"}, {"heb": "חיה", "read": "ㇰハヤー", "mean": "生きている", "ref": "創世記1:30"}, {"heb": "כל", "read": "コル・", "mean": "ことごとく", "ref": "創世記1:30"}, {"heb": "ירק", "read": "イェーレク", "mean": "緑の", "ref": "創世記1:30"}, {"heb": "עשב", "read": "エーセヴ", "mean": "草の", "ref": "創世記1:30"}, {"heb": "לאכלה", "read": "レ・アㇰフラー", "mean": "食べ物として", "ref": "創世記1:30"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "すると[それは]なりました", "ref": "創世記1:30"}, {"heb": "כן", "read": "ㇰヘン", "mean": "そのように", "ref": "創世記1:30"}, {"heb": "וירא", "read": "ヴァ・ヤール", "mean": "そして[彼は]見ました", "ref": "創世記1:31"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記1:31"}, {"heb": "כל", "read": "コル・", "mean": "ことごとく", "ref": "創世記1:31"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～もの", "ref": "創世記1:31"}, {"heb": "עשה", "read": "アサー", "mean": "[彼が]造った", "ref": "創世記1:31"}, {"heb": "והנה", "read": "ヴェ・ヒンネー・", "mean": "すると見なさい", "ref": "創世記1:31"}, {"heb": "טוב", "read": "トヴ", "mean": "良い", "ref": "創世記1:31"}, {"heb": "מאד", "read": "メオード", "mean": "非常に", "ref": "創世記1:31"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:31"}, {"heb": "ערב", "read": "エーレヴ", "mean": "夕暮れが", "ref": "創世記1:31"}, {"heb": "ויהי", "read": "ヴァ・イェヒー・", "mean": "そして[それが]在りました", "ref": "創世記1:31"}, {"heb": "בקר", "read": "ヴォーケル", "mean": "朝が", "ref": "創世記1:31"}, {"heb": "יום", "read": "ヨム", "mean": "日", "ref": "創世記1:31"}, {"heb": "הששי", "read": "ハ・シシー", "mean": "第六の", "ref": "創世記1:31"}, {"heb": "ויכלו", "read": "ヴァ・イェㇰフール", "mean": "そして[それらは]完全に完成させられました", "ref": "創世記2:1"}, {"heb": "השמים", "read": "ハ・シャマーイィム", "mean": "諸々の天は", "ref": "創世記2:1"}, {"heb": "והארץ", "read": "ヴェ・ハ・アーレツ", "mean": "そしてこの地は", "ref": "創世記2:1"}, {"heb": "וכל", "read": "ヴェ・ㇰホル・", "mean": "そしてことごとくは", "ref": "創世記2:1"}, {"heb": "צבאם", "read": "ツェヴァアー・ム", "mean": "それらの大群の", "ref": "創世記2:1"}, {"heb": "ויכל", "read": "ヴァ・イェㇰハール", "mean": "そして[彼は]完全に完成しました", "ref": "創世記2:2"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記2:2"}, {"heb": "ביום", "read": "バ・ヨーム", "mean": "日に", "ref": "創世記2:2"}, {"heb": "השביעי", "read": "ハ・シェヴィイー", "mean": "その第七の", "ref": "創世記2:2"}, {"heb": "מלאכתו", "read": "ミラㇰフト・ォー", "mean": "彼の業を", "ref": "創世記2:2"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～こと", "ref": "創世記2:2"}, {"heb": "עשה", "read": "アサー", "mean": "[彼が]した", "ref": "創世記2:2"}, {"heb": "וישבת", "read": "ヴァ・イィシュボト", "mean": "そして[彼は]休みました", "ref": "創世記2:2"}, {"heb": "ביום", "read": "バ・ヨーム", "mean": "日に", "ref": "創世記2:2"}, {"heb": "השביעי", "read": "ハ・シェヴィイー", "mean": "その第七の", "ref": "創世記2:2"}, {"heb": "מכל", "read": "ミ・ッコル・", "mean": "ことごとくから", "ref": "創世記2:2"}, {"heb": "מלאכתו", "read": "ミラㇰフト・ォー", "mean": "彼の業の", "ref": "創世記2:2"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～こと", "ref": "創世記2:2"}, {"heb": "עשה", "read": "アサー", "mean": "[彼が]した", "ref": "創世記2:2"}, {"heb": "ויברך", "read": "ヴァ・イェヴァーレㇰフ", "mean": "そして[彼は]完全に祝福しました", "ref": "創世記2:3"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記2:3"}, {"heb": "יום", "read": "ヨム", "mean": "日", "ref": "創世記2:3"}, {"heb": "השביעי", "read": "ハ・シェヴィイー", "mean": "その第七の", "ref": "創世記2:3"}, {"heb": "ויקדש", "read": "ヴァ・イェカデシュ", "mean": "そして[彼は]完全に聖別しました", "ref": "創世記2:3"}, {"heb": "אתו", "read": "オト・ォー", "mean": "それを", "ref": "創世記2:3"}, {"heb": "כי", "read": "キー", "mean": "何故なら～故に", "ref": "創世記2:3"}, {"heb": "בו", "read": "ヴ・ォー", "mean": "それにおいて", "ref": "創世記2:3"}, {"heb": "שבת", "read": "シャヴァート", "mean": "[彼は]休んだ", "ref": "創世記2:3"}, {"heb": "מכל", "read": "ミ・ッコル・", "mean": "ことごとくから", "ref": "創世記2:3"}, {"heb": "מלאכתו", "read": "ミラㇰフト・ォー", "mean": "彼の業の", "ref": "創世記2:3"}, {"heb": "אשר", "read": "アシェル", "mean": "それは～こと", "ref": "創世記2:3"}, {"heb": "ברא", "read": "バラー", "mean": "[彼は]創造する", "ref": "創世記2:3"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神[々]は", "ref": "創世記2:3"}, {"heb": "לעשות", "read": "ラ・アソート", "mean": "完成すること", "ref": "創世記2:3"}], "citation": [{"heb": "ראשית", "read": "レシート", "mean": "初め、始まり"}, {"heb": "ברא", "read": "バラー", "mean": "創造する"}, {"heb": "אלהים", "read": "エロヒーム", "mean": "神"}, {"heb": "שמים", "read": "シャマイィム", "mean": "天"}, {"heb": "ארץ", "read": "アーレツ", "mean": "地、大地"}, {"heb": "היה", "read": "ハヤー", "mean": "～である、なる"}, {"heb": "תהו", "read": "トーフ", "mean": "空虚、混沌"}, {"heb": "בהו", "read": "ヴォーフ", "mean": "空虚"}, {"heb": "חשך", "read": "ㇰホーシェク", "mean": "暗闇"}, {"heb": "פנים", "read": "パニーム", "mean": "顔、面"}, {"heb": "תהום", "read": "テホーム", "mean": "深淵"}, {"heb": "רוח", "read": "ルーアㇰフ", "mean": "霊、風"}, {"heb": "רחף", "read": "ラㇰハフ", "mean": "舞う、震える"}, {"heb": "מים", "read": "マーイィム", "mean": "水"}, {"heb": "אמר", "read": "アマール", "mean": "言う"}, {"heb": "אור", "read": "オール", "mean": "光"}, {"heb": "ראה", "read": "ラアー", "mean": "見る"}, {"heb": "טוב", "read": "トーヴ", "mean": "良い"}, {"heb": "בדל", "read": "バダール", "mean": "分ける、区別する"}, {"heb": "קרא", "read": "カラー", "mean": "呼ぶ、名づける"}, {"heb": "יום", "read": "ヨム", "mean": "日"}, {"heb": "לילה", "read": "ライラ", "mean": "夜"}, {"heb": "ערב", "read": "エーレヴ", "mean": "夕方"}, {"heb": "בקר", "read": "ボーケル", "mean": "朝"}, {"heb": "אחד", "read": "エㇰハッド", "mean": "一つの"}, {"heb": "רקיע", "read": "ラキーア", "mean": "大空、天空"}, {"heb": "תוך", "read": "トㇰフ", "mean": "中、真ん中"}, {"heb": "עשה", "read": "アサー", "mean": "作る、する"}, {"heb": "שני", "read": "シェニー", "mean": "第二の"}, {"heb": "קוה", "read": "カヴァー", "mean": "集まる、望む"}, {"heb": "מקום", "read": "マコム", "mean": "場所"}, {"heb": "יבשה", "read": "ヤッバシャー", "mean": "乾いた地、陸"}, {"heb": "מקוה", "read": "ミクヴェー", "mean": "集まった所、水溜まり"}, {"heb": "ים", "read": "ヤム", "mean": "海"}, {"heb": "דשא", "read": "ダシャー", "mean": "芽生えさせる、青草を生じる"}, {"heb": "עשב", "read": "エーセヴ", "mean": "草"}, {"heb": "זרע", "read": "ザラー", "mean": "種を宿す、実らせる"}, {"heb": "עץ", "read": "エツ", "mean": "木"}, {"heb": "פרי", "read": "ペリー", "mean": "実、果実"}, {"heb": "מין", "read": "ミン", "mean": "種類"}, {"heb": "יצא", "read": "ヤツァー", "mean": "出る、出させる"}, {"heb": "שלישי", "read": "シェリシー", "mean": "第三の"}, {"heb": "מאור", "read": "マオール", "mean": "光る物、光体"}, {"heb": "אות", "read": "オート", "mean": "しるし、徴"}, {"heb": "מועד", "read": "モエード", "mean": "定めの時、季節"}, {"heb": "שנה", "read": "シャナー", "mean": "年"}, {"heb": "גדול", "read": "ガドール", "mean": "大きい"}, {"heb": "ממשלה", "read": "メムシャラー", "mean": "支配、統治"}, {"heb": "קטן", "read": "カトーン", "mean": "小さい"}, {"heb": "כוכב", "read": "コㇰハヴ", "mean": "星"}, {"heb": "נתן", "read": "ナタン", "mean": "与える、置く"}, {"heb": "משל", "read": "マシャール", "mean": "支配する"}, {"heb": "רביעי", "read": "レヴィイー", "mean": "第四の"}, {"heb": "שרץ", "read": "シャラツ", "mean": "群がる、群生する"}, {"heb": "נפש", "read": "ネフェシュ", "mean": "魂、生き物、命"}, {"heb": "חי", "read": "ㇰハイ", "mean": "生きている"}, {"heb": "עוף", "read": "オーフ", "mean": "鳥"}, {"heb": "תנין", "read": "タニン", "mean": "海の怪物、大魚"}, {"heb": "כל", "read": "コル", "mean": "全て、ことごとく"}, {"heb": "רמש", "read": "ラマス", "mean": "這う"}, {"heb": "כנף", "read": "カナーフ", "mean": "翼"}, {"heb": "ברך", "read": "ベラㇰフ", "mean": "祝福する"}, {"heb": "פרה", "read": "パラー", "mean": "実り多くある、増える"}, {"heb": "רבה", "read": "ラヴァー", "mean": "多くなる、増える"}, {"heb": "מלא", "read": "マレー", "mean": "満ちる、満たす"}, {"heb": "חמישי", "read": "ㇰハミシー", "mean": "第五の"}, {"heb": "בהמה", "read": "ベヘマー", "mean": "家畜、獣"}, {"heb": "חיה", "read": "ㇰハヤー", "mean": "獣、生き物"}, {"heb": "אדמה", "read": "アダマー", "mean": "土、地面"}, {"heb": "אדם", "read": "アダム", "mean": "人、人間"}, {"heb": "צלם", "read": "ツェーレム", "mean": "像、似姿"}, {"heb": "דמות", "read": "デムート", "mean": "似姿、形"}, {"heb": "רדה", "read": "ラダー", "mean": "支配する、治める"}, {"heb": "דגה", "read": "ダガー", "mean": "魚（集合）"}, {"heb": "זכר", "read": "ザㇰハール", "mean": "男性"}, {"heb": "נקבה", "read": "ネケヴァー", "mean": "女性"}, {"heb": "כבש", "read": "カヴァシュ", "mean": "従える、征服する"}, {"heb": "אכלה", "read": "オㇰフラー", "mean": "食物"}, {"heb": "ירק", "read": "イェーレク", "mean": "青草、青葉"}, {"heb": "ששי", "read": "シシー", "mean": "第六の"}, {"heb": "כלה", "read": "カラー", "mean": "終わる、完成する"}, {"heb": "צבא", "read": "ツァヴァー", "mean": "大群、軍勢"}, {"heb": "שביעי", "read": "シェヴィイー", "mean": "第七の"}, {"heb": "מלאכה", "read": "メラㇰハー", "mean": "仕事、業"}, {"heb": "שבת", "read": "シャヴァト", "mean": "休む、やめる"}, {"heb": "קדש", "read": "キダシュ", "mean": "聖別する"}], "root": [{"heb": "ברא", "read": "バラー", "mean": "創造する"}, {"heb": "היה", "read": "ハヤー", "mean": "～である、なる"}, {"heb": "רחף", "read": "ラㇰハフ", "mean": "舞う、震える"}, {"heb": "אמר", "read": "アマール", "mean": "言う"}, {"heb": "ראה", "read": "ラアー", "mean": "見る"}, {"heb": "בדל", "read": "バダール", "mean": "分ける、区別する"}, {"heb": "קרא", "read": "カラー", "mean": "呼ぶ、名づける"}, {"heb": "עשה", "read": "アサー", "mean": "作る、する"}, {"heb": "קוה", "read": "カヴァー", "mean": "集まる、望む"}, {"heb": "דשא", "read": "ダシャー", "mean": "芽生えさせる"}, {"heb": "זרע", "read": "ザラー", "mean": "種を宿す"}, {"heb": "יצא", "read": "ヤツァー", "mean": "出る、出させる"}, {"heb": "אור", "read": "オール", "mean": "光る、照らす"}, {"heb": "נתן", "read": "ナタン", "mean": "与える、置く"}, {"heb": "משל", "read": "マシャール", "mean": "支配する"}, {"heb": "שרץ", "read": "シャラツ", "mean": "群がる"}, {"heb": "עוף", "read": "オーフ", "mean": "飛ぶ"}, {"heb": "רמש", "read": "ラマス", "mean": "這う"}, {"heb": "ברך", "read": "ベラㇰフ", "mean": "祝福する"}, {"heb": "פרה", "read": "パラー", "mean": "実り多くある"}, {"heb": "רבה", "read": "ラヴァー", "mean": "多くなる"}, {"heb": "מלא", "read": "マレー", "mean": "満ちる"}, {"heb": "רדה", "read": "ラダー", "mean": "支配する"}, {"heb": "כבש", "read": "カヴァシュ", "mean": "従える"}, {"heb": "כלה", "read": "カラー", "mean": "終わる"}, {"heb": "שבת", "read": "シャヴァト", "mean": "休む"}, {"heb": "קדש", "read": "キダシュ", "mean": "聖別する"}]};
+</script>
+<script>
+/* =========================================================
+   データソース：創世記1:1〜2:3 逐語訳（WORDDATA = {surface, citation, root}）
+   各要素: {heb, read, mean} （surfaceのみ ref 付き）
+   ========================================================= */
+
+const CAT_LABEL = {surface:'本文の単語', citation:'単語（元の形）', root:'動詞（root）'};
+
+let wizardState = {cat:null, direction:null, format:null};
+let order=[], current=0, score=0, results=[], currentOptions=[], answeredThis=false, lastRun=null;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function pickN(pool, n, excludeIdx){
+  const p = pool.filter((_,i)=>i!==excludeIdx);
+  return shuffle(p).slice(0,n);
+}
+
+function choiceButton(label, sub, onclick){
+  const b = document.createElement('button');
+  b.className='choice-btn';
+  b.innerHTML = label + (sub? '<span class="cb-sub">'+sub+'</span>' : '');
+  b.onclick = onclick;
+  return b;
+}
+function backLink(onclick){
+  const b = document.createElement('button');
+  b.className='back-link';
+  b.textContent='← 戻る';
+  b.onclick = onclick;
+  return b;
+}
+
+function renderWizard(){
+  const panel = document.getElementById('wizard-panel');
+  panel.innerHTML='';
+  const crumbs = document.createElement('div');
+  crumbs.className='crumbs';
+  const parts=[];
+  if(wizardState.cat) parts.push(CAT_LABEL[wizardState.cat]);
+  if(wizardState.direction) parts.push(wizardState.direction==='h2j' ? 'ヘブル語→日本語' : '日本語→ヘブル語');
+  if(wizardState.format) parts.push(wizardState.format==='reading'?'リーディング':'リスニング');
+  crumbs.textContent = parts.length ? parts.join(' / ') : '出題単位を選択';
+  panel.appendChild(crumbs);
+
+  const row = document.createElement('div');
+  row.className='choice-row';
+
+  if(!wizardState.cat){
+    row.appendChild(choiceButton('単語（元の形）','辞書に載る基本形（推定）', ()=>{wizardState.cat='citation'; renderWizard();}));
+    row.appendChild(choiceButton('動詞（root）','語根（3文字の基本形・推定）', ()=>{wizardState.cat='root'; renderWizard();}));
+    row.appendChild(choiceButton('本文の単語','創世記1:1〜2:3に実際に現れる形', ()=>{wizardState.cat='surface'; renderWizard();}));
+    panel.appendChild(row);
+    return;
+  }
+  if(!wizardState.direction){
+    row.appendChild(choiceButton('ヘブル語→日本語','ヘブル語を見て意味を選ぶ', ()=>{wizardState.direction='h2j'; renderWizard();}));
+    row.appendChild(choiceButton('日本語→ヘブル語','日本語を見てヘブル語を選ぶ', ()=>{wizardState.direction='j2h'; renderWizard();}));
+    panel.appendChild(row);
+    panel.appendChild(backLink(()=>{wizardState.cat=null; renderWizard();}));
+    return;
+  }
+  if(!wizardState.format){
+    row.appendChild(choiceButton('リーディング','文字を見て答える', ()=>{wizardState.format='reading'; renderWizard();}));
+    row.appendChild(choiceButton('リスニング','音声を聞いて答える', ()=>{wizardState.format='listening'; renderWizard();}));
+    panel.appendChild(row);
+    panel.appendChild(backLink(()=>{wizardState.direction=null; renderWizard();}));
+    return;
+  }
+
+  const pool = WORDDATA[wizardState.cat];
+  const max = pool.length;
+  const counts = [10,20,max].filter((v,i,a)=>v<=max && a.indexOf(v)===i);
+  counts.forEach(c=>{
+    const label = (c===max) ? ('全'+max+'問') : (c+'問');
+    row.appendChild(choiceButton(label,'', ()=>runQuiz({cat:wizardState.cat, direction:wizardState.direction, format:wizardState.format, count:c})));
+  });
+  panel.appendChild(row);
+  panel.appendChild(backLink(()=>{wizardState.format=null; renderWizard();}));
+}
+
+function showStart(){
+  wizardState = {cat:null, direction:null, format:null};
+  renderWizard();
+  document.getElementById('screen-start').classList.remove('hidden');
+  document.getElementById('screen-quiz').classList.add('hidden');
+  document.getElementById('screen-result').classList.add('hidden');
+}
+
+function buildQuestions(spec){
+  const pool = WORDDATA[spec.cat];
+  const idxs = shuffle(pool.map((_,i)=>i)).slice(0, spec.count);
+  return idxs.map(i=>{
+    const w = pool[i];
+    return {
+      cat: CAT_LABEL[spec.cat],
+      direction: spec.direction,
+      format: spec.format,
+      heb: w.heb, read: w.read, mean: w.mean, ref: w.ref||null,
+      poolIdx: i
+    };
+  });
+}
+
+function runQuiz(spec){
+  lastRun = spec;
+  const qs = buildQuestions(spec);
+  beginQuiz(qs, spec);
+}
+
+let activePool = [];
+
+function beginQuiz(qs, spec){
+  activePool = WORDDATA[spec.cat];
+  order = qs;
+  current = 0; score = 0; results = [];
+
+  document.getElementById('screen-start').classList.add('hidden');
+  document.getElementById('screen-result').classList.add('hidden');
+  document.getElementById('screen-quiz').classList.remove('hidden');
+
+  document.getElementById('qtotal').textContent = order.length;
+  buildStitches();
+  renderQuestion();
+}
+
+function buildStitches(){
+  const wrap = document.getElementById('stitches');
+  wrap.innerHTML='';
+  for(let i=0;i<order.length;i++){
+    const d = document.createElement('div');
+    d.className='stitch'; d.id='stitch-'+i;
+    wrap.appendChild(d);
+  }
+}
+function updateStitches(){
+  for(let i=0;i<order.length;i++){
+    const el = document.getElementById('stitch-'+i);
+    if(!el) continue;
+    el.classList.remove('done','current');
+    if(i<current) el.classList.add('done');
+    else if(i===current) el.classList.add('current');
+  }
+}
+
+function speakHebrew(text, rate){
+  try{
+    speechSynthesis.cancel();
+    setTimeout(()=>{
+      const u = new SpeechSynthesisUtterance(text);
+      const voices = speechSynthesis.getVoices();
+      const heVoice = voices.find(v=>v.lang && v.lang.toLowerCase().startsWith('he'));
+      if(heVoice) u.voice = heVoice;
+      u.lang = 'he-IL';
+      u.rate = rate || 0.9;
+      speechSynthesis.speak(u);
+    }, 60);
+  }catch(e){ /* 音声合成非対応環境 */ }
+}
+
+function renderQuestion(){
+  answeredThis = false;
+  const q = order[current];
+  document.getElementById('qnum').textContent = current+1;
+  updateStitches();
+  document.getElementById('q-cat').textContent = q.cat + '　' + (q.direction==='h2j'?'ヘブル語→日本語':'日本語→ヘブル語');
+
+  const promptWrap = document.getElementById('q-prompt-wrap');
+  promptWrap.innerHTML='';
+  const hero = document.getElementById('q-hero');
+  hero.innerHTML='';
+
+  const isListening = (q.format==='listening');
+  const isH2J = (q.direction==='h2j');
+
+  if(isH2J){
+    if(isListening){
+      const col = document.createElement('div');
+      col.style.cssText='display:flex;flex-direction:column;align-items:center;';
+      const row = document.createElement('div');
+      row.style.cssText='display:flex;gap:14px;align-items:center;justify-content:center;';
+      const btn = document.createElement('button');
+      btn.className='audio-btn'; btn.textContent='🔊';
+      btn.onclick=()=>speakHebrew(q.heb, 0.9);
+      const slowBtn = document.createElement('button');
+      slowBtn.className='audio-btn audio-btn-slow'; slowBtn.textContent='🐢';
+      slowBtn.title='ゆっくり再生';
+      slowBtn.onclick=()=>speakHebrew(q.heb, 0.45);
+      row.appendChild(btn); row.appendChild(slowBtn);
+      const hint = document.createElement('div');
+      hint.className='audio-hint'; hint.textContent='タップして発音を聞く（🐢=ゆっくり）';
+      col.appendChild(row); col.appendChild(hint);
+      hero.appendChild(col);
+      setTimeout(()=>speakHebrew(q.heb, 0.9), 300);
+      const sub = document.createElement('div');
+      sub.className='prompt-sub'; sub.textContent='聞こえた語の意味はどれ？';
+      promptWrap.appendChild(sub);
+    } else {
+      const hebEl = document.createElement('div');
+      hebEl.className='prompt-heb'; hebEl.textContent = q.heb;
+      const readEl = document.createElement('div');
+      readEl.className='prompt-read'; readEl.textContent = q.read;
+      const sub = document.createElement('div');
+      sub.className='prompt-sub'; sub.textContent='この語の意味はどれ？';
+      promptWrap.appendChild(hebEl); promptWrap.appendChild(readEl); promptWrap.appendChild(sub);
+    }
+  } else {
+    const jaEl = document.createElement('div');
+    jaEl.className='prompt-ja'; jaEl.textContent = q.mean;
+    const sub = document.createElement('div');
+    sub.className='prompt-sub'; sub.textContent = isListening ? '意味に合うヘブル語の発音はどれ？（選択肢は文字表示）' : 'この意味に合うヘブル語はどれ？';
+    promptWrap.appendChild(jaEl); promptWrap.appendChild(sub);
+  }
+
+  const chosenWrongs = pickN(activePool, 3, q.poolIdx);
+  currentOptions = shuffle([
+    {heb:q.heb, read:q.read, mean:q.mean, correct:true},
+    ...chosenWrongs.map(w=>({heb:w.heb, read:w.read, mean:w.mean, correct:false}))
+  ]);
+
+  const optWrap = document.getElementById('q-options');
+  optWrap.innerHTML='';
+  currentOptions.forEach(opt=>{
+    const b = document.createElement('button');
+    b.className='opt';
+    if(isH2J){
+      const jp = document.createElement('span');
+      jp.className='opt-jp'; jp.textContent = opt.mean;
+      b.appendChild(jp);
+    } else {
+      const heb = document.createElement('span');
+      heb.className='opt-heb'; heb.textContent = opt.heb;
+      const read = document.createElement('span');
+      read.className='opt-read'; read.textContent = opt.read;
+      b.appendChild(heb); b.appendChild(read);
+    }
+    b.onclick = ()=>selectOption(b, opt, q);
+    optWrap.appendChild(b);
+  });
+
+  document.getElementById('q-feedback').innerHTML='';
+  document.getElementById('next-btn').classList.remove('show');
+}
+
+function selectOption(btn, opt, q){
+  if(answeredThis) return;
+  answeredThis = true;
+  const allBtns = document.querySelectorAll('#q-options .opt');
+  allBtns.forEach(b=>b.disabled=true);
+
+  const isH2J = (q.direction==='h2j');
+  const fb = document.getElementById('q-feedback');
+
+  if(opt.correct){
+    btn.classList.add('correct');
+    score++;
+    fb.innerHTML = '<b>正解。</b>';
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b=>{
+      const isCorrectBtn = isH2J
+        ? (b.querySelector('.opt-jp') && b.querySelector('.opt-jp').textContent===q.mean)
+        : (b.querySelector('.opt-heb') && b.querySelector('.opt-heb').textContent===q.heb);
+      if(isCorrectBtn) b.classList.add('reveal');
+    });
+    fb.innerHTML = isH2J
+      ? ('不正解。正解: <b>'+q.mean+'</b>')
+      : ('不正解。正解: <b class="fb-heb">'+q.heb+'</b>　'+q.read);
+  }
+  if(!isH2J || q.format!=='listening'){
+    fb.innerHTML += '<div style="margin-top:8px;" class="fb-heb">'+q.heb+'　<span style="color:var(--parchment-dim);font-size:11px;">'+q.read+'</span></div>';
+  }
+  if(q.ref){
+    fb.innerHTML += '<div style="margin-top:4px;font-size:11px;color:var(--parchment-dim);">'+q.ref+'</div>';
+  }
+
+  results.push({
+    cat:q.cat, direction:q.direction, heb:q.heb, read:q.read, mean:q.mean,
+    chosenMean:opt.mean, chosenHeb:opt.heb, correct:opt.correct, ref:q.ref
+  });
+  document.getElementById('next-btn').classList.add('show');
+}
+
+function nextQuestion(){
+  current++;
+  if(current>=order.length) showResult();
+  else renderQuestion();
+}
+
+function showResult(){
+  document.getElementById('screen-quiz').classList.add('hidden');
+  document.getElementById('screen-result').classList.remove('hidden');
+
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-total').textContent = order.length;
+  const pct = Math.round((score/order.length)*100);
+  document.getElementById('score-pct').textContent = '正答率 ' + pct + '%';
+
+  const byCat = {};
+  results.forEach(r=>{
+    if(!byCat[r.cat]) byCat[r.cat]={correct:0,total:0};
+    byCat[r.cat].total++;
+    if(r.correct) byCat[r.cat].correct++;
+  });
+  const bd = document.getElementById('breakdown');
+  bd.innerHTML='';
+  Object.keys(byCat).forEach(cat=>{
+    const row = document.createElement('div');
+    row.className='bd-row';
+    row.innerHTML = '<span>'+cat+'</span><b>'+byCat[cat].correct+' / '+byCat[cat].total+'</b>';
+    bd.appendChild(row);
+  });
+
+  const rl = document.getElementById('review-list');
+  rl.innerHTML='';
+  const h = document.createElement('div');
+  h.style.cssText='font-size:12px;color:var(--parchment-dim);margin-bottom:10px;';
+  h.textContent = '解答一覧（全'+results.length+'問）';
+  rl.appendChild(h);
+
+  results.forEach(r=>{
+    const item = document.createElement('div');
+    item.className='review-item' + (r.correct?' is-correct':' is-wrong');
+    if(r.correct){
+      item.innerHTML = '<span class="rmark">✅</span><span class="rprompt">'+r.heb+'</span>　<span class="ra">'+r.mean+'</span>';
+    } else {
+      item.innerHTML = '<span class="rmark">❌</span><span class="rprompt">'+r.heb+'</span>　'+
+        '<span class="rw">'+(r.direction==='h2j'?r.chosenMean:r.chosenHeb)+'</span>'+
+        '<span class="ra">→ '+r.mean+'</span>';
+    }
+    if(r.ref){
+      const refEl = document.createElement('span');
+      refEl.className='rref'; refEl.textContent = r.ref;
+      item.appendChild(refEl);
+    }
+    rl.appendChild(item);
+  });
+}
+
+showStart();
+</script>
+</body>
+</html>

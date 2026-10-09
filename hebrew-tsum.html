@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ヘブル文字ツム</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Hebrew:wght@700&display=swap">
+<style>
+:root{--bg:#1b2240;--panel:#252e55;--fg:#eef0fa;--mut:#9aa3cc}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:"Hiragino Sans","Noto Sans JP",sans-serif;touch-action:none;user-select:none}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:var(--panel);touch-action:none}
+#hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 8px) 14px 8px;font-size:18px;font-weight:700;pointer-events:none;background:linear-gradient(var(--bg),rgba(27,34,64,0))}
+.s{pointer-events:auto;padding:6px 10px;font-size:14px}#hud{flex-wrap:wrap}
+#info{position:fixed;left:0;right:0;bottom:0;padding:8px 14px calc(env(safe-area-inset-bottom,0px) + 8px);color:var(--mut);font-size:14px;text-align:center;pointer-events:none}
+#ov{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(27,34,64,.88);text-align:center;padding:20px}
+#ov h1{margin:0;font-size:28px}#ov p{margin:0;color:var(--mut);font-size:15px;line-height:1.6}
+button{font:inherit;font-weight:700;padding:12px 32px;border:0;border-radius:999px;background:#f2b84b;color:#1b2240;cursor:pointer}
+button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+</style></head><body>
+<canvas id="cv"></canvas>
+<div id="hud"><span>得点 <b id="sc">0</b></span><span>最高 <b id="hi">0</b></span><span>残り <b id="tm">60</b></span><span><button id="sk" class="s">かき回す</button> <button id="mu" class="s">音ON</button> <button id="fs" class="s">全画面</button></span></div>
+<div id="info"></div>
+<div id="ov"><h1>ヘブル文字ツム</h1><span style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center"><button id="g0">ふつう</button><button id="g1">似た文字</button><button id="g2">似た文字（色つき）</button></span></div>
+<script>
+const L_N=[["א","アレフ","牛","אָלֶף"],["ב","ベート","家","בֵּית"],["ג","ギメル","ラクダ","גִּימֶל"],["ד","ダレット","扉","דָּלֶת"],["ה","ヘー","窓／見よ","הֵא"],["ו","ヴァヴ","釘"],["ז","ザイン","武器"]];
+let L=L_N;
+const DB={"ח":["ח","ヘット","囲い／垣","חֵית"],"ה":["ה","ヘー","窓／見よ","הֵא"],"ז":["ז","ザイン","武器","זַיִן"],"ד":["ד","ダレット","扉","דָּלֶת"],"ו":["ו","ヴァヴ","釘","וָו"],"ב":["ב","ベート","家","בֵּית"],"כ":["כ","カフ","手のひら","כַּף"],"ר":["ר","レーシュ","頭","רֵישׁ"],"ת":["ת","タヴ","しるし","תָּו"],"ן":["ן","ヌン","魚","נוּן"],"נ":["נ","ヌン","魚","נוּן"],"ג":["ג","ギメル","ラクダ","גִּימֶל"],"י":["י","ヨッド","手","יוֹד"],"ם":["ם","メム","水","מֵם"],"ס":["ס","サメフ","支え","סָמֶךְ"],"מ":["מ","メム","水","מֵם"],"ך":["ך","カフ","手のひら","כַּף"],"ק":["ק","コフ","後頭部／針の穴（諸説）","קוֹף"]};
+const SETS=["חהזדו","בכדרה","החתדר","וזןינ","גנםסמ","ךדרקכ"];let lastSet=-1;
+function pickSet(){let i;do{i=Math.random()*SETS.length|0}while(i===lastSet&&SETS.length>1);lastSet=i;return[...SETS[i]].map(c=>DB[c])}
+const C_N=["#f2b84b","#ef7b6c","#7fd1a0","#6fb7f2","#c59cf2","#f29cc8","#e8e07a"],C_S=Array(7).fill("#f2b84b");
+let C=C_N,mode=0,hiKey="hebtsum";
+const KINDS=5,LINK=3.2;
+let W=360,H=560,R=27,N=46,dpr=1;
+const cv=document.getElementById("cv"),x=cv.getContext("2d");
+const $=id=>document.getElementById(id);
+let P=[],chain=[],score=0,left=60,run=false,last=0,hi=0,burst=[];
+try{hi=+localStorage.getItem("hebtsum")||0}catch(e){}
+$("hi").textContent=hi;
+function fit(){W=innerWidth;H=innerHeight;dpr=Math.min(devicePixelRatio||1,2);cv.width=W*dpr;cv.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0)}
+function size(){R=Math.max(22,Math.min(34,Math.min(W,H)/11));N=Math.min(160,Math.round(W*H*.6/(Math.PI*R*R)))}
+fit();size();
+addEventListener("resize",()=>{fit();if(!run)size()});
+function mk(i){const px=R+Math.random()*(W-2*R),py=-R-i*(R*1.3);return{x:px,y:py,px:px,py:py,k:Math.random()*KINDS|0}}
+function setMode(m){mode=m;L=m?pickSet():L_N;C=m===1?C_S:C_N;hiKey=["hebtsum","hebtsum2","hebtsum3"][m];try{hi=+localStorage.getItem(hiKey)||0}catch(e){hi=0}$("hi").textContent=hi;$("info").textContent=m?L.map(l=>l[0]).join(" "):""}
+function bind(){$("g0").onclick=()=>start(0);$("g1").onclick=()=>start(1);$("g2").onclick=()=>start(2)}
+function start(m){setMode(m);ac();if(window.speechSynthesis){try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}catch(e){}}[0,2,4,7].forEach((n,i)=>tone(nf(n),.18,"triangle",.14,0,i*.09));parts=[];floats=[];size();P=[];for(let i=0;i<N;i++)P.push(mk(i));score=0;left=60;run=true;chain=[];$("sc").textContent=0;$("ov").style.display="none";last=performance.now()}
+function end(){run=false;chain=[];[7,4,2,0].forEach((n,i)=>tone(nf(n),.3,"triangle",.14,0,i*.14));if(score>hi){hi=score;try{localStorage.setItem(hiKey,hi)}catch(e){}$("hi").textContent=hi}
+$("ov").innerHTML="<h1>終了</h1><p>得点 "+score+"<br>最高 "+hi+"</p><span style='display:flex;gap:12px;flex-wrap:wrap;justify-content:center'><button id='g0'>ふつう</button><button id='g1'>似た文字</button><button id='g2'>似た文字（色つき）</button></span>";$("ov").style.display="flex";bind()}
+bind();
+const de=document.documentElement,reqFS=de.requestFullscreen||de.webkitRequestFullscreen;
+if(!reqFS)$("fs").style.display="none";
+$("fs").onclick=()=>{try{if(document.fullscreenElement||document.webkitFullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}else reqFS.call(de)}catch(e){}};
+let MS=null,flash=0,AC=null,muted=false,shake=0,parts=[],floats=[],lastSec=99;
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();MS=AC.createGain();MS.gain.value=.4;const cp=AC.createDynamicsCompressor();MS.connect(cp);cp.connect(AC.destination)}catch(e){}}if(AC&&AC.state==="suspended")AC.resume();return AC}
+function tone(f,d,ty,v,sl,dl){if(muted||!AC)return;const t=AC.currentTime+(dl||0),o=AC.createOscillator(),g=AC.createGain();o.type=ty||"sine";o.frequency.setValueAtTime(f,t);if(sl)o.frequency.exponentialRampToValueAtTime(Math.max(30,sl),t+d);g.gain.setValueAtTime(v||.15,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(MS);o.start(t);o.stop(t+d+.02)}
+const PENT=[0,2,4,7,9,12,14,16,19,21,24,26,28,31,33];
+const nf=i=>262*Math.pow(2,PENT[Math.min(i,PENT.length-1)]/12);
+let UT=null;const YOMI={"ヌン":"ヌーン"};
+if(window.speechSynthesis){speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}
+function say(i,n){if(muted||!window.speechSynthesis)return;try{const ss=speechSynthesis,t=n>=15?3:n>=10?2:n>=6?1:0,w=YOMI[L[i][1]]||L[i][1],u=new SpeechSynthesisUtterance([w,w+"！",w+"！"+w+"！",w+"！"+w+"！"+w+"！！"][t]);
+const v=ss.getVoices().find(v=>v.lang.toLowerCase().replace("_","-").startsWith("ja"));if(v)u.voice=v;
+u.lang="ja-JP";u.pitch=[1,1.1,1.2,1.3][t];u.rate=[1,1.05,1.15,1.2][t];u.volume=1;
+u.onerror=e=>{if(e.error!=="canceled"&&e.error!=="interrupted")$("info").textContent="音声エラー: "+e.error};
+UT=u;ss.resume();const go=()=>ss.speak(u);if(ss.speaking||ss.pending){ss.cancel();setTimeout(go,60)}else go()}catch(e){$("info").textContent="音声エラー"}}
+$("mu").onclick=()=>{muted=!muted;$("mu").textContent=muted?"音OFF":"音ON";if(muted&&window.speechSynthesis)speechSynthesis.cancel()};
+function spawnFx(list,k,n){let cx=0,cy=0;for(const c of list){cx+=c.x;cy+=c.y;for(let i=0;i<(n>=15?16:n>=10?11:7);i++){const a=Math.random()*6.283,v=2+Math.random()*4;parts.push({x:c.x,y:c.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,l:30,c:C[k],r:2+Math.random()*3})}}
+cx/=n;cy/=n;floats.push({x:cx,y:cy,l:50,t:"+"+(n*10+(n-3)*8),c:"#fff",z:26});
+if(n>=15)floats.push({x:cx,y:cy-70,l:70,t:"נפלא!",c:"#f29cc8",z:40});if(n>=10)floats.push({x:cx,y:cy-34,l:60,t:"מצוין!",c:"#f2b84b",z:34});else if(n>=6)floats.push({x:cx,y:cy-30,l:55,t:"טוב!",c:"#7fd1a0",z:30});
+shake=n>=8?Math.min(14,n*.9):0;flash=n>=15?.7:n>=10?.4:0}
+let fr=0;
+let stirT=0,stirD=1,ceilT=0;
+$("sk").onclick=()=>{if(!run)return;chain=[];stirT=35;ceilT=80;stirD=Math.random()<.5?-1:1;shake=Math.max(shake,3);tone(150,.5,"sawtooth",.05,700);tone(500,.5,"triangle",.06,120)};
+function adj(a,b){return a.k===b.k&&Math.hypot(a.x-b.x,a.y-b.y)<R*LINK}
+function hasChain(){const seen=new Set();for(const s of P){if(seen.has(s))continue;let st=[s],n=0;seen.add(s);
+while(st.length){const a=st.pop();n++;for(const b of P)if(!seen.has(b)&&adj(a,b)){seen.add(b);st.push(b)}}
+if(n>=3)return true}return false}
+function settled(){return P.every(p=>p.y>0&&Math.hypot(p.x-p.px,p.y-p.py)<.4)}
+function shuffle(){for(let t=0;t<40;t++){for(const p of P)p.k=Math.random()*KINDS|0;if(hasChain())break}
+if(!hasChain()){const a=P[0],o=P.slice().sort((u,v)=>Math.hypot(u.x-a.x,u.y-a.y)-Math.hypot(v.x-a.x,v.y-a.y));for(let i=0;i<3&&i<o.length;i++)o[i].k=a.k}
+tone(900,.5,"sawtooth",.07,150);tone(200,.5,"triangle",.1,900);$("info").textContent="シャッフル"}
+function phys(){
+const g=R*.02;
+if(stirT>0){const k=stirT/35,cx=W/2,cy=H*.62,rr=Math.min(W,H)*.3;stirT--;
+for(const p of P){const dx=p.x-cx,dy=p.y-cy,d=Math.hypot(dx,dy)||1,a=stirD*1.8*k*(R/27)*Math.min(1,d/rr);p.x+=-dy/d*a;p.y+=dx/d*a}}
+if(ceilT>0){ceilT--;for(const p of P)if(p.y<R){p.y=R;if(p.py>p.y)p.py=p.y}}
+for(const p of P){const vx=(p.x-p.px)*.985,vy=(p.y-p.py)*.985;p.px=p.x;p.py=p.y;p.x+=vx;p.y+=vy+g}
+for(let it=0;it<4;it++){
+for(let i=0;i<P.length;i++){const a=P[i];
+if(a.x<R)a.x=R;if(a.x>W-R)a.x=W-R;
+if(a.y>H-R){a.y=H-R;a.px=a.x-(a.x-a.px)*.6}
+for(let j=i+1;j<P.length;j++){const b=P[j],dx=b.x-a.x,dy=b.y-a.y,m=2*R;
+if(Math.abs(dx)>m||Math.abs(dy)>m)continue;
+const d=Math.hypot(dx,dy);
+if(d<m&&d>.001){const o=(m-d)/2,nx=dx/d,ny=dy/d;a.x-=nx*o;a.y-=ny*o;b.x+=nx*o;b.y+=ny*o}}}}}
+function draw(){
+x.clearRect(0,0,W,H);x.save();if(shake>.3){x.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.88}
+x.font='700 '+Math.round(R*1.2)+'px "Noto Serif Hebrew","Frank Ruhl Libre",serif';x.textAlign="center";x.textBaseline="middle";
+for(const p of P){const on=chain.includes(p);
+x.beginPath();x.arc(p.x,p.y,on?R+3:R-1,0,7);x.fillStyle=C[p.k];if(on){x.shadowColor=C[p.k];x.shadowBlur=18}x.fill();x.shadowBlur=0;
+x.lineWidth=on?4:2;x.strokeStyle=on?"#fff":"rgba(27,34,64,.55)";x.stroke();
+x.fillStyle="#1b2240";x.fillText(L[p.k][0],p.x,p.y+2)}
+if(chain.length>1){x.beginPath();x.moveTo(chain[0].x,chain[0].y);for(const c of chain)x.lineTo(c.x,c.y);x.lineWidth=7;x.strokeStyle="rgba(255,255,255,.75)";x.lineJoin="round";x.stroke()}
+for(const b of burst){x.globalAlpha=b.t/20;x.beginPath();x.arc(b.x,b.y,(20-b.t)*2+R,0,7);x.strokeStyle=C[b.k];x.lineWidth=3;x.stroke();b.t--}
+x.globalAlpha=1;burst=burst.filter(b=>b.t>0);
+for(const q of parts){q.x+=q.vx;q.y+=q.vy;q.vy+=.25;q.l--;x.globalAlpha=Math.max(0,q.l/30);x.fillStyle=q.c;x.beginPath();x.arc(q.x,q.y,q.r,0,7);x.fill()}
+parts=parts.filter(q=>q.l>0);
+x.textAlign="center";for(const f of floats){f.y-=1.1;f.l--;x.globalAlpha=Math.min(1,f.l/25);x.font='700 '+f.z+'px "Noto Serif Hebrew","Hiragino Sans",sans-serif';x.lineWidth=4;x.strokeStyle="rgba(27,34,64,.8)";x.strokeText(f.t,f.x,f.y);x.fillStyle=f.c;x.fillText(f.t,f.x,f.y)}
+floats=floats.filter(f=>f.l>0);x.globalAlpha=1;if(flash>.02){x.fillStyle="rgba(255,255,255,"+flash+")";x.fillRect(0,0,W,H);flash*=.88}x.restore()}
+function loop(t){
+if(run){left-=(t-last)/1000;last=t;if(left<=0){left=0;end()}const sc=Math.ceil(left);$("tm").textContent=sc;if(sc<=5&&sc>0&&sc!==lastSec){lastSec=sc;tone(880,.12,"square",.08)}if(sc>5)lastSec=99}
+if(run&&++fr%30===0&&!chain.length&&P.length>2&&settled()&&!hasChain())shuffle();
+phys();draw();requestAnimationFrame(loop)}
+requestAnimationFrame(t=>{last=t;loop(t)});
+function pos(e){const r=cv.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
+function hit(mx,my){let best=null,bd=R*1.1;for(const p of P){const d=Math.hypot(p.x-mx,p.y-my);if(d<bd){bd=d;best=p}}return best}
+cv.addEventListener("pointerdown",e=>{if(!run)return;ac();cv.setPointerCapture(e.pointerId);const[mx,my]=pos(e),p=hit(mx,my);chain=p?[p]:[]});
+cv.addEventListener("pointermove",e=>{if(!run||!chain.length)return;const[mx,my]=pos(e),p=hit(mx,my);if(!p)return;
+const lst=chain[chain.length-1];if(p===lst)return;
+if(chain.length>1&&p===chain[chain.length-2]){chain.pop();tone(nf(chain.length-1),.08,"sine",.08);return}
+if(p.k===lst.k&&!chain.includes(p)&&Math.hypot(p.x-lst.x,p.y-lst.y)<R*LINK){chain.push(p);tone(nf(chain.length-1),.12,"sine",.16)}});
+function up(){if(!chain.length)return;const n=chain.length;
+if(n>=3){const k=chain[0].k;const cl=chain.slice();for(const c of chain)burst.push({x:c.x,y:c.y,k,t:20});spawnFx(cl,k,n);for(let i=0;i<Math.min(n,10);i++)tone(nf(i)*2,.15,"triangle",.1,0,i*.03);tone(120,.2,"sine",.25,50);say(k,n);if(n>=10)[0,4,7].forEach(j=>tone(nf(j+5),.5,"triangle",.1,0,.1));if(n>=15)tone(300,.7,"sawtooth",.06,1800);
+P=P.filter(p=>!chain.includes(p));score+=n*10+(n-3)*8;$("sc").textContent=score;
+$("info").textContent=L[k][0]+" "+L[k][1]+" ×"+n;
+for(let i=0;i<n;i++)P.push(mk(i))}
+chain=[]}
+cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",()=>{chain=[]});
+</script></body></html>

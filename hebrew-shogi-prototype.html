@@ -1,0 +1,1463 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ヘブル文字将棋 — 基本4文字 試作</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --wall:#1b1712;
+    --parchment:#ddc9a0;
+    --parchment-dark:#c7ad7c;
+    --paper:#f1e7d2;
+    --ink:#2b2118;
+    --ink-soft:#6b5b45;
+    --lapis:#1f4e79;
+    --lapis-strong:#163a5c;
+    --lapis-soft:rgba(31,78,121,0.14);
+    --oxide:#7a2e1d;
+    --oxide-soft:rgba(122,46,29,0.14);
+    --gold:#a8802e;
+    --gold-soft:rgba(168,128,46,0.18);
+    --flag-red:#b23324;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --hebrew: "Frank Ruhl Libre", Georgia, "Hiragino Mincho ProN", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;background:var(--wall);font-family:var(--sans);overflow-y:auto;overflow-x:hidden;}
+  body{
+    display:flex;flex-direction:column;min-height:100%;
+    background:radial-gradient(ellipse 1000px 600px at 50% -10%, #2c2519 0%, var(--wall) 55%);
+  }
+  .wrap{
+    flex:1;display:flex;flex-direction:column;
+    max-width:560px;width:100%;margin:0 auto;background:var(--paper);color:var(--ink);
+    padding:calc(10px + env(safe-area-inset-top)) 16px 0;
+    box-shadow:0 0 1px rgba(0,0,0,.3);
+  }
+  .topBar{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;
+    position:sticky;top:0;z-index:10;margin:0 -16px;padding:8px 16px 10px;
+    background:rgba(241,231,210,.86);backdrop-filter:blur(14px) saturate(1.5);-webkit-backdrop-filter:blur(14px) saturate(1.5);
+    border-bottom:1px solid rgba(43,33,24,.1);
+  }
+  .topBar h1{font-family:var(--hebrew);font-weight:700;font-size:17px;margin:0;letter-spacing:.01em;}
+  .iconBtns{display:flex;gap:6px;}
+  .iconBtns button{padding:6px 10px;font-size:11px;display:inline-flex;align-items:center;gap:5px;}
+  .iconBtns svg{width:13px;height:13px;flex:none;}
+  .undoMarks{display:inline-flex;gap:2px;margin-left:5px;vertical-align:1px;}
+  .undoMarks .dot{width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;}
+  .undoMarks .dot.used{opacity:.25;}
+  #undoBtn{display:inline-flex;align-items:center;}
+
+  .hudOver{
+    display:flex;align-items:center;justify-content:center;gap:10px;flex:none;
+    padding:4px 0 8px;font-size:13px;font-weight:700;color:#5a4415;text-align:center;
+  }
+
+  .btnRow{display:flex;gap:6px;flex-wrap:wrap;}
+  button{
+    font-family:var(--sans);font-size:12px;font-weight:600;color:var(--paper);
+    background:var(--ink);border:none;border-radius:20px;
+    padding:7px 13px;cursor:pointer;white-space:nowrap;
+    transition:transform .09s ease, filter .09s ease, background .15s;
+  }
+  button:hover{filter:brightness(1.12);}
+  button:active{transform:scale(.93);filter:brightness(.92);}
+  button:disabled{opacity:.32;cursor:default;background:var(--ink);transform:none;filter:none;}
+  button.secondary{background:transparent;color:var(--ink-soft);border:1px solid rgba(43,33,24,.28);}
+  button.secondary:hover{border-color:var(--ink);color:var(--ink);background:transparent;filter:none;}
+  button.secondary.active-flag{background:var(--lapis);color:var(--paper);border-color:var(--lapis);}
+
+  .stripLabel{font-size:10.5px;color:var(--ink-soft);margin:8px 0 5px;flex:none;}
+  .strip{display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:38px;flex:none;}
+  .strip.hscroll{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:2px;}
+  .strip.hscroll::-webkit-scrollbar{height:4px;}
+  .strip.hscroll::-webkit-scrollbar-thumb{background:rgba(43,33,24,.25);border-radius:2px;}
+
+  #placeSection{overflow:visible;}
+
+  .medal{
+    position:relative;width:44px;height:44px;border-radius:50%;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(155deg, var(--parchment) 0%, var(--parchment-dark) 100%);
+    border:2px solid rgba(43,33,24,.22);
+    box-shadow:inset 0 -3px 5px rgba(43,33,24,.28), 0 2px 5px rgba(0,0,0,.3);
+  }
+  .medal .g{font-family:var(--hebrew);font-size:19px;font-weight:700;color:var(--ink);}
+  .medal.mine .g{color:var(--lapis-strong);}
+  .medal.enemy .g{color:var(--oxide);}
+  .medal .lv{
+    position:absolute;bottom:-5px;right:-5px;min-width:16px;height:16px;padding:0 3px;
+    border-radius:9px;background:var(--gold);color:#2b2118;font-family:var(--mono);
+    font-size:9px;font-weight:700;line-height:16px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+  .medal.small{width:36px;height:36px;}
+  .medal.small .g{font-size:15px;}
+  .medal.placed{opacity:.4;}
+  .medal.placed::after{
+    content:'✓';position:absolute;top:-4px;left:-4px;width:15px;height:15px;border-radius:50%;
+    background:var(--ink);color:var(--paper);font-size:9px;line-height:15px;text-align:center;
+  }
+  .medal.dragging{opacity:.25;}
+  .dragGhost{
+    position:fixed;top:0;left:0;pointer-events:none;z-index:120;
+    display:flex;align-items:center;justify-content:center;border-radius:50%;
+    background:linear-gradient(155deg, var(--parchment) 0%, var(--parchment-dark) 100%);
+    border:2px solid var(--lapis);box-shadow:0 10px 24px rgba(0,0,0,.4);
+  }
+  .dragGhost .g{font-family:var(--hebrew);font-weight:700;color:var(--lapis-strong);}
+  .cell.dropTarget{background:var(--gold-soft);box-shadow:inset 0 0 0 2px var(--gold);}
+  .medal.selectable{cursor:pointer;transition:transform .09s ease, border-color .15s;}
+  .medal.selectable:hover{border-color:var(--lapis);}
+  .medal.selectable:active{transform:scale(.9);}
+  .medal.sel{border-color:var(--lapis);box-shadow:0 0 0 3px var(--lapis-soft), inset 0 -3px 5px rgba(43,33,24,.28);}
+  .medal .cnt{
+    position:absolute;bottom:-5px;right:-5px;min-width:16px;height:16px;padding:0 3px;
+    border-radius:9px;background:var(--ink);color:var(--paper);font-family:var(--mono);
+    font-size:9px;font-weight:700;line-height:16px;text-align:center;
+  }
+
+  #boardWrap{position:relative;display:flex;align-items:center;justify-content:center;padding:2px 0;}
+  #startRow{
+    position:absolute;top:6%;left:50%;transform:translate(-50%,-8px) scale(.7);
+    z-index:20;display:none;opacity:0;pointer-events:none;
+    transition:opacity .25s ease, transform .25s cubic-bezier(.34,1.56,.64,1);
+  }
+  #startRow.show{display:flex;opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto;}
+  #board{
+    position:relative;
+    display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);
+    width:100%;aspect-ratio:1;
+    background:var(--parchment-dark);border-radius:6px;
+    box-shadow:inset 0 0 0 2px rgba(43,33,24,.35), 0 14px 30px rgba(0,0,0,.4);
+    overflow:hidden;
+  }
+  .cell{
+    position:relative;
+    box-shadow:inset 1px 1px 0 rgba(255,255,255,.22), inset -1px -1px 0 rgba(43,33,24,.16);
+    display:flex;align-items:center;justify-content:center;
+    user-select:none;cursor:pointer;transition:filter .08s;
+  }
+  .cell:active{filter:brightness(1.18);}
+  .cell.zone{background:var(--lapis-soft);}
+  .cell.flagZoneSel{background:var(--gold-soft);}
+  .cell.legal::after{
+    content:'';position:absolute;width:20%;height:20%;border-radius:50%;
+    background:var(--lapis);opacity:.6;
+  }
+  .cell.legal.hasPiece::after{
+    width:86%;height:86%;border-radius:4px;background:transparent;
+    border:2px solid var(--gold);opacity:.85;
+  }
+  .cell.selected{background:var(--lapis-soft);box-shadow:inset 0 0 0 2px var(--lapis);}
+  .piece{font-family:var(--hebrew);font-weight:700;font-size:min(6vw,26px);color:var(--lapis-strong);transition:text-shadow .3s;}
+  .piece.enemy{color:var(--oxide);}
+  .cell.zonedMineCell::before,.cell.zonedEnemyCell::before{
+    content:'';position:absolute;width:80%;height:80%;border-radius:50%;z-index:0;
+  }
+  .cell.zonedMineCell::before{
+    background:radial-gradient(circle, var(--gold) 0%, var(--lapis-strong) 78%);
+    box-shadow:0 0 10px 2px rgba(168,128,46,.6);
+  }
+  .cell.zonedEnemyCell::before{
+    background:radial-gradient(circle, var(--gold) 0%, var(--oxide) 78%);
+    box-shadow:0 0 10px 2px rgba(168,128,46,.6);
+  }
+  .cell.zonedMineCell .piece,.cell.zonedEnemyCell .piece{
+    color:#fff8e6;position:relative;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,.55);
+  }
+  .piece.justArrived{animation:landPop .22s ease-out;}
+  @keyframes landPop{0%{transform:scale(.55);}70%{transform:scale(1.12);}100%{transform:scale(1);}}
+  .lvl{
+    position:absolute;top:2px;left:2px;font-family:var(--mono);font-size:8.5px;line-height:1;
+    background:var(--gold);border-radius:8px;padding:1px 4px;color:#2b2118;font-weight:700;z-index:2;
+  }
+  .flagMark{
+    position:absolute;bottom:0;right:0;width:38px;height:38px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;line-height:1;z-index:1;transition:transform .15s;
+  }
+  .flagMark.mine{color:var(--lapis);filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));}
+  .flagMark.enemy{color:var(--flag-red);filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));}
+  .flagMark.mine.interactive{pointer-events:auto;cursor:pointer;}
+  .flagMark.mine.interactive::after{
+    content:'';position:absolute;inset:4px;border-radius:50%;border:2.5px solid var(--lapis);
+    animation:flagAura 1.8s ease-out infinite;pointer-events:none;
+  }
+  @keyframes flagAura{0%{transform:scale(1);opacity:.85;}100%{transform:scale(2.4);opacity:0;}}
+  .flagMark.mine.selected{transform:scale(1.3);filter:drop-shadow(0 0 8px var(--gold));}
+  .flagMark.mine.selected::after{border-color:var(--gold);animation-duration:.9s;}
+  .flagMark.active-turn{animation:flagTurnGlow 1.1s ease-in-out infinite;}
+  .flagMark.mine.active-turn{filter:drop-shadow(0 0 3px var(--lapis)) drop-shadow(0 0 7px var(--lapis));}
+  .flagMark.enemy.active-turn{filter:drop-shadow(0 0 3px var(--flag-red)) drop-shadow(0 0 7px var(--flag-red));}
+  @keyframes flagTurnGlow{0%,100%{transform:scale(1);}50%{transform:scale(1.22);}}
+  .turnBadge{
+    position:absolute;top:-3px;left:-3px;font-family:var(--mono);font-size:8px;font-weight:700;
+    background:var(--ink);color:var(--paper);border-radius:7px;padding:1px 4px;white-space:nowrap;z-index:3;
+  }
+  .cell.flagCell::after{
+    content:'';position:absolute;inset:2px;border-radius:4px;pointer-events:none;
+    box-shadow:0 0 0 2px var(--lapis);animation:flagRing 1.6s ease-in-out infinite;
+  }
+  .cell.flagCell.enemySide::after{box-shadow:0 0 0 2px var(--flag-red);}
+  @keyframes flagRing{
+    0%,100%{opacity:.35;}50%{opacity:.9;}
+  }
+  .hint{font-size:11px;color:var(--ink-soft);text-align:center;margin-top:6px;line-height:1.6;flex:none;}
+
+  .handTray{flex:none;padding:2px 0;}
+  .handTray .strip{min-height:38px;}
+  .handTray.mine{
+    position:sticky;bottom:0;z-index:8;margin:0 -16px;padding:4px 16px calc(6px + env(safe-area-inset-bottom));
+    background:rgba(241,231,210,.88);backdrop-filter:blur(14px) saturate(1.5);-webkit-backdrop-filter:blur(14px) saturate(1.5);
+    border-top:1px solid rgba(43,33,24,.1);
+  }
+  .handTray.mine::before{
+    content:'';display:block;width:30px;height:3px;border-radius:2px;background:rgba(43,33,24,.22);
+    margin:2px auto 4px;
+  }
+  .tinyCount{
+    position:absolute;top:4px;right:14px;font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);
+    background:rgba(255,255,255,.5);padding:1px 6px;border-radius:8px;
+  }
+
+  footer{flex:none;padding:8px 0 4px;}
+  footer p{color:var(--ink-soft);font-size:10.5px;line-height:1.7;margin:0;}
+
+  /* ---- 演出レイヤー ---- */
+  .ghostPiece{
+    position:fixed;top:0;left:0;pointer-events:none;z-index:80;
+    font-family:var(--hebrew);font-weight:700;
+    transition:transform .27s cubic-bezier(.32,.62,.34,1), opacity .27s ease;
+    will-change:transform,opacity;
+  }
+  .ghostPiece.mine{color:var(--lapis-strong);}
+  .ghostPiece.enemy{color:var(--oxide);}
+  .impact{
+    position:fixed;top:0;left:0;pointer-events:none;z-index:70;border-radius:50%;
+    animation:impactPulse .38s ease-out forwards;
+  }
+  .impact.mine{background:radial-gradient(circle, var(--lapis) 0%, transparent 70%);}
+  .impact.enemy{background:radial-gradient(circle, var(--oxide) 0%, transparent 70%);}
+  .impact.summon{background:radial-gradient(circle, var(--gold) 0%, transparent 70%);animation:impactPulse .5s ease-out forwards;}
+  .impact.zonePower{background:radial-gradient(circle, #fff2cf 0%, var(--gold) 45%, transparent 75%);animation:impactPulse .6s ease-out forwards;}
+  @keyframes impactPulse{
+    0%{transform:translate(-50%,-50%) scale(.3); opacity:.9;}
+    100%{transform:translate(-50%,-50%) scale(1.8); opacity:0;}
+  }
+  .bannerOverlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:200;}
+  .bannerOverlay span{
+    font-family:var(--hebrew);font-weight:700;font-size:clamp(24px,7vw,42px);
+    padding:12px 30px;border-radius:8px;background:rgba(27,23,18,.85);color:var(--paper);
+    box-shadow:0 0 0 2px var(--gold), 0 20px 60px rgba(0,0,0,.5);
+    animation:bannerIn .35s cubic-bezier(.2,.8,.2,1);
+  }
+  .bannerOverlay.out span{animation:bannerOut .3s ease forwards;}
+  .bannerOverlay.win span{box-shadow:0 0 0 2px var(--gold), 0 0 44px 8px var(--gold-soft), 0 20px 60px rgba(0,0,0,.5);}
+  .bannerOverlay.lose span{box-shadow:0 0 0 2px var(--flag-red), 0 0 44px 8px rgba(178,51,36,.35), 0 20px 60px rgba(0,0,0,.5);}
+  .bannerOverlay.draw span{box-shadow:0 0 0 2px var(--ink-soft), 0 20px 60px rgba(0,0,0,.5);}
+  @keyframes bannerIn{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.06);opacity:1;}100%{transform:scale(1);opacity:1;}}
+  @keyframes bannerOut{0%{transform:scale(1);opacity:1;}100%{transform:scale(1.15);opacity:0;}}
+
+  #startBtn{
+    background:linear-gradient(135deg, var(--gold) 0%, #8a6a24 100%);
+    color:#2b2118;font-weight:800;font-size:14px;padding:12px 30px;border-radius:26px;
+    box-shadow:0 0 0 2px rgba(168,128,46,.4), 0 8px 20px rgba(168,128,46,.35);
+    animation:startGlow 2.2s ease-in-out infinite;
+  }
+  #startBtn:disabled{animation:none;background:var(--ink);color:var(--paper);box-shadow:none;opacity:.35;}
+  @keyframes startGlow{
+    0%,100%{box-shadow:0 0 0 2px rgba(168,128,46,.4), 0 8px 20px rgba(168,128,46,.35);}
+    50%{box-shadow:0 0 0 2px rgba(168,128,46,.75), 0 8px 30px rgba(168,128,46,.6);}
+  }
+
+  .modalOverlay{position:fixed;inset:0;background:rgba(20,16,10,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:150;display:none;align-items:center;justify-content:center;padding:20px;}
+  .modalBox{background:var(--paper);border-radius:12px;padding:16px 18px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 30px 60px rgba(0,0,0,.5);perspective:1000px;}
+  #modalBody{transform-style:preserve-3d;backface-visibility:hidden;will-change:transform,opacity;}
+  .flipOutFwd{transform-origin:left center;animation:flipOutFwdKF .24s cubic-bezier(.5,0,.85,.35) forwards;}
+  .flipInFwd{transform-origin:right center;animation:flipInFwdKF .26s cubic-bezier(.15,.7,.3,1);}
+  .flipOutBack{transform-origin:right center;animation:flipOutBackKF .24s cubic-bezier(.5,0,.85,.35) forwards;}
+  .flipInBack{transform-origin:left center;animation:flipInBackKF .26s cubic-bezier(.15,.7,.3,1);}
+  @keyframes flipOutFwdKF{0%{transform:rotateY(0) scale(1);opacity:1;}100%{transform:rotateY(-96deg) scale(.94);opacity:0;}}
+  @keyframes flipInFwdKF{0%{transform:rotateY(96deg) scale(.94);opacity:0;}100%{transform:rotateY(0) scale(1);opacity:1;}}
+  @keyframes flipOutBackKF{0%{transform:rotateY(0) scale(1);opacity:1;}100%{transform:rotateY(96deg) scale(.94);opacity:0;}}
+  @keyframes flipInBackKF{0%{transform:rotateY(-96deg) scale(.94);opacity:0;}100%{transform:rotateY(0) scale(1);opacity:1;}}
+  .modalBox h3{font-family:var(--hebrew);margin:0 0 10px;font-size:16px;}
+  .bestiaryEntry{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid rgba(43,33,24,.12);}
+  .bestiaryEntry:last-child{border-bottom:none;}
+  .bestiaryEntry .g{font-family:var(--hebrew);font-size:26px;color:var(--lapis-strong);flex:none;width:36px;text-align:center;}
+  .bestiaryEntry .desc{font-size:12px;color:var(--ink-soft);line-height:1.7;}
+  .bestiaryEntry .desc b{color:var(--ink);}
+  .navSmall{font-family:var(--mono);font-size:11px;padding:6px 10px;}
+
+  .moveDiagram{
+    display:grid;grid-template-columns:repeat(3,32px);grid-template-rows:repeat(3,32px);
+    gap:2px;justify-content:center;margin:8px auto 0;
+  }
+  .moveDiagram.big{grid-template-columns:repeat(5,24px);grid-template-rows:repeat(5,24px);}
+  .diagCell{background:var(--parchment);border-radius:4px;display:flex;align-items:center;justify-content:center;}
+  .diagCell.center{background:var(--ink);}
+  .diagCell.center .diagG{color:var(--paper);font-family:var(--hebrew);font-size:13px;}
+  .diagCell.move{background:var(--lapis-soft);}
+  .diagCell.added{background:var(--gold-soft);}
+  .diagDot{width:10px;height:10px;border-radius:50%;background:var(--lapis);}
+  .diagAddedDot{width:11px;height:11px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px rgba(168,128,46,.35);}
+  .diagJump{width:10px;height:10px;background:var(--gold);transform:rotate(45deg);}
+
+  .bestiaryTile{width:46px;height:46px;transition:opacity .15s;}
+  .bestiaryTile.unlocked{opacity:1;}
+  .bestiaryTile.unlocked .g{color:var(--lapis-strong);}
+  .bestiaryTile.ready{opacity:.88;}
+  .bestiaryTile.ready .g{color:#4a443c;}
+  .bestiaryTile.dim{opacity:.4;}
+  .bestiaryTile.dim .g{color:#4a443c;}
+  .bestiaryTile .g{font-size:20px;}
+
+  .mechTag{
+    display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
+    font-size:11.5px;font-weight:700;margin-top:10px;
+  }
+  .mechTag.enhance{background:var(--gold-soft);color:#7a5c1f;}
+  .mechTag .ic{font-size:13px;}
+
+  .bestiaryNav.transform{background:var(--flag-red);}
+  .bestiaryNav.transform:hover{filter:brightness(1.1);}
+  .bestiaryNav.sofit{background:var(--lapis);}
+  .bestiaryNav.sofit:hover{filter:brightness(1.1);}
+
+  .evoOverlay{
+    position:fixed;inset:0;background:rgba(20,16,10,.78);z-index:300;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    animation:evoFadeIn .2s ease;
+  }
+  @keyframes evoFadeIn{from{opacity:0;}to{opacity:1;}}
+  .evoCard{
+    background:var(--paper);border-radius:16px;padding:26px 22px;text-align:center;max-width:320px;width:100%;
+    box-shadow:0 30px 80px rgba(0,0,0,.6);animation:evoPop .4s cubic-bezier(.3,1.4,.4,1);
+  }
+  @keyframes evoPop{0%{transform:scale(.55);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .evoCongrats{font-family:var(--hebrew);font-weight:900;font-size:21px;color:var(--gold);margin-bottom:6px;letter-spacing:.02em;}
+  .evoText{font-weight:700;font-size:14px;margin-bottom:18px;color:var(--ink);}
+  .evoCompare{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px;}
+  .evoSide .g{font-family:var(--hebrew);font-size:48px;display:block;line-height:1;}
+  .evoSide.before .g{color:#2255cc;}
+  .evoSide.after .g{color:#cc2222;}
+  .evoArrow{font-size:20px;color:var(--ink-soft);}
+  .impact.evoFlash{
+    background:conic-gradient(from 0deg, #2255cc, #cc2222, #2255cc);
+    animation:impactPulse .6s ease-out forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .ghostPiece,.impact,.piece.justArrived,#startBtn,.bannerOverlay span{animation:none!important;transition:none!important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topBar">
+    <h1>ヘブル文字将棋</h1>
+    <div class="iconBtns">
+      <button id="undoBtn" type="button" class="secondary" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h10a5 5 0 0 1 0 10h-2"/><path d="M7 6l-4 4 4 4"/></svg>
+        <span class="undoMarks" id="undoMarks"></span>
+      </button>
+      <button id="bestiaryBtn" type="button" class="secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/><path d="M9 9h7M9 13h7"/></svg>図鑑</button>
+      <button id="winCondBtn" type="button" class="secondary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v4a4 4 0 0 1-8 0V4z"/><path d="M8 5H5a3 3 0 0 0 3 5"/><path d="M16 5h3a3 3 0 0 1-3 5"/><path d="M12 12v3"/><path d="M9 19h6"/><path d="M10 16h4l1 3H9l1-3z"/></svg>勝利条件</button>
+    </div>
+  </div>
+
+  <div class="hudOver" id="hudOver" style="display:none;">
+    <span id="hudOverMsg"></span>
+    <button id="nextBtn" type="button" style="display:none;">次の配置へ</button>
+  </div>
+
+  <div id="gameArea">
+  <div class="handTray" id="handEnemyTray">
+    <div class="strip" id="handEnemy"></div>
+  </div>
+
+  <div id="boardWrap">
+    <div id="board"></div>
+    <div id="startRow">
+      <button id="startBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-3px;margin-right:6px;"><path d="M5 19L19 5"/><path d="M15 3l3 3-3 3"/><path d="M19 19L5 5"/><path d="M9 3L6 6l3 3"/></svg>戦闘開始</button>
+    </div>
+  </div>
+
+  <div id="placeSection">
+    <div id="placeUI"></div>
+    <div style="display:flex;justify-content:center;margin:6px 0;">
+      <button id="resetBtn" type="button" class="secondary" style="font-size:10.5px;padding:5px 10px;">はじめから（全初期化）</button>
+    </div>
+  </div>
+  </div>
+
+  <div class="handTray mine">
+    <div class="tinyCount" id="mineTrayCount"></div>
+    <div class="strip hscroll" id="handMine"></div>
+  </div>
+</div>
+
+<div class="modalOverlay" id="modalOverlay">
+  <div class="modalBox">
+    <div style="display:flex;justify-content:flex-end;"><button id="modalClose" type="button" class="secondary">閉じる</button></div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const SIZE=9, ME='p', AI='a';
+const GLYPH={YOD:'י',HE:'ה',VAV:'ו',HET:'ח'};
+const NAME={YOD:'ユッド',HE:'ヘー',VAV:'ヴァヴ',HET:'ヘット'};
+const START_COUNTS={YOD:6,HE:4};
+function fwd(side){ return side===ME ? -1 : 1; }
+function opp(side){ return side===ME?AI:ME; }
+function inB(r,c){ return r>=0&&r<SIZE&&c>=0&&c<SIZE; }
+function ownZoneRows(side){ return side===ME? [6,7,8] : [0,1,2]; }
+function isOwnZone(side,r){ return ownZoneRows(side).includes(r); }
+
+const TURN_LIMIT = 60;
+function movesDeltas(p){
+  const f=fwd(p.side);
+  let base;
+  if(p.type==='YOD') base=[[f,0]];
+  else if(p.type==='HE') base=[[f,-1],[f,1]];
+  else if(p.type==='VAV') base=[[f,0],[-f,0]];
+  else if(p.type==='HET') base=[[f,-1],[f,1],[-f,0]];
+  else base=[];
+  if(p.zoned){
+    const covers=(dr,dc)=>base.some(([bdr,bdc])=>bdr===dr&&bdc===dc);
+    // 段階的に控えめな強化：後退→左右→斜め前→斜め後、の順で「まだ持っていない層」だけを1段階分だけ追加する
+    const tiers=[[[-f,0]],[[0,1],[0,-1]],[[f,1],[f,-1]],[[-f,1],[-f,-1]]];
+    for(const tier of tiers){
+      const missing = tier.filter(([dr,dc])=>!covers(dr,dc));
+      if(missing.length){ base = base.concat(missing); break; }
+    }
+  }
+  return base;
+}
+
+const KING_COL = 4;
+function newState(){
+  return {
+    board: Array.from({length:SIZE},()=>Array(SIZE).fill(null)),
+    hands: {[ME]:{}, [AI]:{}},
+    flags: {[ME]:{r:8,c:KING_COL}, [AI]:{r:0,c:KING_COL}},
+    flagMoved: false,
+    turn: ME,
+    phase: 'place',
+    turnCount: 0,
+    overMsg: null,
+    lastTo: null
+  };
+}
+function initRoster(){
+  const r=[];
+  for(let i=0;i<START_COUNTS.YOD;i++) r.push({id:idSeq++, type:'YOD', level:1});
+  for(let i=0;i<START_COUNTS.HE;i++) r.push({id:idSeq++, type:'HE', level:1});
+  return r;
+}
+let idSeq=1;
+let roster = initRoster();
+let battleRosterIds = new Set(); // 今バトルに出陣した個体id（配置しなかった個体を保護するため）
+const MAX_UNDO = 3;
+let undoStack = [];
+let undoUses = 0;
+let st = newState();
+let selRosterId = null;
+let selected = null;
+let flagSelected = false;
+let suppressNextCellClick = false;
+
+function totalPieces(side){
+  let n=0;
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){ const p=st.board[r][c]; if(p&&p.side===side) n++; }
+  for(const t in st.hands[side]) n += st.hands[side][t]||0;
+  return n;
+}
+
+function legalMovesFor(side){
+  const moves=[];
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    const p = st.board[r][c];
+    if(!p || p.side!==side) continue;
+    for(const [dr,dc] of movesDeltas(p)){
+      const nr=r+dr, nc=c+dc;
+      if(!inB(nr,nc)) continue;
+      const dest = st.board[nr][nc];
+      if(!dest){
+        moves.push({kind:'move', fromR:r, fromC:c, toR:nr, toC:nc, capture:false});
+      } else if(dest.side!==side){
+        moves.push({kind:'move', fromR:r, fromC:c, toR:nr, toC:nc, capture:true});
+      } else {
+        const jr=r+dr*2, jc=c+dc*2;
+        if(inB(jr,jc) && !st.board[jr][jc]){
+          moves.push({kind:'move', fromR:r, fromC:c, toR:jr, toC:jc, capture:false, jump:true});
+        }
+      }
+    }
+  }
+  for(const type in st.hands[side]){
+    if((st.hands[side][type]||0) <= 0) continue;
+    for(const r of ownZoneRows(side)) for(let c=0;c<SIZE;c++){
+      if(!st.board[r][c]) moves.push({kind:'drop', type, toR:r, toC:c});
+    }
+  }
+  return moves;
+}
+
+function applyMove(move, side){
+  st.turnCount++;
+  if(move.kind==='move'){
+    const p = st.board[move.fromR][move.fromC];
+    const dest = st.board[move.toR][move.toC];
+    if(dest){
+      st.hands[side][dest.type] = (st.hands[side][dest.type]||0)+1;
+    }
+    st.board[move.fromR][move.fromC]=null;
+    if(dest){
+      p.level = (p.level||1)+1;
+      if(p.level>=10){
+        let newType=null;
+        if(p.type==='YOD') newType='VAV';
+        else if(p.type==='HE') newType='HET';
+        if(newType){ lastEvolution = {from:p.type, to:newType, r:move.toR, c:move.toC}; p.type=newType; p.level=1; }
+      }
+    }
+    if(isOwnZone(opp(side), move.toR)) p.zoned=true;
+    st.board[move.toR][move.toC]=p;
+  } else {
+    st.hands[side][move.type]--;
+    const p = {type:move.type, side, level:1, id:idSeq++};
+    if(isOwnZone(opp(side), move.toR)) p.zoned=true;
+    st.board[move.toR][move.toC] = p;
+  }
+  st.lastTo = {r:move.toR, c:move.toC};
+}
+
+function syncRosterAfterBattle(winner){
+  const survivorIds = new Set();
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    const p = st.board[r][c];
+    if(p && p.side===ME){
+      survivorIds.add(p.id);
+      const ind = roster.find(x=>x.id===p.id);
+      if(ind){ ind.type=p.type; ind.level=p.level; }
+    }
+  }
+  // 今回のバトルに出陣した個体のみ「生死」を判定する。出陣しなかった個体は無条件で残す。
+  roster = roster.filter(ind => !battleRosterIds.has(ind.id) || survivorIds.has(ind.id));
+  if(winner==='ME'){
+    for(const type in st.hands[ME]){
+      const cnt = st.hands[ME][type]||0;
+      for(let i=0;i<cnt;i++) roster.push({id:idSeq++, type, level:1});
+    }
+  }
+  st.hands[ME] = {};
+}
+
+function checkEnd(){
+  const mover = opp(st.turn);
+  let ended=false, winner=null;
+  const enemyFlag = st.flags[opp(mover)];
+  if(enemyFlag){
+    const occ = st.board[enemyFlag.r][enemyFlag.c];
+    if(occ && occ.side===mover){
+      // 旗を取った駒は、そのランクの通常レベル上昇量の2倍を得る（基本ランク=+1の2倍=+2）
+      const BASIC_LEVEL_GAIN = 1;
+      occ.level = (occ.level||1) + BASIC_LEVEL_GAIN*2;
+      if(occ.level>=10){
+        if(occ.type==='YOD') occ.type='VAV';
+        else if(occ.type==='HE') occ.type='HET';
+      }
+      winner = mover===ME?'ME':'AI';
+      st.overMsg=(mover===ME?'あなた':'AI')+'の勝ち（敵の旗を占領・旗取得駒はLv+2）';
+      ended=true;
+    }
+  }
+  if(!ended && totalPieces(st.turn)===0){
+    winner = mover===ME?'ME':'AI';
+    st.overMsg=(mover===ME?'あなた':'AI')+'の勝ち（相手を全滅させた）'; ended=true;
+  } else if(!ended && st.turnCount>=TURN_LIMIT){
+    const meN=totalPieces(ME), aiN=totalPieces(AI);
+    if(meN===aiN){ winner='draw'; st.overMsg='引き分け（手数上限・残存数同数 各'+meN+'）'; }
+    else { winner = meN>aiN?'ME':'AI'; st.overMsg=(meN>aiN?'あなた':'AI')+'の勝ち（手数上限・残存数 自分'+meN+' / AI'+aiN+'）'; }
+    ended=true;
+  } else if(!ended && legalMovesFor(st.turn).length===0){
+    winner = mover===ME?'ME':'AI';
+    st.overMsg=(mover===ME?'あなた':'AI')+'の勝ち（相手が身動きできない）'; ended=true;
+  }
+  if(ended){
+    st.phase='over';
+    syncRosterAfterBattle(winner);
+    const cls = winner==='draw' ? 'draw' : (winner==='ME' ? 'win':'lose');
+    const text = winner==='draw' ? '引き分け' : (winner==='ME' ? 'あなたの勝利':'AIの勝利');
+    playBanner(text, cls);
+  }
+}
+
+function runAITurn(){
+  const moves = legalMovesFor(AI);
+  if(moves.length===0){ checkEnd(); render(); return; }
+  const captures = moves.filter(m=>m.kind==='move' && m.capture);
+  const mv = (captures.length? captures : moves)[Math.floor(Math.random()*(captures.length?captures.length:moves.length))];
+  const info = buildEffectInfo(mv, AI);
+  applyMove(mv, AI);
+  st.turn = ME;
+  checkEnd();
+  render();
+  playMoveEffects(info);
+  if(lastEvolution){ const evo=lastEvolution; lastEvolution=null; setTimeout(()=>triggerEvolutionReveal(evo.from,evo.to,evo.r,evo.c), 300); }
+}
+
+// ---- placement phase ----
+function placedIds(){
+  const s=new Set();
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){ const p=st.board[r][c]; if(p&&p.side===ME) s.add(p.id); }
+  return s;
+}
+function placeCell(r,c){
+  if(st.phase!=='place') return;
+  if(flagSelected){
+    if(!isOwnZone(ME,r)) return;
+    st.flags[ME] = {r,c};
+    st.flagMoved = true;
+    flagSelected=false;
+    render();
+    return;
+  }
+  const existing = st.board[r][c];
+  if(existing){
+    if(existing.side===ME){ st.board[r][c]=null; render(); }
+    return;
+  }
+  if(!isOwnZone(ME,r)) return;
+  if(!selRosterId) return;
+  const ind = roster.find(x=>x.id===selRosterId);
+  if(!ind || placedIds().has(ind.id)) return;
+  st.board[r][c] = {id:ind.id, type:ind.type, level:ind.level, side:ME};
+  st.lastTo = {r,c};
+  selRosterId = null;
+  render();
+  playSummonEffect(r,c,ind.type,ME);
+}
+function canStart(){ return placedIds().size>=5; }
+function aiAutoPlace(){
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    const p = st.board[r][c];
+    if(p && p.side===ME){
+      const mr = SIZE-1-r;
+      st.board[mr][c] = {type:p.type, side:AI, level:1, id:idSeq++};
+    }
+  }
+  if(st.flags[ME]) st.flags[AI] = {r: SIZE-1-st.flags[ME].r, c: st.flags[ME].c};
+}
+
+// ---- UI refs ----
+const boardEl=document.getElementById('board');
+const handMineEl=document.getElementById('handMine');
+const handEnemyEl=document.getElementById('handEnemy');
+const startBtn=document.getElementById('startBtn');
+const placeSection=document.getElementById('placeSection');
+
+function movesForSelection(){
+  if(!selected) return [];
+  const all = legalMovesFor(ME);
+  if(selected.kind==='board') return all.filter(m=>m.kind==='move'&&m.fromR===selected.r&&m.fromC===selected.c);
+  return all.filter(m=>m.kind==='drop'&&m.type===selected.type);
+}
+function destSet(){
+  const s=new Map();
+  for(const m of movesForSelection()) s.set(m.toR+'_'+m.toC,true);
+  return s;
+}
+
+function renderHand(container,side){
+  container.innerHTML='';
+  const hand = st.hands[side];
+  const mineTurn = side===ME && st.phase==='battle' && st.turn===ME;
+  let any=false;
+  for(const type in hand){
+    const count = hand[type]||0;
+    if(count<=0) continue;
+    any=true;
+    const div=document.createElement('div');
+    div.className='medal small '+(side===ME?'mine':'enemy')+(mineTurn?' selectable':'');
+    div.dataset.type=type;
+    if(mineTurn && selected && selected.kind==='drop' && selected.type===type) div.classList.add('sel');
+    div.innerHTML = `<span class="g">${GLYPH[type]}</span><span class="cnt">×${count}</span>`;
+    if(mineTurn) div.addEventListener('click',()=>{ selected=(selected&&selected.kind==='drop'&&selected.type===type)?null:{kind:'drop',type}; render(); });
+    container.appendChild(div);
+  }
+  if(!any) container.innerHTML = '<span class="hint" style="margin:0;">（なし）</span>';
+}
+
+function attachFlagInteraction(el){
+  el.style.touchAction='none';
+  el.addEventListener('pointerdown', (e)=>{
+    if(st.phase!=='place') return;
+    e.stopPropagation();
+    const startX=e.clientX, startY=e.clientY;
+    let dragging=false, ghost=null, lastCell=null;
+    function onMove(ev){
+      const dx=ev.clientX-startX, dy=ev.clientY-startY;
+      if(!dragging && Math.hypot(dx,dy)>6){
+        dragging=true;
+        ghost=document.createElement('div');
+        ghost.className='dragGhost';
+        ghost.style.width='40px'; ghost.style.height='40px';
+        ghost.style.borderColor='var(--lapis)';
+        ghost.innerHTML=`<span style="font-size:20px;color:var(--lapis);">⚑</span>`;
+        document.body.appendChild(ghost);
+      }
+      if(dragging){
+        ghost.style.left=ev.clientX+'px'; ghost.style.top=ev.clientY+'px';
+        ghost.style.transform='translate(-50%,-50%)';
+        const target=document.elementFromPoint(ev.clientX, ev.clientY);
+        const cellDiv = target && target.closest ? target.closest('.cell') : null;
+        if(lastCell && lastCell!==cellDiv) lastCell.classList.remove('dropTarget');
+        if(cellDiv){
+          const r=+cellDiv.dataset.r;
+          if(isOwnZone(ME,r)) cellDiv.classList.add('dropTarget');
+        }
+        lastCell=cellDiv;
+      }
+    }
+    function onUp(ev){
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      suppressNextCellClick = true;
+      if(dragging){
+        if(ghost) ghost.remove();
+        if(lastCell) lastCell.classList.remove('dropTarget');
+        const target=document.elementFromPoint(ev.clientX, ev.clientY);
+        const cellDiv = target && target.closest ? target.closest('.cell') : null;
+        if(cellDiv){
+          const r=+cellDiv.dataset.r, c=+cellDiv.dataset.c;
+          if(isOwnZone(ME,r)){ st.flags[ME]={r,c}; st.flagMoved=true; }
+        }
+        render();
+        return;
+      }
+      // ドラッグせずタップのみ：選択モードの切り替え（次に自陣内をタップすると移動）
+      flagSelected = !flagSelected;
+      render();
+    }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  });
+}
+
+function attachRosterInteraction(el, ind, isPlaced){
+  el.style.touchAction='pan-x'; // 横スクロールはブラウザのネイティブ処理に譲り、縦方向の動きだけドラッグとして拾う
+  el.addEventListener('pointerdown', (e)=>{
+    if(st.phase!=='place') return;
+    const startX=e.clientX, startY=e.clientY;
+    let dragging=false, ghost=null, lastCell=null;
+    function cleanup(){
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onCancel);
+      el.classList.remove('dragging');
+      if(ghost){ ghost.remove(); ghost=null; }
+      if(lastCell){ lastCell.classList.remove('dropTarget'); lastCell=null; }
+    }
+    function onCancel(){
+      // 横スクロールなど、ブラウザ側にジェスチャーが奪われた場合の後始末（配置は行わない）
+      cleanup();
+    }
+    function onMove(ev){
+      if(isPlaced) return;
+      const dx=ev.clientX-startX, dy=ev.clientY-startY;
+      if(!dragging && Math.abs(dy)>8 && Math.abs(dy)>Math.abs(dx)){
+        dragging=true;
+        e.preventDefault();
+        el.classList.add('dragging');
+        ghost=document.createElement('div');
+        ghost.className='dragGhost';
+        const rect=el.getBoundingClientRect();
+        ghost.style.width=rect.width+'px'; ghost.style.height=rect.height+'px';
+        ghost.innerHTML=`<span class="g" style="font-size:${rect.width*0.42}px;">${GLYPH[ind.type]}</span>`;
+        document.body.appendChild(ghost);
+      }
+      if(dragging){
+        ghost.style.left=ev.clientX+'px'; ghost.style.top=ev.clientY+'px';
+        ghost.style.transform='translate(-50%,-50%)';
+        const target=document.elementFromPoint(ev.clientX, ev.clientY);
+        const cellDiv = target && target.closest ? target.closest('.cell') : null;
+        if(lastCell && lastCell!==cellDiv) lastCell.classList.remove('dropTarget');
+        if(cellDiv){
+          const r=+cellDiv.dataset.r, c=+cellDiv.dataset.c;
+          if(isOwnZone(ME,r) && !st.board[r][c]) cellDiv.classList.add('dropTarget');
+        }
+        lastCell=cellDiv;
+      }
+    }
+    function onUp(ev){
+      if(dragging){
+        const target=document.elementFromPoint(ev.clientX, ev.clientY);
+        const cellDiv = target && target.closest ? target.closest('.cell') : null;
+        let placed=false;
+        if(cellDiv){
+          const r=+cellDiv.dataset.r, c=+cellDiv.dataset.c;
+          if(isOwnZone(ME,r) && !st.board[r][c]){
+            selRosterId = ind.id;
+            placeCell(r,c);
+            placed=true;
+          }
+        }
+        cleanup();
+        if(placed) return;
+        render();
+        return;
+      }
+      cleanup();
+      if(isPlaced){
+        for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+          const p=st.board[r][c];
+          if(p && p.id===ind.id) st.board[r][c]=null;
+        }
+        render();
+      } else {
+        selRosterId=(selRosterId===ind.id?null:ind.id);
+        render();
+      }
+    }
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onCancel);
+  });
+}
+
+function renderRoster(container){
+  container.innerHTML='';
+  if(roster.length===0){ container.innerHTML='<span class="hint" style="margin:0;">個体なし</span>'; return; }
+  const placed = placedIds();
+  for(const ind of roster){
+    const isPlaced = placed.has(ind.id);
+    const div=document.createElement('div');
+    div.className='medal mine selectable'+(isPlaced?' placed':'')+(selRosterId===ind.id?' sel':'');
+    div.innerHTML = `<span class="g">${GLYPH[ind.type]}</span><span class="lv">${ind.level}</span>`;
+    div.title = NAME[ind.type]+' Lv'+ind.level+(isPlaced?'（配置済み・タップで戻す）':'（タップまたはドラッグで配置）');
+    attachRosterInteraction(div, ind, isPlaced);
+    container.appendChild(div);
+  }
+}
+
+function render(){
+  const inPlace = st.phase==='place';
+  placeSection.style.display = inPlace ? '' : 'none';
+  document.getElementById('placeUI').style.display = inPlace ? '' : 'none';
+  const canStartNow = inPlace && canStart();
+  const startRowEl = document.getElementById('startRow');
+  const wasShown = startRowEl.classList.contains('show');
+  if(canStartNow) startRowEl.classList.add('show'); else startRowEl.classList.remove('show');
+  if(canStartNow && !wasShown){
+    setTimeout(()=>{
+      const r = startRowEl.getBoundingClientRect();
+      spawnImpact(r, 'summon', 1.4);
+    }, 30);
+  }
+  document.getElementById('handEnemyTray').style.display = inPlace ? 'none' : '';
+
+  boardEl.innerHTML='';
+  const dest = st.phase==='battle' ? destSet() : new Map();
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    const cell=document.createElement('div');
+    cell.className='cell';
+    cell.dataset.r=r; cell.dataset.c=c;
+    if(inPlace && isOwnZone(ME,r)) cell.classList.add('zone');
+    if(inPlace && flagSelected && isOwnZone(ME,r)) cell.classList.add('flagZoneSel');
+    if(inPlace && st.flags[ME].r===r && st.flags[ME].c===c) cell.classList.add('flagCell');
+    const p = st.board[r][c];
+    if(p && p.zoned) cell.classList.add(p.side===ME ? 'zonedMineCell' : 'zonedEnemyCell');
+    if(p){
+      cell.classList.add('hasPiece');
+      const span=document.createElement('span');
+      span.className='piece'+(p.side===AI?' enemy':'');
+      if(st.lastTo && st.lastTo.r===r && st.lastTo.c===c) span.classList.add('justArrived');
+      span.textContent=GLYPH[p.type];
+      cell.appendChild(span);
+      const lvl=document.createElement('span'); lvl.className='lvl'; lvl.textContent=p.level||1;
+      cell.appendChild(lvl);
+    }
+    if(st.flags[ME] && st.flags[ME].r===r && st.flags[ME].c===c){
+      const isTurn = st.phase==='battle' && st.turn===ME;
+      const f=document.createElement('span'); f.className='flagMark mine'+(inPlace?' interactive':'')+(flagSelected?' selected':'')+(isTurn?' active-turn':''); f.textContent='⚑';
+      if(inPlace) attachFlagInteraction(f);
+      if(isTurn){ const b=document.createElement('span'); b.className='turnBadge'; b.textContent=`${st.turnCount}/${TURN_LIMIT}`; f.appendChild(b); }
+      cell.appendChild(f);
+    }
+    if(!inPlace && st.flags[AI] && st.flags[AI].r===r && st.flags[AI].c===c){
+      const isTurn = st.phase==='battle' && st.turn===AI;
+      const f=document.createElement('span'); f.className='flagMark enemy'+(isTurn?' active-turn':''); f.textContent='⚑';
+      if(isTurn){ const b=document.createElement('span'); b.className='turnBadge'; b.textContent=`${st.turnCount}/${TURN_LIMIT}`; f.appendChild(b); }
+      cell.appendChild(f);
+    }
+    if(selected && selected.kind==='board' && selected.r===r && selected.c===c) cell.classList.add('selected');
+    if(dest.has(r+'_'+c)) cell.classList.add('legal');
+    cell.addEventListener('click', ()=>{
+      if(suppressNextCellClick){ suppressNextCellClick=false; return; }
+      if(st.phase==='place'){ placeCell(r,c); return; }
+      onCellClick(r,c);
+    });
+    boardEl.appendChild(cell);
+  }
+
+  renderHand(handEnemyEl, AI);
+  document.getElementById('mineTrayCount').textContent = inPlace ? '' : `自分${totalPieces(ME)}・AI${totalPieces(AI)}`;
+  if(inPlace) renderRoster(handMineEl); else renderHand(handMineEl, ME);
+
+  const hudOverEl = document.getElementById('hudOver');
+  if(st.phase==='over'){
+    hudOverEl.style.display='flex';
+    document.getElementById('hudOverMsg').textContent = st.overMsg;
+  } else {
+    hudOverEl.style.display='none';
+  }
+
+  document.getElementById('nextBtn').style.display = st.phase==='over' ? '' : 'none';
+
+  const undoBtn = document.getElementById('undoBtn');
+  undoBtn.style.display = st.phase==='battle' ? 'inline-flex' : 'none';
+  if(st.phase==='battle'){
+    undoBtn.disabled = (st.turn!==ME) || undoUses>=MAX_UNDO || undoStack.length===0;
+    const marksEl = document.getElementById('undoMarks');
+    marksEl.innerHTML = Array.from({length:MAX_UNDO}, (_,i)=>`<span class="dot${i<undoUses?' used':''}"></span>`).join('');
+  }
+}
+
+// ---- 演出（見た目のみ） ----
+function cellEl(r,c){ return boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`); }
+function handTrayRect(side, type){
+  const container = side===ME ? handMineEl : handEnemyEl;
+  const specific = type!=null ? container.querySelector(`.medal[data-type="${type}"]`) : null;
+  const el = specific || container;
+  return el.getBoundingClientRect();
+}
+function spawnGhost(glyph, sideClass, fromRect, toRect, opts={}){
+  if(!fromRect || !toRect) return;
+  const g=document.createElement('div');
+  g.className='ghostPiece '+sideClass;
+  g.textContent=glyph;
+  const size = opts.size || Math.min(fromRect.width, fromRect.height)*0.6;
+  g.style.fontSize=size+'px';
+  const fx=fromRect.left+fromRect.width/2, fy=fromRect.top+fromRect.height/2;
+  g.style.left=fx+'px'; g.style.top=fy+'px';
+  g.style.transform='translate(-50%,-50%) scale('+(opts.fadeIn?0.4:1)+')';
+  g.style.opacity= opts.fadeIn ? '0' : '1';
+  document.body.appendChild(g);
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const dx=(toRect.left+toRect.width/2)-fx, dy=(toRect.top+toRect.height/2)-fy;
+      const scale = opts.endScale!=null? opts.endScale : 1;
+      g.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${scale})`;
+      if(opts.fadeOut) g.style.opacity='0';
+      if(opts.fadeIn) g.style.opacity='1';
+    });
+  });
+  setTimeout(()=>g.remove(), opts.duration||300);
+}
+function spawnImpact(rect, cls, scale=1){
+  if(!rect) return;
+  const d=document.createElement('div');
+  d.className='impact '+cls;
+  const size=Math.min(rect.width,rect.height)*scale;
+  d.style.width=size+'px'; d.style.height=size+'px';
+  d.style.left=(rect.left+rect.width/2)+'px'; d.style.top=(rect.top+rect.height/2)+'px';
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(), 650);
+}
+function playBanner(text, cls, duration=1300){
+  const b=document.createElement('div');
+  b.className='bannerOverlay '+cls;
+  b.innerHTML=`<span>${text}</span>`;
+  document.body.appendChild(b);
+  setTimeout(()=>b.classList.add('out'), duration-300);
+  setTimeout(()=>b.remove(), duration);
+}
+function buildEffectInfo(mv, side){
+  const info = {side, toR:mv.toR, toC:mv.toC};
+  if(mv.kind==='move'){
+    const mover = st.board[mv.fromR][mv.fromC];
+    info.kind='move'; info.glyph=GLYPH[mover.type]; info.fromR=mv.fromR; info.fromC=mv.fromC;
+    info.wasZoned = !!mover.zoned;
+  } else {
+    info.kind='drop'; info.glyph=GLYPH[mv.type]; info.glyphType=mv.type; info.wasZoned=false;
+  }
+  const capturedPiece = st.board[mv.toR][mv.toC];
+  if(capturedPiece){ info.capturedType=capturedPiece.type; }
+  return info;
+}
+function playMoveEffects(info){
+  const toRect = cellEl(info.toR, info.toC).getBoundingClientRect();
+  const fromRect = info.kind==='move'
+    ? (cellEl(info.fromR, info.fromC)?.getBoundingClientRect() || toRect)
+    : handTrayRect(info.side, info.glyphType);
+  const sideClass = info.side===ME?'mine':'enemy';
+  spawnGhost(info.glyph, sideClass, fromRect, toRect, {duration:260});
+  if(info.capturedType){
+    spawnImpact(toRect, sideClass);
+    const handRect = handTrayRect(info.side, info.capturedType);
+    spawnGhost(GLYPH[info.capturedType], sideClass, toRect, handRect, {duration:320, endScale:0.4, fadeOut:true});
+  }
+  const nowPiece = st.board[info.toR][info.toC];
+  if(nowPiece && nowPiece.zoned && !info.wasZoned){
+    setTimeout(()=>spawnImpact(toRect, 'zonePower', 1.3), 120);
+  }
+}
+function playSummonEffect(r,c,type,side){
+  const toEl = cellEl(r,c);
+  if(!toEl) return;
+  const toRect = toEl.getBoundingClientRect();
+  const fromRect = {left:toRect.left, top:toRect.top-48, width:toRect.width, height:toRect.height};
+  spawnGhost(GLYPH[type], side===ME?'mine':'enemy', fromRect, toRect, {duration:320, fadeIn:true});
+  spawnImpact(toRect, 'summon');
+}
+
+function doUndo(){
+  if(st.phase!=='battle' || st.turn!==ME) return;
+  if(undoUses>=MAX_UNDO || undoStack.length===0) return;
+  st = undoStack.pop();
+  undoUses++;
+  selected=null; selRosterId=null;
+  render();
+}
+document.getElementById('undoBtn').addEventListener('click', doUndo);
+
+function onCellClick(r,c){
+  if(st.phase!=='battle' || st.turn!==ME) return;
+  const p = st.board[r][c];
+  if(selected){
+    const cands = movesForSelection().filter(m=>m.toR===r&&m.toC===c);
+    if(cands.length){
+      undoStack.push(JSON.parse(JSON.stringify(st)));
+      const info = buildEffectInfo(cands[0], ME);
+      applyMove(cands[0], ME);
+      selected=null;
+      st.turn=AI;
+      checkEnd();
+      render();
+      playMoveEffects(info);
+      if(lastEvolution){ const evo=lastEvolution; lastEvolution=null; setTimeout(()=>triggerEvolutionReveal(evo.from,evo.to,evo.r,evo.c), 300); }
+      if(st.phase==='battle') setTimeout(runAITurn, 420);
+      return;
+    }
+  }
+  if(p && p.side===ME) selected={kind:'board',r,c};
+  else selected=null;
+  render();
+}
+
+function fadeTransition(mutateFn){
+  const el=document.getElementById('gameArea');
+  el.style.transition='opacity .16s ease, transform .16s ease';
+  el.style.opacity='0'; el.style.transform='scale(.98)';
+  setTimeout(()=>{
+    mutateFn();
+    render();
+    requestAnimationFrame(()=>{
+      el.style.opacity='1'; el.style.transform='scale(1)';
+    });
+  }, 150);
+}
+
+startBtn.addEventListener('click', ()=>{
+  if(!canStart()) return;
+  battleRosterIds = placedIds();
+  undoStack = []; undoUses = 0;
+  fadeTransition(()=>{
+    aiAutoPlace();
+    st.phase='battle';
+  });
+  setTimeout(()=>playBanner('戦闘開始','start', 1000), 160);
+});
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  fadeTransition(()=>{
+    roster = initRoster();
+    st = newState(); selected=null; selRosterId=null; flagSelected=false;
+  });
+});
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  fadeTransition(()=>{
+    st = newState(); selected=null; selRosterId=null; flagSelected=false;
+  });
+});
+
+// ---- 図鑑・勝利条件モーダル ----
+const IMPLEMENTED = new Set(['YOD','HE','VAV','HET']); // 実装済み＝解放済み扱い。他23文字は「？」表示
+
+// moveDesc: {type:'step'|'slide'|'jump', dr, dc}（dr>0が前方）
+const S=(dr,dc)=>({type:'step',dr,dc});
+const L=(dr,dc)=>({type:'slide',dr,dc});
+const J=(dr,dc)=>({type:'jump',dr,dc});
+
+const BESTIARY = {
+  YOD:{glyph:'י',name:'ユッド',num:10,pron:'Y',tier:'フェーズ1',kind:'original',
+    moves:[S(1,0)], special:'なし', evolvesTo:'VAV',
+    lore:'神の名を構成する最小の文字とされる。種にも見立てられ、すべての存在の根源の象徴（解釈・要確認）。'},
+  HE:{glyph:'ה',name:'ヘー',num:5,pron:'H',tier:'フェーズ1',kind:'original',
+    moves:[S(1,-1),S(1,1)], special:'なし', evolvesTo:'HET',
+    lore:'「窓」を表すとされ、息吹・啓示の象徴。神の名の一部としても用いられる（解釈・要確認）。'},
+  VAV:{glyph:'ו',name:'ヴァヴ',num:6,pron:'V',tier:'フェーズ1',kind:'evolved',parentId:'YOD',
+    moves:[S(1,0),S(-1,0)], special:'敵陣侵入でさらに強化される', originTrigger:'Lv.10で変身',
+    lore:'「鉤・釘」を意味し、物事をつなぐ接続の象徴。ヘブライ語の「そして」を表す接頭辞でもある（解釈・要確認）。'},
+  HET:{glyph:'ח',name:'ヘット',num:8,pron:'Ḥ',tier:'フェーズ1',kind:'evolved',parentId:'HE',
+    moves:[S(1,-1),S(1,1),S(-1,0)], special:'敵陣侵入でさらに強化される', originTrigger:'Lv.10で変身',
+    lore:'「柵・塀」を意味し、生命（ハイ）を守る境界の象徴（解釈・要確認）。'},
+
+  GIMEL:{glyph:'ג',name:'ギメル',num:3,pron:'G',tier:'フェーズ2',kind:'original',
+    moves:[L(1,0)], special:'なし', synth:['YOD','VAV'],
+    lore:'「らくだ」を意味し、富める者から貧しい者へ運ぶ、与える動きの象徴（解釈・要確認）。'},
+  NUN:{glyph:'נ',name:'ヌン',num:14,pron:'N',tier:'フェーズ2',kind:'original',
+    moves:[J(2,1),J(2,-1)], special:'捕獲されると自動的にサメフ化する（レベル不問）', synth:['VAV','HET'],
+    lore:'「魚」を意味し、水面下で絶えず続く信仰・忠実さの象徴（解釈・要確認）。'},
+  DALET:{glyph:'ד',name:'ダレッド',num:4,pron:'D',tier:'フェーズ2',kind:'original',
+    moves:[S(0,-1),S(0,1)], special:'捕獲されると自動的にサメフ化する（レベル不問）', synth:['YOD','HE'],
+    lore:'「扉」を意味し、貧しさ（ダル）と謙虚さ、そして次へ進む境界の象徴（解釈・要確認）。'},
+  LAMED:{glyph:'ל',name:'ラメッド',num:12,pron:'L',tier:'フェーズ2',kind:'original',
+    moves:[L(1,0),L(-1,0)], special:'なし', synth:['YOD','HET'],
+    lore:'22文字中もっとも背が高い文字とされ、「学ぶ」（ラマド）に通じ、上を目指す向上心の象徴（解釈・要確認）。'},
+  QOF:{glyph:'ק',name:'クフ',tier:'フェーズ2',num:19,pron:'Q',kind:'original',
+    moves:[S(-1,-1),S(-1,1),S(-1,0)], special:'なし', synth:['HE','HET'],
+    lore:'「針の穴」「後頭部」を意味するとされ、見えない領域・潜在意識の象徴（解釈・要確認）。'},
+  MEM:{glyph:'מ',name:'メム',num:13,pron:'M',tier:'フェーズ2',kind:'original',
+    moves:[S(1,0),S(-1,0),S(0,-1),S(0,1),S(1,-1),S(1,1)], special:'なし', sofitTo:'MEM_SOFIT', synth:['HE','VAV'],
+    lore:'「水」を意味し、絶えず形を変えて流れる知恵の象徴（解釈・要確認）。'},
+  TSADI:{glyph:'צ',name:'ツァディ',num:18,pron:'Ṣ',tier:'フェーズ2',kind:'original',
+    moves:[S(1,0),S(1,-1),S(1,1),S(-1,-1),S(-1,1)], special:'なし', sofitTo:'TSADI_SOFIT', synth:['VAV','HET'],
+    lore:'「釣り針」または「義人（ツァディク）」を意味し、身をかがめる謙虚さの象徴（解釈・要確認）。'},
+  KAF:{glyph:'כ',name:'カフ',num:11,pron:'K',tier:'フェーズ2',kind:'original',
+    moves:[S(1,0),S(-1,0),S(0,-1),S(0,1),S(1,-1),S(1,1),S(-1,-1),S(-1,1)], special:'なし', sofitTo:'KAF_SOFIT', synth:['YOD','HE'],
+    lore:'「手のひら」を意味し、物事をつかみ取る力・可能性の象徴（解釈・要確認）。'},
+  AYIN:{glyph:'ע',name:'アイン',num:16,pron:'ʿ',tier:'フェーズ2',kind:'original',
+    moves:[], special:'自分からは移動しない。縦横斜め2マス先にいる敵を跳躍して直接捕獲できる。', synth:['YOD','VAV'],
+    lore:'「目」を意味し、物事の表面を超えて見通す洞察の象徴（解釈・要確認）。'},
+  SAMEKH:{glyph:'ס',name:'サメフ',num:15,pron:'S',tier:'フェーズ2',kind:'evolved',parentId:'DALET',
+    moves:[S(1,0)], special:'なし', originTrigger:'捕獲されると変身（レベル不問）',
+    lore:'「支え」を意味し、円環のように始まりも終わりもない永続性の象徴（解釈・要確認）。'},
+  NUN_SOFIT:{glyph:'ן',name:'ヌン（ソフィート）',num:14,pron:'N',tier:'フェーズ2',kind:'sofit',parentId:'NUN',
+    moves:[J(2,1),J(2,-1),J(3,1),J(3,-1)], special:'跳躍後、さらに1マス前進できる', originTrigger:'Lv.10でソフィート化',
+    lore:'語末に置かれ下に伸びる形は、表舞台を退いた後も続く忠実さの象徴（解釈・要確認）。'},
+  MEM_SOFIT:{glyph:'ם',name:'メム（ソフィート）',num:13,pron:'M',tier:'フェーズ2',kind:'sofit',parentId:'MEM',
+    moves:[L(1,0),S(-1,0),S(0,-1),S(0,1),S(1,-1),S(1,1)], special:'なし', originTrigger:'Lv.10でソフィート化',
+    lore:'閉じた形は、隠された知恵・語られざる真理の象徴（解釈・要確認）。'},
+  TSADI_SOFIT:{glyph:'ץ',name:'ツァディ（ソフィート）',num:18,pron:'Ṣ',tier:'フェーズ2',kind:'sofit',parentId:'TSADI',
+    moves:[L(1,-1),L(1,1),S(1,0),S(-1,-1),S(-1,1)], special:'なし', originTrigger:'Lv.10でソフィート化',
+    lore:'まっすぐ伸びる語末形は、貫かれた義の象徴（解釈・要確認）。'},
+  KAF_SOFIT:{glyph:'ך',name:'カフ（ソフィート）',num:11,pron:'K',tier:'フェーズ2',kind:'sofit',parentId:'KAF',
+    moves:[S(1,0),S(-1,0),S(0,-1),S(0,1),S(1,-1),S(1,1),S(-1,-1),S(-1,1)],
+    special:'移動先に味方がいてもその場所と入れ替わることができる', originTrigger:'Lv.10でソフィート化',
+    lore:'伸びる形は、閉じた手のひらが開いていく可能性の象徴（解釈・要確認）。'},
+
+  ALEF:{glyph:'א',name:'アレフ',num:1,pron:'ʔ',tier:'フェーズ3',kind:'original',
+    moves:[J(2,1),J(2,-1),J(-2,1),J(-2,-1),J(1,2),J(1,-2),J(-1,2),J(-1,-2)],
+    special:'なし', synth:['SAMEKH','VAV','SAMEKH'],
+    lore:'「牡牛」を意味し、力強さと静かな沈黙（無音の文字）を併せ持つ、根源的な一体性の象徴（解釈・要確認）。モチーフの語：סוס（馬）。'},
+  BET:{glyph:'ב',name:'ベート',num:2,pron:'B',tier:'フェーズ3',kind:'original',
+    moves:[L(1,0),L(-1,0),L(0,1),L(0,-1)], special:'なし', synth:['HET','TSADI_SOFIT'],
+    lore:'「家」を意味し、トーラー冒頭の文字。物事が宿る器・空間の象徴（解釈・要確認）。モチーフの語：חץ（矢）。'},
+  ZAYIN:{glyph:'ז',name:'ザイン',num:7,pron:'Z',tier:'フェーズ3',kind:'original',
+    moves:[L(1,1),L(1,-1),L(-1,1),L(-1,-1)], special:'なし', synth:['VAV','DALET','HET'],
+    lore:'「剣・武器」を意味し、鋭い判断力・戦う意志の象徴（解釈・要確認）。'},
+  PE:{glyph:'פ',name:'ペー',num:17,pron:'P',tier:'フェーズ3',kind:'original',
+    moves:[S(1,0),S(-1,0),S(0,1),S(0,-1)], special:'隣接する味方1体を任意の空きマスへ呼び寄せられる（1ターン1回）',
+    sofitTo:'PE_SOFIT', synth:['QOF','VAV','LAMED'],
+    lore:'「口」を意味し、内なる思いを外へ表す言葉の力の象徴（解釈・要確認）。モチーフの語：קול（声）。'},
+  SHIN:{glyph:'ש',name:'シン',num:21,pron:'Sh',tier:'フェーズ3',kind:'original',
+    moves:[S(1,0),S(-1,0),S(0,1),S(0,-1),S(1,-1),S(1,1)], special:'1ターンに2回まで行動できる', synth:['PE','ZAYIN'],
+    lore:'「歯・炎」を意味し、神名シャダイの頭文字。3つの穂先は三人の族長を象徴するとされる（解釈・要確認）。モチーフの語：פז（純金）。'},
+  PE_SOFIT:{glyph:'ף',name:'ペー（ソフィート）',num:17,pron:'P',tier:'フェーズ3',kind:'sofit',parentId:'PE',
+    moves:[S(1,0),S(-1,0),S(0,1),S(0,-1)], special:'隣接味方の呼び寄せ範囲が盤上全域に拡大する', originTrigger:'Lv.10でソフィート化',
+    lore:'響き渡る声のように、語末で伸びる形は影響力の広がりを象徴する（解釈・要確認）。'},
+
+  RESH:{glyph:'ר',name:'レーシュ',num:20,pron:'R',tier:'フェーズ4',kind:'original',
+    moves:[L(1,0),L(-1,0),L(0,1),L(0,-1),S(1,1),S(1,-1),S(-1,1),S(-1,-1)], special:'なし', synth:['AYIN','KAF','SHIN','VAV'],
+    lore:'「頭」を意味し、貧しさ（ラーシュ）と最高位を併せ持つ逆説的な文字とされる（解釈・要確認）。モチーフの語：עכשו（今）。'},
+  TET:{glyph:'ט',name:'テット',num:9,pron:'Ṭ',tier:'フェーズ4',kind:'original',
+    moves:[L(1,1),L(1,-1),L(-1,1),L(-1,-1),S(1,0),S(-1,0),S(0,1),S(0,-1)],
+    special:'捕獲した直後、さらに1マス移動できる', synth:['NUN','TSADI','MEM','HET'],
+    lore:'「蛇・かご」を意味し、内に秘められた善（トヴ）を隠し持つ文字とされる（解釈・要確認）。'},
+  TAV:{glyph:'ת',name:'タヴ（最強）',num:22,pron:'T',tier:'フェーズ4',kind:'original',
+    moves:[L(1,0),L(-1,0),L(0,1),L(0,-1),L(1,1),L(1,-1),L(-1,1),L(-1,-1)],
+    special:'「フェーズ1〜3」の段階の文字からは捕獲されない', synth:['ALEF','RESH','TSADI_SOFIT'],
+    lore:'最後の文字であり、真理（エメト）を締めくくる。完成と契約の証の象徴（解釈・要確認）。モチーフの語：ארץ（地）。'}
+};
+const TIERS = ['フェーズ1','フェーズ2','フェーズ3','フェーズ4'];
+
+function moveDiagramHTML(moveDesc, addedDesc){
+  const size=5, mid=2;
+  const flags={};
+  for(const m of (moveDesc||[])){
+    if(m.type==='slide'){
+      for(let dist=1; dist<=mid; dist++){
+        const rr=mid-(m.dr*dist), cc=mid+(m.dc*dist);
+        if(rr<0||rr>=size||cc<0||cc>=size) break;
+        flags[rr+'_'+cc]= dist===mid ? 'edge' : 'slide';
+      }
+    } else {
+      const rr=mid-m.dr, cc=mid+m.dc;
+      if(rr>=0&&rr<size&&cc>=0&&cc<size) flags[rr+'_'+cc]=m.type;
+    }
+  }
+  const addedFlags={};
+  for(const m of (addedDesc||[])){
+    const rr=mid-m.dr, cc=mid+m.dc;
+    if(rr>=0&&rr<size&&cc>=0&&cc<size) addedFlags[rr+'_'+cc]=true;
+  }
+  if((!moveDesc||moveDesc.length===0) && (!addedDesc||addedDesc.length===0)){
+    return '<div class="hint" style="margin-top:8px;">この文字は自分からは移動しない（特殊能力で作用する）</div>';
+  }
+  let html='<div class="moveDiagram big">';
+  for(let r=0;r<size;r++) for(let c=0;c<size;c++){
+    const isCenter=(r===mid&&c===mid);
+    const key=r+'_'+c;
+    const added=addedFlags[key];
+    const f=flags[key];
+    let inner='';
+    if(isCenter) inner='<span class="diagG">駒</span>';
+    else if(added) inner='<span class="diagAddedDot"></span>';
+    else if(f==='jump') inner='<span class="diagJump"></span>';
+    else if(f) inner='<span class="diagDot"></span>';
+    html+=`<div class="diagCell${isCenter?' center':''}${f?' move':''}${added?' added':''}">${inner}</div>`;
+  }
+  html+='</div><div class="hint" style="margin-top:6px;">↑が前方（進行方向）・線状は距離無制限、菱形は跳躍'+(addedDesc&&addedDesc.length?'、金色は強化で追加される範囲':'')+'</div>';
+  return html;
+}
+function enhancedAddedMoves(baseMoves){
+  const covers=(dr,dc)=> (baseMoves||[]).some(m=>m.dr===dr&&m.dc===dc);
+  const tiers=[[[-1,0]],[[0,1],[0,-1]],[[1,1],[1,-1]],[[-1,1],[-1,-1]]];
+  for(const tier of tiers){
+    const missing = tier.filter(([dr,dc])=>!covers(dr,dc));
+    if(missing.length) return missing.map(([dr,dc])=>({dr,dc}));
+  }
+  return [];
+}
+
+function isReady(id){
+  if(IMPLEMENTED.has(id)) return true;
+  const e = BESTIARY[id];
+  if(e.kind==='original') return !!(e.synth && e.synth.every(ing=>IMPLEMENTED.has(ing)));
+  if(e.kind==='evolved' || e.kind==='sofit') return IMPLEMENTED.has(e.parentId);
+  return false;
+}
+function tileHTML(id){
+  const e=BESTIARY[id], unlocked=IMPLEMENTED.has(id);
+  const cls = unlocked ? 'unlocked' : (isReady(id) ? 'ready' : 'dim');
+  return `<div class="medal mine selectable bestiaryTile ${cls}" data-open="${id}" title="${unlocked?e.name:'？'}">
+    <span class="g">${unlocked?e.glyph:'？'}</span>
+  </div>`;
+}
+function neighborId(id, dir){
+  const e = BESTIARY[id];
+  const pool = Object.keys(BESTIARY)
+    .filter(k=>(BESTIARY[k].kind==='sofit')===(e.kind==='sofit'))
+    .sort((a,b)=>BESTIARY[a].num-BESTIARY[b].num);
+  const idx = pool.indexOf(id);
+  const j = idx+dir;
+  return (j>=0 && j<pool.length) ? pool[j] : null;
+}
+function bestiaryDetailHTML(id, showEnhanced){
+  const e = BESTIARY[id];
+  const unlocked = IMPLEMENTED.has(id);
+  const prevId = neighborId(id,-1), nextId = neighborId(id,1);
+  let html = `<div class="btnRow" style="justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <button type="button" class="secondary navSmall" ${prevId?`data-open="${prevId}" data-dir="back"`:'disabled'}>← ${prevId?BESTIARY[prevId].num:''}</button>
+      <button type="button" class="secondary" id="backToListBtn">一覧へ</button>
+      <button type="button" class="secondary navSmall" ${nextId?`data-open="${nextId}" data-dir="fwd"`:'disabled'}>${nextId?BESTIARY[nextId].num:''} →</button>
+    </div>
+    <div style="text-align:center;margin-bottom:4px;">
+      <div style="font-family:var(--hebrew);font-size:44px;color:var(--lapis-strong);line-height:1;">${unlocked?e.glyph:'？'}</div>
+      <div style="font-weight:700;margin-top:3px;font-size:14px;">${unlocked?e.name:'？'}</div>
+      <div class="hint" style="margin:2px 0 0;">文字番号：${e.num}${e.kind!=='original'?'（'+(e.kind==='sofit'?'ソフィート形':'変身形')+'）':''}　発音：${unlocked?e.pron:'？'}　段階：${e.tier}</div>
+    </div>
+    ${moveDiagramHTML(e.moves, showEnhanced?enhancedAddedMoves(e.moves):null)}
+    ${showEnhanced?'<div class="mechTag enhance">✦ 敵陣侵入で一時的に強化（そのバトル限定）</div>':''}
+    <div class="btnRow" style="justify-content:center;margin-top:8px;">
+      <button type="button" class="secondary" id="enhanceToggleBtn" data-id="${id}" data-showing="${showEnhanced?'1':'0'}">${showEnhanced?'通常に戻す':'強化後を見る'}</button>
+    </div>
+    <div class="desc" style="margin-top:8px;"><b>特殊能力：</b>${e.special||'なし'}</div>
+    <div class="desc" style="margin-top:6px;font-style:italic;">${e.lore}</div>
+  `;
+  html += `<div class="btnRow" style="margin-top:10px;justify-content:center;flex-wrap:wrap;">`;
+  if(e.evolvesTo) html += `<button type="button" class="bestiaryNav transform" data-open="${e.evolvesTo}" data-dir="fwd">→ 変身後を見る</button>`;
+  if(e.sofitTo) html += `<button type="button" class="bestiaryNav sofit" data-open="${e.sofitTo}" data-dir="fwd">↳ ソフィート形を見る</button>`;
+  if(e.parentId) html += `<button type="button" class="bestiaryNav secondary" data-open="${e.parentId}" data-dir="back">元の文字へ</button>`;
+  if(e.kind==='original'){
+    const disabled = e.tier==='フェーズ1';
+    html += `<button type="button" class="bestiaryNav${disabled?' secondary':''}" ${disabled?'disabled':''} data-open-synth="${id}">合成方法</button>`;
+  } else if(e.kind==='evolved'){
+    html += `<button type="button" class="bestiaryNav transform" data-open-origin="${id}">→ 変身方法</button>`;
+  } else if(e.kind==='sofit'){
+    html += `<button type="button" class="bestiaryNav sofit" data-open-origin="${id}">↳ ソフィート方法</button>`;
+  }
+  html += `</div>`;
+  return html;
+}
+function originHTML(id){
+  const e = BESTIARY[id];
+  const p = BESTIARY[e.parentId];
+  const isSofit = e.kind==='sofit';
+  const accent = isSofit ? 'var(--lapis)' : 'var(--flag-red)';
+  return `<h3 style="color:${accent};">${isSofit?'↳ ソフィート方法':'→ 変身方法'}</h3>
+    <div class="hint" style="margin-bottom:10px;">${e.originTrigger||''}</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin:10px 0 18px;">
+      <span style="font-family:var(--hebrew);font-size:40px;color:var(--ink-soft);">${(p&&IMPLEMENTED.has(e.parentId))?p.glyph:'？'}</span>
+      <span style="font-size:18px;color:var(--ink-soft);">→</span>
+      <span style="font-family:var(--hebrew);font-size:40px;color:${accent};">${IMPLEMENTED.has(id)?e.glyph:'？'}</span>
+    </div>
+    <div class="btnRow" style="justify-content:center;">
+      <button type="button" class="secondary" data-open="${id}" data-dir="back">戻る</button>
+    </div>`;
+}
+function synthHTML(id){
+  const e = BESTIARY[id];
+  const list = e.synth || [];
+  return `<h3>合成方法</h3>
+    <div class="desc" style="margin-bottom:10px;">${IMPLEMENTED.has(id)?e.name:'？'}（${IMPLEMENTED.has(id)?e.glyph:'？'}）の合成に必要な文字</div>
+    <div style="display:flex;justify-content:center;gap:6px;margin:16px 0;direction:rtl;flex-wrap:wrap;">
+      ${list.map(ingId=>{
+        const ing=BESTIARY[ingId], ok=IMPLEMENTED.has(ingId);
+        return `<div style="width:40px;height:40px;border-radius:6px;background:var(--parchment);display:flex;align-items:center;justify-content:center;font-family:var(--hebrew);font-size:20px;color:var(--lapis-strong);" title="${ok?ing.name:'？'}">${ok?ing.glyph:'？'}</div>`;
+      }).join('')}
+    </div>
+    <div class="btnRow" style="margin-top:14px;justify-content:center;">
+      <button type="button" class="secondary" data-open="${id}" data-dir="back">戻る</button>
+    </div>`;
+}
+let bestiaryListMode = 'category'; // 'alpha'（文字番号順） | 'category'（フェーズ別・デフォルト）
+function alphaListHTML(){
+  const baseIds = Object.keys(BESTIARY).filter(id=>BESTIARY[id].kind!=='sofit').sort((a,b)=>BESTIARY[a].num-BESTIARY[b].num);
+  const sofitIds = Object.keys(BESTIARY).filter(id=>BESTIARY[id].kind==='sofit').sort((a,b)=>BESTIARY[a].num-BESTIARY[b].num);
+  let html = `<div class="strip" style="gap:8px;">${baseIds.map(tileHTML).join('')}</div>`;
+  html += `<div class="stripLabel" style="margin:12px 0 6px;">ソフィート形</div><div class="strip" style="gap:8px;">${sofitIds.map(tileHTML).join('')}</div>`;
+  return html;
+}
+function categoryListHTML(){
+  let html='';
+  for(const tier of TIERS){
+    html += `<div class="stripLabel" style="margin:12px 0 6px;">${tier}</div><div class="strip" style="gap:8px;">`;
+    for(const id of Object.keys(BESTIARY).filter(id=>BESTIARY[id].tier===tier)) html += tileHTML(id);
+    html += `</div>`;
+  }
+  return html;
+}
+function bestiaryListHTML(){
+  const modeLabel = bestiaryListMode==='alpha' ? '分類で見る（フェーズ別）' : '文字順で見る';
+  const body = bestiaryListMode==='alpha' ? alphaListHTML() : categoryListHTML();
+  return `<h3>図鑑（全27文字）</h3>
+    <div class="btnRow" style="justify-content:center;margin-bottom:10px;">
+      <button type="button" class="secondary" id="toggleListModeBtn">${modeLabel}</button>
+    </div>
+    ${body}`;
+}
+function openModal(html){ document.getElementById('modalBody').innerHTML=html; document.getElementById('modalOverlay').style.display='flex'; wireModal(); }
+function closeModal(){ document.getElementById('modalOverlay').style.display='none'; }
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalOverlay').addEventListener('click', (e)=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+// ---- 図鑑の画面遷移演出（すべて「ページめくり」で統一） ----
+function pageFlip(newHtml, dir='fwd', duration=240){
+  const body = document.getElementById('modalBody');
+  body.classList.remove('flipOutFwd','flipOutBack','flipInFwd','flipInBack');
+  void body.offsetWidth;
+  body.classList.add(dir==='fwd' ? 'flipOutFwd' : 'flipOutBack');
+  setTimeout(()=>{
+    body.innerHTML = newHtml;
+    body.classList.remove('flipOutFwd','flipOutBack');
+    body.classList.add(dir==='fwd' ? 'flipInFwd' : 'flipInBack');
+    wireModal();
+    setTimeout(()=>{ body.classList.remove('flipInFwd','flipInBack'); }, duration+20);
+  }, duration);
+}
+function goToDetail(id, dir){ pageFlip(bestiaryDetailHTML(id,false), dir||'fwd'); }
+function goToListFromDetail(){ pageFlip(bestiaryListHTML(), 'back'); }
+function toggleListMode(){
+  bestiaryListMode = bestiaryListMode==='alpha' ? 'category' : 'alpha';
+  pageFlip(bestiaryListHTML(), 'fwd');
+}
+function wireModal(){
+  document.querySelectorAll('[data-open]').forEach(el=>{
+    el.addEventListener('click', ()=> goToDetail(el.dataset.open, el.dataset.dir) );
+  });
+  document.querySelectorAll('[data-open-synth]').forEach(el=>{
+    if(el.disabled) return;
+    el.addEventListener('click', ()=> pageFlip(synthHTML(el.dataset.openSynth), 'fwd') );
+  });
+  document.querySelectorAll('[data-open-origin]').forEach(el=>{
+    el.addEventListener('click', ()=> pageFlip(originHTML(el.dataset.openOrigin), 'fwd') );
+  });
+  const backBtn = document.getElementById('backToListBtn');
+  if(backBtn) backBtn.addEventListener('click', goToListFromDetail);
+  const toggleBtn = document.getElementById('toggleListModeBtn');
+  if(toggleBtn) toggleBtn.addEventListener('click', toggleListMode);
+  const enhBtn = document.getElementById('enhanceToggleBtn');
+  if(enhBtn) enhBtn.addEventListener('click', ()=>{
+    const showing = enhBtn.dataset.showing==='1';
+    document.getElementById('modalBody').innerHTML = bestiaryDetailHTML(enhBtn.dataset.id, !showing);
+    wireModal();
+  });
+}
+document.getElementById('bestiaryBtn').addEventListener('click', ()=> openModal(bestiaryListHTML()) );
+document.getElementById('winCondBtn').addEventListener('click', ()=>{
+  openModal(`<h3>勝利条件</h3><div class="desc" style="font-size:12.5px;line-height:2;">
+    ・相手の旗（赤）のマスに自分の駒が到達する<br>
+    ・相手の駒（盤上+持ち駒）を全て0にする<br>
+    ・相手が合法手を持てない状態にする<br>
+    ・手数上限（${TURN_LIMIT}）到達時は残存駒数が多い方が勝ち、同数は引き分け
+  </div>`);
+});
+
+// ---- 変身（進化）の初回演出 ----
+let lastEvolution = null;
+let seenTransforms = new Set();
+function triggerEvolutionReveal(from,to,r,c){
+  const key = from+'>'+to;
+  if(!seenTransforms.has(key)){
+    seenTransforms.add(key);
+    showEvolutionCelebration(from,to);
+  } else {
+    playEvolutionFlash(r,c);
+  }
+}
+function showEvolutionCelebration(from,to){
+  const div=document.createElement('div');
+  div.className='evoOverlay';
+  div.innerHTML = `
+    <div class="evoCard">
+      <div class="evoCongrats">Congratulations!</div>
+      <div class="evoText">${NAME[from]}が${NAME[to]}に変身しました！</div>
+      <div class="evoCompare">
+        <div class="evoSide before"><span class="g">${GLYPH[from]}</span><div class="hint">変身前</div></div>
+        <div class="evoArrow">→</div>
+        <div class="evoSide after"><span class="g">${GLYPH[to]}</span><div class="hint">変身後</div></div>
+      </div>
+      <button type="button" id="evoCloseBtn">閉じる</button>
+    </div>`;
+  document.body.appendChild(div);
+  document.getElementById('evoCloseBtn').addEventListener('click', ()=>div.remove());
+}
+function playEvolutionFlash(r,c){
+  if(r==null||c==null) return;
+  const el = cellEl(r,c);
+  if(!el) return;
+  const rect = el.getBoundingClientRect();
+  const d=document.createElement('div');
+  d.className='impact evoFlash';
+  const size=Math.min(rect.width,rect.height)*1.6;
+  d.style.width=size+'px'; d.style.height=size+'px';
+  d.style.left=(rect.left+rect.width/2)+'px'; d.style.top=(rect.top+rect.height/2)+'px';
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),700);
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate"><meta http-equiv="Pragma" content="no-cache">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>語根トレーニング・試作</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+Hebrew:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f3ec;--card:#fff;--ink:#2a2620;--dim:#8a8274;--edge:#d9d2c3;--acc:#c4553c;--accE:#9c3f2a;--ok:#4f9a5f;--okBg:#e3f3e6;--ng:#d4553f;--ngBg:#fbe6e1;--gold:#b8863a}
+@media(prefers-color-scheme:dark){:root{--bg:#17140f;--card:#2a251c;--ink:#eae0c6;--dim:#a89b7c;--edge:#17120b;--okBg:#1f3325;--ngBg:#3a1f1a}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+body{background:var(--bg);color:var(--ink);font-family:'Noto Sans JP',sans-serif;display:flex;justify-content:center;touch-action:manipulation}
+.heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;unicode-bidi:isolate}
+#app{position:relative;width:100%;max-width:520px;height:100dvh;max-height:820px;display:flex;flex-direction:column;padding:calc(10px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));overflow:hidden}
+#top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto}
+.seg{display:flex;background:var(--edge);border-radius:12px;padding:3px}
+.seg button{border:0;background:none;color:var(--dim);font:500 13px 'Noto Sans JP';padding:7px 14px;border-radius:9px;cursor:pointer}
+.seg button.on{background:var(--card);color:var(--ink);transform:translateZ(0)}
+#mute{border:0;background:none;font-size:20px;cursor:pointer;padding:6px}
+#stat{flex:0 0 auto;font-size:12px;color:var(--dim);margin:6px 2px 0;display:flex;gap:14px}
+#stat b{color:var(--ink);font-size:14px;display:inline-block}
+#chips{display:none;gap:6px;margin-top:8px;flex:0 0 auto}#chips.on{display:flex}
+#chips button{flex:1;border:1px solid var(--edge);background:var(--card);color:var(--dim);font:500 12px 'Noto Sans JP';padding:7px 0;border-radius:10px;cursor:pointer}
+#chips button.on{color:var(--acc);border-color:var(--acc)}
+#q{flex:0 0 22%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:0}
+#cap{font-size:12px;color:var(--dim)}#qh{font-size:clamp(34px,9vw,46px);color:var(--gold);line-height:1.2}#qm{font-size:18px;font-weight:500;margin-top:2px}
+#slots{display:flex;direction:rtl;justify-content:center;gap:12px;flex:0 0 auto;margin-bottom:12px}
+.slot{width:64px;height:72px;border-radius:14px;border:2px dashed var(--edge);background:var(--card);display:flex;align-items:center;justify-content:center;font:600 36px 'Noto Sans Hebrew';cursor:pointer}
+.slot{touch-action:none}.slot.f{border-style:solid}.slot.pop{animation:pop .16s ease-out}.slot.tgt{border-style:solid;border-color:var(--acc);background:var(--card);transform:scale(1.06)}
+.ghost{transform-origin:center;will-change:transform;z-index:10;box-shadow:0 10px 24px rgba(0,0,0,.25);opacity:.96}
+.slot.ok{border-color:var(--ok);background:var(--okBg);color:var(--ok);animation:pulse .3s ease-out}
+.slot.ng{border-color:var(--ng);background:var(--ngBg);color:var(--ng);animation:shake .3s ease-out}
+@keyframes pop{from{transform:scale(.7)}to{transform:scale(1)}}
+@keyframes pulse{50%{transform:scale(1.12)}}
+@keyframes shake{20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+#field{flex:1;min-height:0;min-width:0;width:100%;display:grid;direction:rtl;gap:9px}
+.cell{background:var(--edge);border-radius:14px;padding-bottom:4px;min-height:0;min-width:0}
+.cell.off{opacity:.28;pointer-events:none}
+.tile{width:100%;height:100%;border:0;padding:0;min-width:0;border-radius:14px;background:var(--card);color:var(--ink);font:500 clamp(24px,7vw,32px) 'Noto Sans Hebrew';cursor:pointer;transition:transform 60ms ease-out;touch-action:none}
+.tile:active,.tile.p{transform:translateY(4px)}
+.fly{position:fixed;z-index:9;display:flex;align-items:center;justify-content:center;background:var(--card);border-radius:14px;font:500 28px 'Noto Sans Hebrew';pointer-events:none;will-change:transform}
+.spark{position:fixed;z-index:9;width:8px;height:8px;border-radius:50%;pointer-events:none;will-change:transform,opacity}
+#ans{position:absolute;left:14px;right:14px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:4;border:0;border-radius:16px;background:var(--acc);box-shadow:0 4px 0 var(--accE);color:#fff;font:700 18px 'Noto Sans JP';letter-spacing:.08em;padding:15px;opacity:0;transform:translateY(16px);pointer-events:none;transition:transform .16s cubic-bezier(.2,.8,.3,1),opacity .16s;touch-action:none}
+#ans.show{opacity:1;transform:none;pointer-events:auto}#ans.show:active{transform:translateY(3px)}
+#sheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-radius:22px 22px 0 0;padding:16px 18px calc(16px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .22s cubic-bezier(.2,.8,.3,1);z-index:5;box-shadow:0 -6px 24px rgba(0,0,0,.14)}
+#sheet.show{transform:none}
+#sheet.ok{border-top:4px solid var(--ok)}#sheet.ng{border-top:4px solid var(--ng)}
+#sh1{font-size:16px;font-weight:700}#sh1 .heb{font-size:24px;color:var(--gold);margin-left:8px}
+#sh2{font-size:13.5px;line-height:1.7;margin-top:6px}#sh3{font-size:12.5px;color:var(--dim);line-height:1.7;margin-top:4px;display:none}#sh3.on{display:block}
+#sayrow{display:flex;align-items:center;gap:10px;margin-top:6px}#say{border:1px solid var(--edge);background:var(--bg);color:var(--ink);font:500 12.5px 'Noto Sans JP';padding:7px 12px;border-radius:10px;cursor:pointer;touch-action:none}#say:active{transform:translateY(2px)}#sayst{font-size:11.5px;color:var(--ng)}
+#more{border:0;background:none;color:var(--dim);font:12px 'Noto Sans JP';padding:6px 0;cursor:pointer;text-decoration:underline}
+#next{display:block;width:100%;margin-top:10px;border:0;border-radius:14px;background:var(--acc);box-shadow:0 4px 0 var(--accE);color:#fff;font:700 15px 'Noto Sans JP';padding:13px;cursor:pointer;transition:transform 60ms}
+#next:active{transform:translateY(3px)}
+#sheet.ng #next{background:var(--ng)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head><body>
+<div id="app">
+ <div id="top"><div class="seg" id="seg"></div><button id="mute" aria-label="音">🔊</button></div>
+ <div id="stat"><span>今日 <b id="pts">0</b>点</span><span>習得度 <b id="mst">0</b>%</span><span id="due"></span><span id="ver" style="margin-left:auto;font-size:10px;opacity:.6"></span></div>
+ <div id="chips"></div>
+ <div id="q"><div id="cap"></div><div id="qh" class="heb"></div><div id="qm"></div></div>
+ <div id="slots"></div>
+ <div id="field"></div>
+ <button id="ans">Answer</button>
+ <div id="sheet"><div id="sh1"></div><div id="sh2"></div><div id="sayrow"><button id="say">🔈 もう一度</button><span id="sayst"></span></div>
+ <div id="sh3"></div><button id="more">詳細</button><button id="next">次へ</button></div>
+</div>
+<script>
+const FALLBACK=[{"id":"R001","root":"שמר","meaning":"守る、見張る、保つ","derived":[{"heb":"מִשְׁמֶרֶת","mean":"見張り、務め"}]}];
+const ALL="אבגדהוזחטיכלמנסעפצקרשת".split("");
+const SIM=[["ד","ר"],["ב","כ"],["ה","ח","ת"],["ו","ז"],["מ","ס"],["ע","צ"],["ג","נ"],["ק","כ"],["ש","ס"],["ט","ת"]];
+const FINAL={"ך":"כ","ם":"מ","ן":"נ","ף":"פ","ץ":"צ"};
+const VER="1008-d";
+const K={log:"roots_proto_log_v1",srs:"roots_proto_srs_v1",pts:"roots_proto_pts_v1",mute:"roots_proto_mute_v1"};
+const INT=[1,3,7,14,30,60,120],RM=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let pick="due",roots=[],cur=null,qtype="d",diff="easy",picked=[],locked=false,item=null,muted=false;
+const $=id=>document.getElementById(id);
+const sh=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const norm=s=>[...s].map(c=>FINAL[c]||c);
+const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const fmt=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const today=()=>fmt(new Date());
+const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return fmt(d)};
+const level=st=>(!st||!st.seen||st.step<1)?0:st.step<=1?1:st.step<=3?2:st.step<=5?3:4;
+/* ---------- 音（合成） ---------- */
+let ac=null,fx=null;
+function audio(){
+ if(!ac){try{ac=new(window.AudioContext||window.webkitAudioContext)();
+  fx=ac.createGain();fx.gain.value=1;fx.connect(ac.destination);
+  const dl=ac.createDelay(),fb=ac.createGain(),wet=ac.createGain();dl.delayTime.value=.17;fb.gain.value=.3;wet.gain.value=.22;
+  fx.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(ac.destination)}catch(e){ac=null}}
+ if(ac&&ac.state==="suspended")ac.resume();return ac}
+function tone(f,d,type,g,delay,fEnd,atk){if(muted)return;const a=audio();if(!a)return;const t=a.currentTime+(delay||0),o=a.createOscillator(),v=a.createGain();
+ o.type=type||"sine";o.frequency.setValueAtTime(f,t);if(fEnd)o.frequency.exponentialRampToValueAtTime(fEnd,t+d);
+ v.gain.setValueAtTime(0.0001,t);v.gain.exponentialRampToValueAtTime(g||.15,t+(atk||Math.min(.01,d*.2)));v.gain.exponentialRampToValueAtTime(0.0001,t+d);
+ o.connect(v);v.connect(a.destination);o.start(t);o.stop(t+d+.02)}
+function bell(f,delay,dec,g,dry){if(muted)return;const a=audio();if(!a)return;const t=a.currentTime+(delay||0);
+ [[1,1],[2.01,.35],[3.97,.12]].forEach(([r,k])=>{const o=a.createOscillator(),v=a.createGain();o.type="sine";o.frequency.value=f*r;
+  v.gain.setValueAtTime(0.0001,t);v.gain.exponentialRampToValueAtTime((g||.16)*k,t+.006);v.gain.exponentialRampToValueAtTime(0.0001,t+(dec||.8)/r);
+  o.connect(v);v.connect(dry?a.destination:fx);o.start(t);o.stop(t+(dec||.8)+.05)})}
+const base=i=>620*Math.pow(1.122,i*2);
+const sTap=i=>tone(base(i),.07,"sine",.13,0,base(i)*1.07);
+const sUndo=i=>tone(base(i)*.72,.08,"sine",.1,0,base(i)*.72*.92);
+const sOk=()=>{bell(1047,0,.15,.15,1);[[1319,.11],[1568,.12],[2093,.15]].forEach(([f,g])=>bell(f,.08,.38,g,1))};
+const sNg=()=>{tone(233,.16,"triangle",.1);tone(196,.22,"triangle",.1,.12)};
+const sUp=()=>{sOk();bell(2093,.24,.3,.1,1);bell(2637,.3,.45,.11,1)};
+let voices=[],uref=null,curWord="";
+const SS=()=>window.speechSynthesis;
+function loadVoices(){try{voices=SS().getVoices()||[]}catch(e){}}
+try{loadVoices();SS()&&(SS().onvoiceschanged=loadVoices)}catch(e){}
+const hebVoice=()=>voices.find(x=>/^(he|iw)/i.test(x.lang));
+function say(t){
+ try{const u=new SpeechSynthesisUtterance(t),v=hebVoice();u.lang=v?v.lang:"he-IL";if(v)u.voice=v;u.rate=.85;u.volume=1;
+  u.onerror=ev=>{$("sayst").textContent="再生エラー："+(ev.error||"不明")};uref=u;SS().speak(u)}catch(e){$("sayst").textContent="再生エラー"}}
+function speak(t,force){
+ if(muted||!t||!SS())return;
+ if(force&&(SS().speaking||SS().pending)){SS().cancel();setTimeout(()=>say(t),80)}else say(t)}
+function voiceStatus(){
+ loadVoices();
+ $("sayst").textContent=!SS()?"この端末は音声読み上げ非対応":(voices.length&&!hebVoice())?"ヘブル語音声が未インストール（音声ガイド参照）":"";
+}
+function primeSpeech(){try{if(window.speechSynthesis&&!muted){const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}}catch(e){}}
+const buzz=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+/* ---------- SRS・点 ---------- */
+function pickRoot(){
+ const pool=roots.length>1?roots.filter(r=>r!==cur):roots;
+ if(pick==="rand")return pool[Math.random()*pool.length|0];
+ const s=ld(K.srs,{}),t=today(),due=pool.filter(r=>!s[r.id]||s[r.id].due<=t);
+ if(due.length)return due[Math.random()*due.length|0];
+ return pool.slice().sort((a,b)=>s[a.id].due<s[b.id].due?-1:1)[0];
+}
+function getPts(){const p=ld(K.pts,{});return p.date===today()?p:{date:today(),pts:0,joined:false}}
+function stats(){
+ const s=ld(K.srs,{}),t=today();
+ const m=roots.reduce((a,r)=>a+level(s[r.id]),0)/(roots.length*4||1);
+ const n=roots.filter(r=>!s[r.id]||s[r.id].due<=t).length;
+ $("pts").textContent=getPts().pts;$("mst").textContent=Math.round(m*100);
+ $("due").textContent="対象 "+n+"/"+roots.length;
+}
+function bump(){const e=$("pts");if(RM||!e.animate)return;e.animate([{transform:"scale(1)"},{transform:"scale(1.4)"},{transform:"scale(1)"}],{duration:260,easing:"ease-out"})}
+/* ---------- UI ---------- */
+function chip(host,t,on,fn){const b=document.createElement("button");b.textContent=t;b.className=on?"on":"";b.onclick=()=>{audio();fn()};host.appendChild(b)}
+function bar(){
+ $("seg").innerHTML="";chip($("seg"),"復習",pick==="due",()=>{pick="due";bar();next()});chip($("seg"),"自由",pick==="rand",()=>{pick="rand";bar();next()});
+ const c=$("chips");c.innerHTML="";c.className=pick==="rand"?"on":"";
+ if(pick==="rand"){chip(c,"派生語",qtype==="d",()=>{qtype="d";bar();next()});chip(c,"意味",qtype==="m",()=>{qtype="m";bar();next()});chip(c,"8文字",diff==="easy",()=>{diff="easy";bar();next()});chip(c,"22文字",diff==="full",()=>{diff="full";bar();next()})}
+}
+function bubbles(L){
+ if(diff==="full")return [...ALL];
+ const s=new Set(L);L.forEach(l=>SIM.forEach(g=>{if(g.includes(l))g.forEach(x=>s.add(x))}));
+ sh(ALL).forEach(l=>{if(s.size<8)s.add(l)});
+ let set=sh([...s]).slice(0,8);L.forEach(l=>{if(!set.includes(l)){const i=set.findIndex(x=>!L.includes(x));set[i]=l}});return sh(set);
+}
+function next(){
+ if(drag){try{drag.ghost&&drag.ghost.remove()}catch(e){}drag=null}
+ locked=false;picked=[];$("sheet").className="";
+ cur=pickRoot();
+ if(pick==="due"){const st=ld(K.srs,{})[cur.id];diff=(st&&st.step>=3)?"full":"easy";qtype=Math.random()<.5?"d":"m"}
+ const L=norm(cur.root);
+ if(qtype==="d"&&cur.derived&&cur.derived.length){item=cur.derived[Math.random()*cur.derived.length|0];$("cap").textContent="派生語の語根は？（"+(diff==="full"?22:8)+"文字）";$("qh").textContent=item.heb;$("qm").textContent=""}
+ else{item=null;$("cap").textContent="この意味の語根は？（"+(diff==="full"?22:8)+"文字）";$("qh").textContent="";$("qm").textContent=cur.meaning}
+ const f=$("field");f.innerHTML="";const set=bubbles(L),cols=diff==="full"?6:4,rows=Math.ceil(set.length/cols);
+ f.style.gridTemplateColumns="repeat("+cols+",minmax(0,1fr))";f.style.gridTemplateRows="repeat("+rows+",1fr)";
+ set.forEach(l=>{const c=document.createElement("div"),b=document.createElement("button");c.className="cell";b.className="tile";b.textContent=l;
+  b.addEventListener("pointerdown",e=>{if(!locked&&!drag)press(e,"tile",{l,c,b})});c.appendChild(b);f.appendChild(c)});
+ draw();stats();
+}
+function draw(res,gap,popIdx){
+ const s=$("slots");s.innerHTML="";
+ const arr=picked.map(p=>p.l);if(gap!=null&&gap!==undefined)arr.splice(gap,0,null);
+ for(let i=0;i<3;i++){const e=document.createElement("div");
+  e.className="slot"+(arr[i]?" f":"")+(gap===i?" tgt":"")+(popIdx===i?" pop":"")+(res&&arr[i]?(res[i]?" ok":" ng"):"");
+  e.textContent=arr[i]||"";
+  e.addEventListener("pointerdown",ev=>{if(!locked&&!drag&&picked[i])press(ev,"slot",i)});s.appendChild(e)}
+ $("ans").className=(picked.length===3&&!locked)?"show":"";
+}
+function removeAt(i){const p=picked.splice(i,1)[0];sUndo(i);buzz(5);draw();flyBack(p,i)}
+function flyBack(p,i){
+ const done=()=>p.c.classList.remove("off");
+ if(RM||!document.body.animate){done();return}
+ const a=$("slots").children[i].getBoundingClientRect(),b=p.b.getBoundingClientRect();
+ const c=document.createElement("div");c.className="fly";c.textContent=p.l;
+ c.style.cssText+="left:"+b.left+"px;top:"+b.top+"px;width:"+b.width+"px;height:"+b.height+"px";document.body.appendChild(c);
+ const dx=a.left+a.width/2-(b.left+b.width/2),dy=a.top+a.height/2-(b.top+b.height/2),sc=a.width/b.width;
+ c.animate([{transform:"translate("+dx+"px,"+dy+"px) scale("+sc+")"},{transform:"translate(0,0) scale(1)"}],{duration:150,easing:"cubic-bezier(.3,.7,.3,1)"}).onfinish=()=>{c.remove();done()}
+}
+function fly(tile,idx,l,done){
+ const a=tile.getBoundingClientRect(),b=$("slots").children[idx].getBoundingClientRect();
+ if(RM||!document.body.animate){done();return}
+ const c=document.createElement("div");c.className="fly";c.textContent=l;
+ c.style.cssText+="left:"+a.left+"px;top:"+a.top+"px;width:"+a.width+"px;height:"+a.height+"px";document.body.appendChild(c);
+ const dx=b.left+b.width/2-(a.left+a.width/2),dy=b.top+b.height/2-(a.top+a.height/2),sc=b.width/a.width;
+ const an=c.animate([{transform:"translate(0,0) scale(1)"},{transform:"translate("+dx+"px,"+dy+"px) scale("+sc+")"}],{duration:170,easing:"cubic-bezier(.2,.8,.3,1)"});
+ an.onfinish=()=>{c.remove();done()}
+}
+let drag=null;
+function press(e,kind,obj){
+ if(kind==="tile"&&picked.length>=3)return;
+ e.preventDefault();audio();
+ drag={kind,obj,sx:e.clientX,sy:e.clientY,id:e.pointerId,moved:false,ghost:null,gap:null,held:null};
+ if(kind==="tile")obj.b.classList.add("p");
+ try{e.target.setPointerCapture(e.pointerId)}catch(x){}
+ window.addEventListener("pointermove",onMove);window.addEventListener("pointerup",onUp);window.addEventListener("pointercancel",onUp);
+}
+function gapAt(x,y){
+ const box=$("slots").getBoundingClientRect();
+ if(y<box.top-80||y>box.bottom+80)return null;
+ let best=0,bd=1e9;[...$("slots").children].forEach((e,i)=>{const r=e.getBoundingClientRect(),d=Math.abs(x-(r.left+r.width/2));if(d<bd){bd=d;best=i}});
+ return Math.min(best,picked.length);
+}
+function place(x,y){drag.ghost.style.transform="translate("+(x-32)+"px,"+(y-32)+"px) scale(1.15)"}
+function onMove(e){
+ if(!drag||e.pointerId!==drag.id)return;
+ if(!drag.moved){if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)<8)return;
+  drag.moved=true;
+  const g=document.createElement("div");g.className="fly ghost";g.style.cssText+="left:0;top:0;width:64px;height:64px";document.body.appendChild(g);drag.ghost=g;
+  if(drag.kind==="tile"){drag.held=drag.obj;g.textContent=drag.obj.l;drag.obj.b.classList.remove("p");drag.obj.c.classList.add("off")}
+  else{drag.held=picked.splice(drag.obj,1)[0];g.textContent=drag.held.l;drag.gap=drag.obj;draw(null,drag.gap)}
+  buzz(6);tone(700,.05,"sine",.08);
+ }
+ place(e.clientX,e.clientY);
+ const gp=gapAt(e.clientX,e.clientY);
+ if(gp!==drag.gap){drag.gap=gp;draw(null,gp);if(gp!==null)tone(760+gp*60,.03,"sine",.05)}
+}
+function onUp(e){
+ if(!drag||e.pointerId!==drag.id)return;
+ window.removeEventListener("pointermove",onMove);window.removeEventListener("pointerup",onUp);window.removeEventListener("pointercancel",onUp);
+ const d=drag;drag=null;
+ if(d.kind==="tile")d.obj.b.classList.remove("p");
+ if(!d.moved){if(e.type==="pointercancel")return;d.kind==="tile"?tap(d.obj.c,d.obj.b,d.obj.l):removeAt(d.obj);return}
+ const h=d.held,g=d.gap;
+ if(g===null||e.type==="pointercancel"){
+  // 枠の外で離した：元に戻す
+  draw();
+  const r=h.b.getBoundingClientRect(),m=d.ghost.getBoundingClientRect();
+  const done=()=>{d.ghost.remove();h.c.classList.remove("off")};
+  if(RM||!d.ghost.animate){done();return}
+  const x0=m.left+m.width/2-32+0,y0=m.top+m.height/2-32;
+  d.ghost.animate([{transform:"translate("+x0+"px,"+y0+"px) scale(1.15)"},{transform:"translate("+(r.left+r.width/2-32)+"px,"+(r.top+r.height/2-32)+"px) scale(1)"}],{duration:160,easing:"ease-out"}).onfinish=done;
+  sUndo(0);return;
+ }
+ d.ghost.remove();
+ picked.splice(g,0,h);draw(null,null,g);sTap(g);buzz(8);
+}
+function tap(c,b,l){
+ if(locked||picked.length>=3)return;
+ const i=picked.length;picked.push({l,c,b});c.classList.add("off");sTap(i);buzz(8);
+ fly(b,i,l,()=>{draw(null,null,picked.findIndex(x=>x.b===b))});
+}
+function spark(ok){
+ if(RM||!document.body.animate)return;
+ const r=$("slots").getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+ for(let i=0;i<10;i++){const e=document.createElement("div");e.className="spark";e.style.cssText+="left:"+x+"px;top:"+y+"px;background:"+(ok?["#4f9a5f","#b8863a","#c4553c"][i%3]:"#d4553f");document.body.appendChild(e);
+  const a=Math.PI*2*i/10,d=50+Math.random()*40;
+  e.animate([{transform:"translate(0,0) scale(1)",opacity:1},{transform:"translate("+Math.cos(a)*d+"px,"+Math.sin(a)*d+"px) scale(.2)",opacity:0}],{duration:520,easing:"ease-out"}).onfinish=()=>e.remove()}
+}
+function judge(){
+ const ans=norm(cur.root),got=picked.map(p=>p.l),res=got.map((l,i)=>l===ans[i]),ok=res.every(Boolean);
+ const kind=ok?"":([...got].sort().join()===[...ans].sort().join()?"順序違い":"文字違い");
+ draw(res);
+ const lg=ld(K.log,{}),e=lg[cur.id]||(lg[cur.id]={ok:0,ng:0,order:0,letter:0});
+ if(ok)e.ok++;else{e.ng++;kind==="順序違い"?e.order++:e.letter++}sv(K.log,lg);
+ let gain=0,note="",up=false,lvNow=0;
+ if(pick==="due"){
+  const s=ld(K.srs,{}),t=today(),st=s[cur.id]||(s[cur.id]={step:0,due:t,seen:false}),before=level(st),cap=diff==="full"?7:3;
+  if(ok){if(st.step<cap)st.step++;st.due=addDays(INT[Math.max(st.step,1)-1])}else{st.step=Math.max(0,st.step-1);st.due=addDays(1)}
+  st.seen=true;sv(K.srs,s);
+  const p=getPts();if(!p.joined){p.joined=true;p.pts+=5;gain+=5}
+  lvNow=level(st);
+  if(ok&&level(st)>before){p.pts+=10;gain+=10;up=true}
+  p.date=today();sv(K.pts,p);
+  note="Lv"+level(st)+"／次回 "+st.due+(ok&&diff==="easy"&&st.step>=cap?"（Lv3〜は22文字で正解が必要）":"");
+ }
+ ok?(up&&lvNow>=3?sUp():sOk()):sNg();buzz(ok?[15]:[30,40,30]);spark(ok);
+ curWord=item?item.heb:(cur.form||cur.root);$("sayst").textContent="";voiceStatus();
+ if(ok)setTimeout(()=>speak(curWord),RM?0:380)
+ const S=$("sheet");
+ $("sh1").innerHTML=(ok?"✓ 正解":"✗ "+kind)+'<span class="heb">'+cur.root+"</span>"+(gain?'<span style="color:var(--ok);font-size:13px"> +'+gain+"点</span>":"");
+ $("sh2").innerHTML=(item?item.heb+"＝"+item.mean+"<br>":"")+"意味："+cur.meaning;
+ $("sh3").innerHTML=(cur.image?"イメージ："+cur.image+"<br>":"")+(cur.type?"型："+cur.type+"<br>":"")+(cur.verse?cur.verse.ref+" "+cur.verse.heb+"<br>":"")+(note||"");
+ $("sh3").className="";$("more").textContent="詳細";
+ setTimeout(()=>{S.className="show "+(ok?"ok":"ng")},RM?0:260);
+ stats();bump();
+}
+$("ans").addEventListener("pointerdown",e=>{e.preventDefault();if(locked||picked.length<3||drag)return;audio();primeSpeech();tone(660,.05,"sine",.1);locked=true;$("ans").className="";judge()});
+$("say").addEventListener("pointerdown",e=>{e.preventDefault();audio();speak(curWord,true)});
+$("more").onclick=()=>{const o=$("sh3").classList.toggle("on");$("more").textContent=o?"閉じる":"詳細"};
+$("next").addEventListener("pointerdown",e=>{e.preventDefault();audio();tone(440,.06,"sine",.1);next()});
+$("mute").onclick=()=>{muted=!muted;sv(K.mute,muted);$("mute").textContent=muted?"🔇":"🔊";audio()};
+muted=!!ld(K.mute,false);$("mute").textContent=muted?"🔇":"🔊";
+$("ver").textContent=VER;
+fetch("data/roots.json",{cache:"no-store"}).then(r=>{if(!r.ok)throw 0;return r.json()}).catch(()=>FALLBACK).then(d=>{roots=d;bar();next()});
+</script></body></html>

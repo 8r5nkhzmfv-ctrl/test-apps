@@ -1,0 +1,1286 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ヘブル文字将棋 — ホーム画面テスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#5b8fd6;
+    --sky-mid:#9cc4ea;
+    --sky-low:#dff0f7;
+    --grass-1:#7fae4f;
+    --grass-2:#5f9440;
+    --sun:#ffe17a;
+    --sun-core:#fff6d8;
+    --ink:#2b2118;
+    --paper:#f1e7d2;
+    --lapis:#1f4e79;
+    --lapis-strong:#163a5c;
+    --gold:#a8802e;
+    --hebrew: "Frank Ruhl Libre", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;font-family:var(--sans);overflow:hidden;background:#000;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  body{display:flex;flex-direction:column;}
+
+  .scene{
+    position:relative;flex:1;min-height:0;overflow:hidden;
+    background:linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-mid) 55%, var(--sky-low) 78%);
+  }
+
+  h1.title{
+    position:absolute;top:calc(10px + env(safe-area-inset-top));left:0;right:0;text-align:center;
+    font-family:var(--hebrew);font-weight:700;color:#fff;font-size:clamp(18px,5vw,24px);
+    text-shadow:0 2px 8px rgba(0,0,0,.25);margin:0;z-index:5;letter-spacing:.02em;
+  }
+
+  /* 太陽 */
+  .sunWrap{
+    position:absolute;top:6%;right:8%;width:88px;height:88px;
+    animation:sunSpin 50s linear infinite;
+  }
+  @keyframes sunSpin{to{transform:rotate(360deg);}}
+  .sunWrap::before{
+    content:'';position:absolute;inset:0;border-radius:50%;
+    background:radial-gradient(circle, var(--sun-core) 0%, var(--sun) 60%, rgba(255,225,122,0) 75%);
+    box-shadow:0 0 40px 10px rgba(255,225,122,.5);
+  }
+  .ray{position:absolute;left:50%;top:50%;width:3px;height:14px;background:rgba(255,241,189,.85);
+    border-radius:2px;transform-origin:50% 0;}
+
+  /* 雲 */
+  .cloud{
+    position:absolute;background:#fff;border-radius:50px;opacity:.88;
+    box-shadow:0 6px 14px rgba(0,0,0,.06);
+    filter:blur(.3px);
+  }
+  .cloud::before,.cloud::after{content:'';position:absolute;background:#fff;border-radius:50%;}
+  .cloud1{width:120px;height:40px;top:14%;}
+  .cloud1::before{width:60px;height:60px;top:-30px;left:15px;}
+  .cloud1::after{width:50px;height:50px;top:-22px;left:60px;}
+  .cloud2{width:90px;height:32px;top:26%;}
+  .cloud2::before{width:46px;height:46px;top:-22px;left:12px;}
+  .cloud2::after{width:38px;height:38px;top:-16px;left:46px;}
+  .cloud3{width:70px;height:26px;top:9%;}
+  .cloud3::before{width:36px;height:36px;top:-18px;left:10px;}
+  .cloud3::after{width:30px;height:30px;top:-13px;left:36px;}
+  @keyframes drift{from{transform:translateX(-160px);}to{transform:translateX(calc(100vw + 160px));}}
+
+  /* 牧草地 */
+  .meadow{
+    position:absolute;left:0;right:0;bottom:0;height:34%;
+    background:linear-gradient(to bottom, var(--grass-2) 0%, var(--grass-1) 100%);
+    border-top:3px solid rgba(255,255,255,.25);
+  }
+  .meadow::before{
+    content:'';position:absolute;inset:0;opacity:.25;
+    background-image:radial-gradient(circle, rgba(255,255,255,.5) 1px, transparent 1.5px);
+    background-size:18px 18px;
+  }
+
+  /* 文字クリーチャー */
+  /* 文字クリーチャー（丸い台座なし、文字そのもの） */
+  .critter{
+    position:absolute;bottom:8%;
+    display:flex;align-items:center;justify-content:center;
+    z-index:3;
+  }
+  .critter .g{
+    font-family:var(--hebrew);font-size:36px;font-weight:700;color:var(--lapis-strong);
+    filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));
+  }
+  /* a. 二足歩行型：左右に揺れながらトコトコ */
+  .critter.type-walk{animation:walkBobKF 1s ease-in-out infinite;}
+  @keyframes walkBobKF{
+    0%,100%{transform:translateY(0) rotate(-5deg) scaleX(var(--flip,1));}
+    50%{transform:translateY(-5px) rotate(5deg) scaleX(var(--flip,1));}
+  }
+  /* b. 兎跳び型：一歩ずつジャンプ（JSでhopJumpを都度付与） */
+  .g.hopJump{animation:hopJumpKF .3s ease-out;}
+  @keyframes hopJumpKF{0%,100%{transform:translateY(0);}50%{transform:translateY(-15px);}}
+  .g.hopJumpGentle{animation:hopJumpGentleKF .46s ease-in-out;}
+  @keyframes hopJumpGentleKF{0%,100%{transform:translateY(0);}50%{transform:translateY(-9px);}}
+  /* e. 空中移動型：ふわふわ浮遊 */
+  .critter.type-float{animation:floatBobKF 2.6s ease-in-out infinite;}
+  @keyframes floatBobKF{
+    0%,100%{transform:translateY(0) scaleX(var(--flip,1));}
+    50%{transform:translateY(-11px) scaleX(var(--flip,1));}
+  }
+  /* c. 不動型：常時静止、タップ時のみ震える */
+  .critter.type-immovable{animation:none;cursor:default;}
+  .g.immovableShake{animation:immovableShakeKF .35s ease-in-out;}
+  @keyframes immovableShakeKF{
+    0%,100%{transform:translateX(0) rotate(0deg);}
+    20%{transform:translateX(-3px) rotate(-3deg);}
+    40%{transform:translateX(3px) rotate(3deg);}
+    60%{transform:translateX(-2px) rotate(-2deg);}
+    80%{transform:translateX(2px) rotate(2deg);}
+  }
+  .critter.size-large .g{font-size:56px;}
+  .critter.size-normal .g{font-size:32px;}
+  /* d. 転がり型：タップ時のみ回転しながら移動（JSで直接transformを付与） */
+  .critter.type-roll{animation:none;}
+  .critter{cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  .critter *{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;}
+  .critter .g.happy{animation:happyPop .55s ease;}
+  @keyframes happyPop{
+    0%{transform:scale(1) rotate(0deg);}
+    28%{transform:scale(1.35) rotate(-10deg);}
+    52%{transform:scale(.9) rotate(7deg);}
+    76%{transform:scale(1.12) rotate(-4deg);}
+    100%{transform:scale(1) rotate(0deg);}
+  }
+  .heartPop{
+    position:fixed;pointer-events:none;z-index:50;font-size:15px;
+    animation:heartFloat .85s ease-out forwards;
+  }
+  @keyframes heartFloat{
+    0%{transform:translate(-50%,0) scale(.5);opacity:0;}
+    18%{opacity:1;transform:translate(-50%,-8px) scale(1);}
+    100%{transform:translate(-50%,-48px) scale(1.05);opacity:0;}
+  }
+  .critter.holding{z-index:20;filter:drop-shadow(0 10px 14px rgba(0,0,0,.35));animation:none;}
+  .critter.holding .g{animation:none;transform:scale(1.15);}
+  .g.landBounce{animation:landBounceKF .4s ease-out;}
+  @keyframes landBounceKF{
+    0%{transform:scaleY(.7) scaleX(1.15);}
+    50%{transform:scaleY(1.1) scaleX(.95);}
+    100%{transform:scaleY(1) scaleX(1);}
+  }
+  .critter.tumble{animation:none;}
+  .critter.tumble .g{animation:tumbleFallKF .7s ease-out forwards;transform-origin:50% 90%;}
+  @keyframes tumbleFallKF{
+    0%{transform:rotate(0deg);}
+    60%{transform:rotate(92deg);}
+    100%{transform:rotate(84deg);}
+  }
+  .critter.gettingUp{animation:none;}
+  .critter.gettingUp .g{animation:tumbleUpKF .63s ease-in-out forwards;transform-origin:50% 90%;}
+  @keyframes tumbleUpKF{
+    0%{transform:rotate(84deg);}
+    60%{transform:rotate(-12deg);}
+    100%{transform:rotate(0deg);}
+  }
+  .critter.angry{animation:none;}
+  .critter.angry .g{animation:angryShakeKF .55s ease-in-out;}
+  @keyframes angryShakeKF{
+    0%,100%{transform:translateX(0) rotate(0deg);}
+    20%{transform:translateX(-4px) rotate(-7deg);}
+    40%{transform:translateX(4px) rotate(7deg);}
+    60%{transform:translateX(-3px) rotate(-5deg);}
+    80%{transform:translateX(3px) rotate(5deg);}
+  }
+  .critter.fav::after{
+    content:'♥';position:absolute;top:-10px;right:-10px;font-size:13px;color:#e0507a;
+    text-shadow:0 1px 2px rgba(0,0,0,.3);
+  }
+  .g.angryJumpSlow{animation:angryJumpSlowKF .46s ease-in-out;}
+  @keyframes angryJumpSlowKF{0%,100%{transform:translateY(0);}45%{transform:translateY(-16px);}}
+  .g.angryJumpFast{animation:angryJumpFastKF .18s ease-in-out;}
+  @keyframes angryJumpFastKF{0%,100%{transform:translateY(0) scale(2);}50%{transform:translateY(-10px) scale(2);}}
+  .angryFace{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-size:20px;z-index:6;}
+  .dirUp{display:inline-block;transform:rotate(-90deg);}
+
+  /* 追加演出：震え／見渡し／ウキウキ／歌う */
+  .g.shiverKF{animation:shiverKF .12s ease-in-out 33;}
+  @keyframes shiverKF{0%,100%{transform:translateX(0);}50%{transform:translateX(3px);}}
+  .g.lookAround{animation:lookAroundKF 2.4s ease-in-out;}
+  @keyframes lookAroundKF{
+    0%,100%{transform:rotate(0deg);} 20%{transform:rotate(18deg);} 45%{transform:rotate(-18deg);}
+    70%{transform:rotate(14deg);} 90%{transform:rotate(0deg);}
+  }
+  .g.giddyJump{animation:giddyJumpKF .38s ease-in-out 3;}
+  @keyframes giddyJumpKF{0%,100%{transform:translateY(0) rotate(0deg);}50%{transform:translateY(-13px) rotate(8deg);}}
+  .noteFloat{position:fixed;pointer-events:none;z-index:50;font-size:14px;animation:noteFloatKF 1.1s ease-out forwards;}
+  @keyframes noteFloatKF{
+    0%{transform:translate(-50%,0) scale(.6);opacity:0;}
+    20%{opacity:1;transform:translate(-50%,-10px) scale(1);}
+    100%{transform:translate(-50%,-46px) scale(1);opacity:0;}
+  }
+  .g.restCloud{animation:none !important;}
+  .g.thud{animation:thudKF .3s ease-out;}
+  @keyframes thudKF{0%{transform:scaleY(.72) scaleX(1.18);}50%{transform:scaleY(1.06) scaleX(.96);}100%{transform:scaleY(1) scaleX(1);}}
+  .dust{position:fixed;pointer-events:none;z-index:15;font-size:13px;opacity:.8;animation:dustKF .5s ease-out forwards;}
+  @keyframes dustKF{0%{transform:translate(-50%,0) scale(.6);opacity:.8;}100%{transform:translate(-70%,-6px) scale(1.3);opacity:0;}}
+  .rainDrop{position:absolute;top:-14px;width:2px;height:14px;background:rgba(255,255,255,.55);border-radius:2px;
+    animation:rainFallKF linear infinite;z-index:4;}
+  @keyframes rainFallKF{to{transform:translateY(115vh);}}
+  .g.rainDance{animation:rainDanceKF .5s ease-in-out infinite;}
+  @keyframes rainDanceKF{0%,100%{transform:translateY(0) rotate(-6deg);}50%{transform:translateY(-9px) rotate(6deg);}}
+  .breadDrop{position:absolute;width:17px;height:12px;border-radius:50% 50% 45% 45%;
+    background:radial-gradient(circle at 35% 30%,#f2c98a,#c9893f 80%);box-shadow:0 2px 3px rgba(0,0,0,.25);z-index:2;}
+  .ball{position:absolute;width:16px;height:16px;border-radius:50%;z-index:4;
+    background:radial-gradient(circle at 35% 30%,#fff,#e04848 55%,#a02020 100%);box-shadow:0 2px 3px rgba(0,0,0,.3);}
+  .speechBubble{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:6px;
+    background:#fff;color:var(--ink);font-size:10px;padding:3px 7px;border-radius:10px;white-space:nowrap;
+    box-shadow:0 2px 4px rgba(0,0,0,.2);pointer-events:none;z-index:8;}
+
+  /* 牧草地の木（フェーズで成長） */
+  .tree{position:absolute;right:6%;bottom:8%;display:flex;flex-direction:column;align-items:center;z-index:2;cursor:pointer;}
+  .tree .trunk{background:linear-gradient(to bottom,#8a6a3a,#6b4e28);border-radius:3px 3px 1px 1px;}
+  .tree .canopy{position:relative;}
+  .leaf{position:absolute;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #8fc45c, #5f9440 70%);
+    box-shadow:inset 0 -4px 6px rgba(0,0,0,.15);}
+  .decor{position:absolute;inset:0;pointer-events:none;}
+  .flower{position:absolute;width:7px;height:7px;border-radius:50%;background:#fff0f5;box-shadow:0 0 0 2px #f2a6c4 inset;}
+  .fruit{position:absolute;width:19px;height:19px;border-radius:50%;pointer-events:auto;cursor:pointer;
+    background:radial-gradient(circle at 35% 30%, #ffb15e, #d9581f 75%);
+    box-shadow:0 2px 3px rgba(0,0,0,.25);transition:transform .15s;}
+  .fruit:active{transform:scale(.85);}
+
+  .tree.phase-1 .trunk{width:4px;height:18px;}
+  .tree.phase-1 .canopy{width:20px;height:20px;}
+  .tree.phase-1 .leaf1{width:20px;height:20px;left:0;top:0;}
+  .tree.phase-1 .leaf2,.tree.phase-1 .leaf3{display:none;}
+
+  .tree.phase-2 .trunk{width:10px;height:46px;}
+  .tree.phase-2 .canopy{width:64px;height:58px;}
+  .tree.phase-2 .leaf1{width:44px;height:44px;left:0;top:12px;}
+  .tree.phase-2 .leaf2{width:38px;height:38px;left:22px;top:0;}
+  .tree.phase-2 .leaf3{display:none;}
+
+  .tree.phase-3 .trunk,.tree.phase-4 .trunk{width:17px;height:86px;}
+  .tree.phase-3 .canopy,.tree.phase-4 .canopy{width:112px;height:96px;}
+  .tree.phase-3 .leaf1,.tree.phase-4 .leaf1{width:72px;height:72px;left:0;top:20px;}
+  .tree.phase-3 .leaf2,.tree.phase-4 .leaf2{width:64px;height:64px;left:40px;top:0;}
+  .tree.phase-3 .leaf3,.tree.phase-4 .leaf3{width:58px;height:58px;left:52px;top:28px;}
+
+  /* ナビゲーション */
+  .navBar{
+    flex:none;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    background:var(--paper);border-top:1px solid rgba(43,33,24,.12);
+    box-shadow:0 -8px 20px rgba(0,0,0,.15);
+  }
+  .navBtn{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:none;border:none;color:var(--ink);font-family:var(--sans);font-size:11px;font-weight:600;
+    padding:8px 2px;border-radius:10px;cursor:pointer;transition:transform .1s ease, background .15s;
+  }
+  .navBtn:active{transform:scale(.92);background:rgba(31,78,121,.08);}
+  .navBtn svg{width:22px;height:22px;color:var(--lapis-strong);}
+  .toast{
+    position:absolute;left:50%;bottom:38%;transform:translate(-50%,10px);
+    background:rgba(27,23,18,.85);color:#fff;padding:8px 16px;border-radius:20px;font-size:12.5px;
+    opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;z-index:10;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+</style>
+</head>
+<body>
+<div class="scene" id="scene">
+  <h1 class="title">ヘブル文字将棋</h1>
+  <div class="sunWrap" id="sunWrap"></div>
+  <div class="cloud cloud1" style="animation:drift 70s linear infinite;"></div>
+  <div class="cloud cloud2" style="animation:drift 95s linear infinite; animation-delay:-30s;"></div>
+  <div class="cloud cloud3" style="animation:drift 60s linear infinite; animation-delay:-15s;"></div>
+  <div class="meadow" id="meadow"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<div class="navBar">
+  <button class="navBtn" data-name="バトル">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L19 5"/><path d="M15 3l3 3-3 3"/><path d="M19 19L5 5"/><path d="M9 3L6 6l3 3"/></svg>
+    バトル
+  </button>
+  <button class="navBtn" data-name="編成">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="7" height="7" rx="1"/><rect x="14" y="4" width="7" height="7" rx="1"/><rect x="3" y="15" width="7" height="7" rx="1"/><rect x="14" y="15" width="7" height="7" rx="1"/></svg>
+    編成
+  </button>
+  <button class="navBtn" data-name="合成">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="3.2"/><circle cx="17" cy="8" r="3.2"/><circle cx="17" cy="16" r="3.2"/><path d="M9.6 10.6l4.8-1.7M9.6 13.4l4.8 1.7"/></svg>
+    合成
+  </button>
+  <button class="navBtn" data-name="図鑑">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H8"/><path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2"/><path d="M9 9h7M9 13h7"/></svg>
+    図鑑
+  </button>
+  <button class="navBtn" data-name="ヘルプ">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.7 1.2c0 1.6-2.2 1.8-2.2 3.3"/><path d="M12 17h.01"/></svg>
+    ヘルプ
+  </button>
+</div>
+
+<script>
+"use strict";
+const GLYPH={
+  ALEF:'א',BET:'ב',GIMEL:'ג',DALET:'ד',HE:'ה',VAV:'ו',ZAYIN:'ז',HET:'ח',TET:'ט',YOD:'י',
+  KAF:'כ',LAMED:'ל',MEM:'מ',NUN:'נ',SAMEKH:'ס',AYIN:'ע',PE:'פ',TSADI:'צ',QOF:'ק',RESH:'ר',SHIN:'ש',TAV:'ת',
+  NUN_SOFIT:'ן',MEM_SOFIT:'ם',TSADI_SOFIT:'ץ',KAF_SOFIT:'ך',PE_SOFIT:'ף'
+};
+// 27文字の移動タイプ分類（重複・漏れなし）
+const LOCOMOTION={
+  ALEF:'walk', GIMEL:'walk', HE:'walk', HET:'walk', TAV:'walk',
+  ZAYIN:'hop', LAMED:'hop', NUN:'hop', NUN_SOFIT:'hop', QOF:'hop', RESH:'hop',
+  BET:'immovable', TSADI_SOFIT:'immovable', KAF_SOFIT:'immovable',
+  DALET:'immovable', MEM:'immovable', MEM_SOFIT:'immovable', TSADI:'immovable',
+  TET:'roll', KAF:'roll', SAMEKH:'roll', PE:'roll', SHIN:'roll',
+  VAV:'float', YOD:'float', AYIN:'float', PE_SOFIT:'float'
+};
+const IMMOVABLE_SIZE={BET:'large', TSADI_SOFIT:'large', KAF_SOFIT:'large', DALET:'normal', MEM:'normal', MEM_SOFIT:'normal', TSADI:'normal'};
+// タップ時に鳴らす発音（子音+母音の簡易音。語末形は対応する基本形と同じ子音、ペーソフィートのみ"fa"）
+const SOUND={
+  ALEF:'a', BET:'ba', GIMEL:'ga', DALET:'da', HE:'ha', VAV:'va', ZAYIN:'za', HET:'cha', TET:'ta',
+  YOD:'ya', KAF:'ka', LAMED:'la', MEM:'ma', NUN:'na', SAMEKH:'sa', AYIN:'a', PE:'pa', TSADI:'tsa',
+  QOF:'ka', RESH:'ra', SHIN:'sha', TAV:'ta',
+  NUN_SOFIT:'na', MEM_SOFIT:'ma', TSADI_SOFIT:'tsa', KAF_SOFIT:'ka', PE_SOFIT:'fa'
+};
+let _voiceReady = false;
+if('speechSynthesis' in window){
+  speechSynthesis.onvoiceschanged = ()=>{ _voiceReady = true; };
+}
+function playLetterSound(el){
+  if(!('speechSynthesis' in window)) return;
+  const id = el && el.dataset ? el.dataset.letterId : null;
+  const syl = SOUND[id];
+  if(!syl) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(syl);
+    u.lang = 'en-US';
+    u.rate = 0.85;
+    u.pitch = 1.1;
+    speechSynthesis.speak(u);
+  }catch(e){ /* 音声合成非対応環境は無視 */ }
+}
+
+// テスト用の仮ロースター（本番では実データに差し替え）。5タイプ全てを見せる構成
+const mockRoster=[
+  {id:'HE', fav:true},
+  {id:'NUN', fav:true},
+  {id:'DALET', fav:false},
+  {id:'BET', fav:false},
+  {id:'TET', fav:false},
+  {id:'VAV', fav:false},
+  {id:'ALEF', fav:false},
+  {id:'QOF', fav:false},
+  {id:'PE', fav:false},
+  {id:'YOD', fav:false},
+];
+
+function pickWanderers(){
+  const n = 3 + Math.floor(Math.random()*3); // 3〜5体
+  const favs = mockRoster.filter(x=>x.fav);
+  const rest = mockRoster.filter(x=>!x.fav).sort(()=>Math.random()-0.5);
+  return [...favs, ...rest].slice(0, n);
+}
+
+function spawnCritters(){
+  const scene = document.getElementById('scene');
+  const chosen = pickWanderers();
+  chosen.forEach((c)=>{
+    const type = LOCOMOTION[c.id] || 'walk';
+    const sizeCls = type==='immovable' ? (' size-'+(IMMOVABLE_SIZE[c.id]||'normal')) : '';
+    const el = document.createElement('div');
+    el.className = 'critter type-'+type + sizeCls + (c.fav ? ' fav' : '');
+    el.innerHTML = `<span class="g">${GLYPH[c.id]}</span>`;
+    el.dataset.letterId = c.id;
+    if(type==='float') el.dataset.dropMode='float';
+    if(type==='immovable' && (IMMOVABLE_SIZE[c.id]||'normal')==='normal') el.dataset.dropMode='thud';
+    scene.appendChild(el);
+    setupByType(el, type, IMMOVABLE_SIZE[c.id]);
+  });
+}
+
+function placeOnGround(el){
+  const b = wanderBounds();
+  el.style.left = (b.min + Math.random()*(b.max-b.min)) + 'px';
+  el.style.bottom = '8%';
+}
+function placeInSky(el){
+  const b = wanderBounds();
+  el.style.left = (b.min + Math.random()*(b.max-b.min)) + 'px';
+  const scene = document.getElementById('scene');
+  const skyMin = scene.clientHeight*0.16, skyMax = scene.clientHeight*0.42;
+  el.style.top = (skyMin + Math.random()*(skyMax-skyMin)) + 'px';
+}
+
+function setupByType(el, type, immovableSize){
+  switch(type){
+    case 'walk':
+      placeOnGround(el);
+      genericWander(el, 3200, 6700, false, 'ground');
+      attachDragInteraction(el);
+      break;
+    case 'hop':
+      placeOnGround(el);
+      genericWander(el, 2600, 5500, true, 'ground');
+      attachDragInteraction(el);
+      break;
+    case 'float':
+      placeInSky(el);
+      genericWander(el, 4000, 8000, false, 'float');
+      attachDragInteraction(el);
+      break;
+    case 'immovable':
+      placeOnGround(el);
+      if((immovableSize||'normal')==='normal'){
+        attachDragInteraction(el); // 普通サイズは長押しで引っ張れる（落下時は常にズシン）
+      } else {
+        attachImmovableInteraction(el); // 特大はびくともしない
+      }
+      break;
+    case 'roll':
+      placeOnGround(el);
+      attachRollInteraction(el);
+      break;
+  }
+}
+
+const petCounts = new WeakMap();
+function reactHappy(el){
+  playLetterSound(el);
+  // 3) 甘えん坊イベント：アピール中に撫でられたら満足して離脱
+  if(el._approaching){
+    el._approaching = false;
+    clearTimeout(el._appealTimer);
+    if(el._bubble){ el._bubble.remove(); el._bubble = null; }
+    el._busy = false;
+    resumeWander(el);
+  }
+  const g = el.querySelector('.g');
+  g.classList.remove('happy');
+  void g.offsetWidth;
+  g.classList.add('happy');
+  const rect = el.getBoundingClientRect();
+  const symbols = ['♥','♥','✦'];
+  symbols.forEach((sym, i)=>{
+    setTimeout(()=>{
+      const h = document.createElement('div');
+      h.className = 'heartPop';
+      h.textContent = sym;
+      h.style.color = sym==='♥' ? '#e0507a' : '#ffd25a';
+      h.style.left = (rect.left + rect.width/2 + (Math.random()*26-13)) + 'px';
+      h.style.top = (rect.top + rect.height*0.15) + 'px';
+      document.body.appendChild(h);
+      setTimeout(()=>h.remove(), 900);
+    }, i*90);
+  });
+  // 3) 3回以上可愛がると、他の文字が「僕もかわいがって〜」と寄ってくる
+  const n = (petCounts.get(el)||0) + 1;
+  petCounts.set(el, n);
+  clearTimeout(el._petResetTimer);
+  el._petResetTimer = setTimeout(()=>petCounts.set(el, 0), 6000);
+  if(n>=3){
+    petCounts.set(el, 0);
+    triggerJealousApproach(el);
+  }
+}
+
+function wanderBounds(){
+  const margin = 30;
+  const w = window.innerWidth;
+  return { min: margin, max: Math.max(margin+10, w - 40 - margin) };
+}
+function genericWander(el, minDur, maxDur, isHop, kind){
+  function step(){
+    if(el._busy) { el._wanderTimer = setTimeout(step, 800); return; }
+    const b = wanderBounds();
+    const curLeft = parseFloat(el.style.left) || b.min;
+    let target;
+    if(isHop){
+      // 5) 兎跳びは移動距離を短めに
+      const span = 70 + Math.random()*90;
+      target = Math.min(b.max, Math.max(b.min, curLeft + (Math.random()<0.5?-1:1)*span));
+    } else {
+      target = b.min + Math.random()*(b.max-b.min);
+    }
+    el.style.setProperty('--flip', target < curLeft ? '-1' : '1');
+    if(isHop){
+      hopTo(el, target, afterArrive);
+    } else {
+      const duration = minDur + Math.random()*(maxDur-minDur);
+      el.style.transition = `left ${duration}ms cubic-bezier(.4,0,.6,1)`;
+      el.style.left = target+'px';
+      setTimeout(afterArrive, duration);
+    }
+    function afterArrive(){
+      maybeVerticalDrift(el, kind);
+      if(kind==='ground' && Math.random()<0.4){
+        playIdleFlourish(el, scheduleNext);
+      } else if(kind==='float' && Math.random()<0.3){
+        tryCloudRest(el, scheduleNext);
+      } else {
+        scheduleNext();
+      }
+    }
+    function scheduleNext(){
+      const rest = isHop ? (1000 + Math.random()*2500) : (1200 + Math.random()*3000);
+      el._wanderTimer = setTimeout(step, rest);
+    }
+  }
+  el._wanderStep = step;
+  el._wanderTimer = setTimeout(step, 400 + Math.random()*1500);
+}
+function hopTo(el, target, onDone){
+  // 5) 兎跳びはもっと穏やかにゆっくりと
+  const g = el.querySelector('.g');
+  const curLeft = parseFloat(el.style.left)||0;
+  const dist = target - curLeft;
+  const hopCount = Math.max(2, Math.round(Math.abs(dist)/34));
+  let i=0;
+  function oneHop(){
+    const stepX = curLeft + dist*((i+1)/hopCount);
+    el.style.transition='left .42s ease-out';
+    el.style.left = stepX+'px';
+    g.classList.remove('hopJump'); void g.offsetWidth; g.classList.add('hopJumpGentle');
+    i++;
+    if(i<hopCount) setTimeout(oneHop, 460);
+    else setTimeout(onDone, 460);
+  }
+  oneHop();
+}
+function maybeVerticalDrift(el, kind){
+  if(!kind || Math.random()>=0.3) return;
+  const scene = document.getElementById('scene');
+  if(kind==='float'){
+    const skyMin = scene.clientHeight*0.14, skyMax = scene.clientHeight*0.44;
+    el.style.transition = `left .01ms, top 1.3s ease-in-out`;
+    el.style.top = (skyMin + Math.random()*(skyMax-skyMin)) + 'px';
+  } else if(kind==='ground'){
+    // 牧草地内のみで上下（メンドウの奥行き相当）
+    const meadowMinPx = 4, meadowMaxPx = scene.clientHeight*0.09;
+    el.style.transition = `left .01ms, bottom 1.3s ease-in-out`;
+    el.style.bottom = (meadowMinPx + Math.random()*(meadowMaxPx-meadowMinPx)) + 'px';
+  }
+}
+function playIdleFlourish(el, cb){
+  const g = el.querySelector('.g');
+  const kind = ['shiver','look','giddy','sing'][Math.floor(Math.random()*4)];
+  if(kind==='shiver'){
+    g.classList.remove('shiverKF'); void g.offsetWidth; g.classList.add('shiverKF');
+    setTimeout(()=>{ g.classList.remove('shiverKF'); cb(); }, 4000);
+  } else if(kind==='look'){
+    g.classList.remove('lookAround'); void g.offsetWidth; g.classList.add('lookAround');
+    setTimeout(()=>{ g.classList.remove('lookAround'); cb(); }, 2400);
+  } else if(kind==='giddy'){
+    g.classList.remove('giddyJump'); void g.offsetWidth; g.classList.add('giddyJump');
+    for(let i=0;i<3;i++) setTimeout(()=>spawnNote(el,'✦'), i*380);
+    setTimeout(()=>{ g.classList.remove('giddyJump'); cb(); }, 1200);
+  } else {
+    g.classList.remove('singBob'); void g.offsetWidth; g.classList.add('singBob');
+    let n=0; const total=4;
+    const notes=setInterval(()=>{ spawnNote(el, Math.random()<0.5?'♪':'♫'); n++; if(n>=total) clearInterval(notes); }, 400);
+    setTimeout(()=>{ g.classList.remove('singBob'); cb(); }, 1700);
+  }
+}
+function spawnNote(el, sym){
+  const rect = el.getBoundingClientRect();
+  const h = document.createElement('div');
+  h.className='noteFloat'; h.textContent=sym;
+  h.style.left=(rect.left+rect.width/2+(Math.random()*22-11))+'px';
+  h.style.top=(rect.top-4)+'px';
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(), 1150);
+}
+function tryCloudRest(el, cb){
+  const clouds = document.querySelectorAll('.cloud');
+  if(clouds.length===0){ cb(); return; }
+  const cloud = clouds[Math.floor(Math.random()*clouds.length)];
+  const scene = document.getElementById('scene');
+  const sceneRect = scene.getBoundingClientRect();
+  const cRect = cloud.getBoundingClientRect();
+  const targetLeft = cRect.left - sceneRect.left + cRect.width*0.3;
+  const targetTop = cRect.top - sceneRect.top + cRect.height*0.15;
+  el.style.transition = 'left 1.1s ease-in-out, top 1.1s ease-in-out';
+  el.style.left = targetLeft+'px';
+  el.style.top = targetTop+'px';
+  const g = el.querySelector('.g');
+  setTimeout(()=>{
+    g.classList.add('restCloud');
+    const holdMs = 2200 + Math.random()*2200;
+    setTimeout(()=>{ g.classList.remove('restCloud'); cb(); }, holdMs);
+  }, 1150);
+}
+function stopWander(el){
+  clearTimeout(el._wanderTimer);
+}
+function resumeWander(el){
+  if(!el._wanderStep) return;
+  el.style.transition = 'none';
+  el._wanderTimer = setTimeout(el._wanderStep, 500 + Math.random()*900);
+}
+
+function attachImmovableInteraction(el){
+  el.style.touchAction='none';
+  el.style.userSelect='none'; el.style.webkitUserSelect='none'; el.style.webkitTouchCallout='none';
+  el.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
+    playLetterSound(el);
+    const g = el.querySelector('.g');
+    g.classList.remove('immovableShake'); void g.offsetWidth; g.classList.add('immovableShake');
+    const rect = el.getBoundingClientRect();
+    const sym = Math.random()<0.5 ? '💦' : '💨';
+    const h = document.createElement('div');
+    h.className='heartPop';
+    h.innerHTML = sym==='💨' ? '<span class="dirUp">💨</span>' : sym;
+    h.style.left = (rect.left+rect.width/2+(Math.random()*16-8))+'px';
+    h.style.top = (rect.top-4)+'px';
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(), 700);
+  });
+}
+
+function attachRollInteraction(el){
+  el.style.touchAction='none';
+  el.style.userSelect='none'; el.style.webkitUserSelect='none'; el.style.webkitTouchCallout='none';
+  let startCX=0, startCY=0;
+  el.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
+    startCX=e.clientX; startCY=e.clientY;
+    document.addEventListener('pointerup', onUp, {once:true});
+  });
+  function onUp(ev){
+    const moved = Math.hypot(ev.clientX-startCX, ev.clientY-startCY);
+    if(moved<10) doRoll(el);
+  }
+  scheduleRollSing(el);
+}
+function scheduleRollSing(el){
+  const delay = 6000 + Math.random()*8000;
+  setTimeout(()=>{
+    if(!el._rolling){
+      const g = el.querySelector('.g');
+      g.classList.add('singBob');
+      let n=0; const total=4;
+      const notes=setInterval(()=>{ spawnNote(el, Math.random()<0.5?'♪':'♫'); n++; if(n>=total) clearInterval(notes); }, 400);
+      setTimeout(()=> g.classList.remove('singBob'), 1700);
+    }
+    scheduleRollSing(el);
+  }, delay);
+}
+function doRoll(el){
+  if(el._rolling) return;
+  playLetterSound(el);
+  el._rolling = true;
+  const g = el.querySelector('.g');
+  const dir = Math.random()<0.5 ? -1 : 1;
+  const dist = 45 + Math.random()*45;
+  const b = wanderBounds();
+  const curLeft = parseFloat(el.style.left)||b.min;
+  const target = Math.min(b.max, Math.max(b.min, curLeft + dir*dist));
+  const duration = 650;
+  el.style.setProperty('--flip', dir<0 ? '-1' : '1');
+  el.style.transition = `left ${duration}ms cubic-bezier(.2,.6,.4,1)`;
+  g.style.transition = `transform ${duration}ms linear`;
+  g.style.transform = `rotate(${dir*720}deg)`;
+  el.style.left = target+'px';
+  setTimeout(()=>{
+    g.style.transition='';
+    g.style.transform='';
+    el._rolling=false;
+  }, duration+30);
+}
+
+function groundTop(){
+  const sceneRect = document.getElementById('scene').getBoundingClientRect();
+  const meadowRect = document.getElementById('meadow').getBoundingClientRect();
+  return meadowRect.top - sceneRect.top + 8;
+}
+
+// ---- 木（牧草地の右横、フェーズで成長） ----
+let treePhase = 1; // テスト用：木をタップ（実以外）すると1→2→3→4→1と巡回
+function spawnTree(){
+  const scene = document.getElementById('scene');
+  const tree = document.createElement('div');
+  tree.id = 'tree';
+  tree.innerHTML = `
+    <div class="canopy">
+      <div class="leaf leaf1"></div>
+      <div class="leaf leaf2"></div>
+      <div class="leaf leaf3"></div>
+      <div class="decor" id="treeDecor"></div>
+    </div>
+    <div class="trunk"></div>`;
+  scene.appendChild(tree);
+  tree.addEventListener('click', (e)=>{
+    if(e.target.classList.contains('fruit')) return;
+    treePhase = treePhase>=4 ? 1 : treePhase+1; // テスト用の巡回
+    updateTreePhase();
+    if(!ballActive && Math.random()<0.3) spawnBall(tree);
+  });
+  updateTreePhase();
+  schedulePerch();
+}
+function updateTreePhase(){
+  const tree = document.getElementById('tree');
+  tree.className = 'tree phase-'+treePhase;
+  const decor = document.getElementById('treeDecor');
+  decor.innerHTML = '';
+  if(treePhase===3){
+    for(let i=0;i<9;i++){
+      const f=document.createElement('div');
+      f.className='flower';
+      f.style.left=(4+Math.random()*96)+'px';
+      f.style.top=(4+Math.random()*70)+'px';
+      decor.appendChild(f);
+    }
+  } else if(treePhase===4){
+    for(let i=0;i<7;i++){
+      const fr=document.createElement('div');
+      fr.className='fruit';
+      fr.style.left=(14+Math.random()*80)+'px';
+      fr.style.top=(14+Math.random()*58)+'px';
+      fr.addEventListener('click', (e)=>{ e.stopPropagation(); tapFruit(fr); });
+      decor.appendChild(fr);
+    }
+  }
+}
+
+// 1) 飛行型（float）の文字が、たまに木にとまりに来る
+function schedulePerch(){
+  const delay = 7000 + Math.random()*9000;
+  setTimeout(()=>{
+    tryPerch();
+    schedulePerch();
+  }, delay);
+}
+function availableFloaters(){
+  return Array.from(document.querySelectorAll('.critter.type-float')).filter(el=>!el._busy);
+}
+function tryPerch(){
+  if(treePhase < 3) return; // 大きい木（フェーズ3以降）にしかとまらない
+  const floaters = availableFloaters();
+  if(floaters.length===0) return;
+  const el = floaters[Math.floor(Math.random()*floaters.length)];
+  const tree = document.getElementById('tree');
+  if(!tree) return;
+  el._busy = true;
+  const sceneRect = document.getElementById('scene').getBoundingClientRect();
+  const treeRect = tree.getBoundingClientRect();
+  const perchLeft = treeRect.left - sceneRect.left + treeRect.width*0.5 - 15 + (Math.random()*16-8);
+  const perchTop = treeRect.top - sceneRect.top + treeRect.height*0.12;
+  stopWander(el);
+  el.style.transition = 'left 1s ease-in-out, top 1s ease-in-out';
+  el.style.left = perchLeft+'px';
+  el.style.top = perchTop+'px';
+  el.style.bottom = 'auto';
+  setTimeout(()=>{
+    const holdMs = 3000 + Math.random()*3000;
+    setTimeout(()=>{
+      el._busy = false;
+      resumeWander(el);
+    }, holdMs);
+  }, 1050);
+}
+
+// 2) 実をタップすると地面に落ち、しばらく留まった後、飛行型の文字が降りてきて少しずつ食べる
+function tapFruit(fruitEl){
+  if(fruitEl._picked) return;
+  fruitEl._picked = true;
+  const scene = document.getElementById('scene');
+  const sceneRect = scene.getBoundingClientRect();
+  const r = fruitEl.getBoundingClientRect();
+  const startLeft = r.left - sceneRect.left, startTop = r.top - sceneRect.top;
+  fruitEl.remove();
+  fruitEl.style.transition = 'none';
+  fruitEl.style.position='absolute';
+  fruitEl.style.left=startLeft+'px';
+  fruitEl.style.top=startTop+'px';
+  fruitEl.style.margin='0';
+  scene.appendChild(fruitEl);
+  const ground = groundTop() + 34;
+  const fallDur = 620;
+  // 開始位置を一度描画させてから遷移を発火させる（二重rAF）
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      fruitEl.style.transition = `top ${fallDur}ms cubic-bezier(.45,0,1,1)`;
+      fruitEl.style.top = ground+'px';
+    });
+  });
+  setTimeout(()=>{
+    // 着地後、少しの間そのまま地面に留まる
+    setTimeout(()=> summonEater(fruitEl), 700 + Math.random()*500);
+  }, fallDur);
+}
+function summonEater(fruitEl){
+  if(!fruitEl.isConnected) return;
+  const floaters = availableFloaters();
+  if(floaters.length===0){ fruitEl.remove(); return; }
+  const eater = floaters[Math.floor(Math.random()*floaters.length)];
+  eater._busy = true;
+  stopWander(eater);
+  const fr = fruitEl.getBoundingClientRect();
+  const sceneRect = document.getElementById('scene').getBoundingClientRect();
+  eater.style.transition = 'left .9s ease-in-out, top .9s ease-in-out';
+  eater.style.left = (fr.left - sceneRect.left - 6) + 'px';
+  eater.style.top = (fr.top - sceneRect.top - 28) + 'px';
+  eater.style.bottom = 'auto';
+  setTimeout(()=>{
+    let bites=0;
+    const totalBites=5;
+    function bite(){
+      const g = eater.querySelector('.g');
+      g.classList.remove('hopJump'); void g.offsetWidth; g.classList.add('hopJump');
+      const scale = Math.max(0, 1-(bites+1)/totalBites);
+      fruitEl.style.transform = `scale(${scale})`;
+      bites++;
+      if(bites<totalBites) setTimeout(bite, 320);
+      else setTimeout(()=>{
+        fruitEl.remove();
+        eater._busy=false;
+        resumeWander(eater);
+      }, 320);
+    }
+    bite();
+  }, 950);
+}
+
+
+function attachDragInteraction(el){
+  el.style.touchAction='none';
+  el.style.userSelect='none';
+  el.style.webkitUserSelect='none';
+  el.style.webkitTouchCallout='none';
+  let pressTimer=null, dragging=false, startCX=0, startCY=0;
+
+  function freezeInPlace(){
+    // 触れた瞬間に徘徊を止め、今見えている位置にその場でピン留めする（的が逃げないように）
+    stopWander(el);
+    const scene = document.getElementById('scene');
+    const rect = el.getBoundingClientRect(), sceneRect = scene.getBoundingClientRect();
+    el.style.transition='none';
+    el.style.left=(rect.left-sceneRect.left)+'px';
+    el.style.top=(rect.top-sceneRect.top)+'px';
+    el.style.bottom='auto';
+  }
+
+  function onMoveEarly(ev){
+    if(Math.hypot(ev.clientX-startCX, ev.clientY-startCY) > 10){
+      clearTimeout(pressTimer);
+      document.removeEventListener('pointermove', onMoveEarly);
+    }
+  }
+  function onUpEarly(ev){
+    clearTimeout(pressTimer);
+    document.removeEventListener('pointermove', onMoveEarly);
+    if(!dragging){
+      const moved = Math.hypot(ev.clientX-startCX, ev.clientY-startCY);
+      if(moved < 10) reactHappy(el);
+      resumeWander(el); // タップだけだった・保持に至らなかった場合は徘徊を再開
+    }
+  }
+
+  function beginDrag(){
+    dragging = true;
+    el.classList.add('holding');
+    document.removeEventListener('pointermove', onMoveEarly);
+    document.addEventListener('pointermove', onDragMove);
+    document.addEventListener('pointerup', onDragUp, {once:true});
+  }
+  function onDragMove(ev){
+    const sceneRect = document.getElementById('scene').getBoundingClientRect();
+    el.style.left = (ev.clientX - sceneRect.left) + 'px';
+    el.style.top = (ev.clientY - sceneRect.top) + 'px';
+  }
+  function onDragUp(){
+    document.removeEventListener('pointermove', onDragMove);
+    dragging = false;
+    el.classList.remove('holding');
+    dropCritter(el);
+  }
+
+  el.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
+    startCX=e.clientX; startCY=e.clientY;
+    freezeInPlace();
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(beginDrag, 200);
+    document.addEventListener('pointermove', onMoveEarly);
+    document.addEventListener('pointerup', onUpEarly, {once:true});
+  });
+}
+
+function dropCritter(el){
+  // 6) 飛行型は手放しても落下しない。そのまま元のように空を飛ぶ
+  if(el.dataset.dropMode==='float'){
+    el.style.transition='none';
+    resumeWander(el);
+    return;
+  }
+  const ground = groundTop();
+  const curTop = parseFloat(el.style.top) || ground;
+  const fallDist = Math.max(0, ground - curTop);
+  const duration = Math.min(1250, Math.max(270, fallDist*2.83)); // 0.6倍速（ゆっくり）
+  // 横方向は画面内に収める
+  const b = wanderBounds();
+  const curLeft = Math.min(b.max, Math.max(b.min, parseFloat(el.style.left)||b.min));
+  el.style.left = curLeft+'px';
+  el.style.transition = `top ${duration}ms cubic-bezier(.55,0,1,1)`; // 加速する落下
+  requestAnimationFrame(()=>{ el.style.top = ground+'px'; });
+  setTimeout(()=>{
+    if(el.dataset.dropMode==='thud'){
+      // 7) 不動型（普通サイズ）は高所から落ちても怒らずズシンと着地してそこにとどまる
+      thudLand(el);
+    } else if(fallDist > 130){
+      tumble(el, ()=> resumeWander(el));
+    } else {
+      const g = el.querySelector('.g');
+      g.classList.remove('landBounce'); void g.offsetWidth; g.classList.add('landBounce');
+      resumeWander(el);
+    }
+  }, duration + 20);
+}
+function thudLand(el){
+  const g = el.querySelector('.g');
+  g.classList.remove('thud'); void g.offsetWidth; g.classList.add('thud');
+  const rect = el.getBoundingClientRect();
+  const d = document.createElement('div');
+  d.className='dust'; d.textContent='💥';
+  d.style.left=(rect.left+rect.width/2)+'px';
+  d.style.top=(rect.top+rect.height*0.85)+'px';
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(), 550);
+}
+
+function tumble(el, cb){
+  el.classList.add('tumble');
+  setTimeout(()=>{
+    el.classList.remove('tumble');
+    el.classList.add('gettingUp');
+    setTimeout(()=>{
+      el.classList.remove('gettingUp');
+      doAngry(el, cb);
+    }, 630); // 0.6倍速（ゆっくり）
+  }, 800); // 0.6倍速（ゆっくり）
+}
+
+function doAngry(el, cb){
+  const variants = [playAngry1, playAngry2, playAngry3];
+  const pick = variants[Math.floor(Math.random()*variants.length)];
+  pick(el, cb);
+}
+
+// 怒り方①：💢が飛ぶ（既存）
+function playAngry1(el, cb){
+  el.classList.add('angry');
+  spawnAngryBurst(el);
+  setTimeout(()=>{
+    el.classList.remove('angry');
+    if(cb) cb();
+  }, 550);
+}
+
+// 怒り方②：ゆっくり何度かジャンプしながらプンプン（💨）
+function playAngry2(el, cb){
+  const g = el.querySelector('.g');
+  let jumps=0; const total=4;
+  function jump(){
+    g.classList.remove('angryJumpSlow'); void g.offsetWidth; g.classList.add('angryJumpSlow');
+    spawnPuff(el);
+    jumps++;
+    if(jumps<total) setTimeout(jump, 500);
+    else setTimeout(()=>{ g.classList.remove('angryJumpSlow'); if(cb) cb(); }, 500);
+  }
+  jump();
+}
+
+// 怒り方③：2倍に巨大化＋下から上へ赤く→😡で細かく連続ジャンプ＋💨→上から下へ色が戻り→ゆっくり縮む
+function playAngry3(el, cb){
+  const g = el.querySelector('.g');
+  const baseColor = '#163a5c';
+  const angryColor = '#d92626';
+  g.style.transition = 'transform .3s ease';
+  g.style.transform = 'scale(2)';
+  animateWipe(g, 0, 100, 400, baseColor, angryColor, ()=>{
+    const face = document.createElement('div');
+    face.className='angryFace';
+    face.textContent='😡';
+    el.appendChild(face);
+    let jumps=0; const total=6;
+    function jump(){
+      g.classList.remove('angryJumpFast'); void g.offsetWidth; g.classList.add('angryJumpFast');
+      if(jumps%2===0) spawnPuff(el);
+      jumps++;
+      if(jumps<total) setTimeout(jump, 180);
+      else setTimeout(finish, 200);
+    }
+    function finish(){
+      face.remove();
+      animateWipe(g, 100, 0, 400, baseColor, angryColor, ()=>{
+        g.style.backgroundImage='none';
+        g.style.webkitBackgroundClip='';
+        g.style.backgroundClip='';
+        g.style.color=baseColor;
+        g.style.transform='scale(1)';
+        setTimeout(()=>{
+          g.style.transition='';
+          if(cb) cb();
+        }, 340);
+      });
+    }
+    jump();
+  });
+}
+function animateWipe(g, from, to, duration, fromColor, toColor, cb){
+  const start = performance.now();
+  function frame(now){
+    const t = Math.min(1, (now-start)/duration);
+    const pct = from + (to-from)*t;
+    g.style.backgroundImage = `linear-gradient(to top, ${toColor} ${pct}%, ${fromColor} ${pct}%)`;
+    g.style.webkitBackgroundClip='text';
+    g.style.backgroundClip='text';
+    g.style.color='transparent';
+    if(t<1) requestAnimationFrame(frame);
+    else if(cb) cb();
+  }
+  requestAnimationFrame(frame);
+}
+function spawnPuff(el){
+  const rect = el.getBoundingClientRect();
+  const h=document.createElement('div');
+  h.className='heartPop';
+  h.innerHTML='<span class="dirUp">💨</span>';
+  h.style.left=(rect.left+rect.width/2+(Math.random()*20-10))+'px';
+  h.style.top=(rect.top-4)+'px';
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(), 700);
+}
+
+function spawnAngryBurst(el){
+  const rect = el.getBoundingClientRect();
+  const symbols=['💢','！'];
+  symbols.forEach((sym,i)=>{
+    setTimeout(()=>{
+      const h=document.createElement('div');
+      h.className='heartPop';
+      h.textContent=sym;
+      h.style.color = sym==='💢' ? '#c0392b' : '#a8452e';
+      h.style.left=(rect.left+rect.width/2+(Math.random()*24-12))+'px';
+      h.style.top=(rect.top - 6)+'px';
+      document.body.appendChild(h);
+      setTimeout(()=>h.remove(), 900);
+    }, i*110);
+  });
+}
+
+
+// 太陽の光線を放射状に生成
+(function buildSunRays(){
+  const wrap = document.getElementById('sunWrap');
+  const n = 10;
+  for(let i=0;i<n;i++){
+    const ray = document.createElement('div');
+    ray.className='ray';
+    ray.style.transform = `rotate(${(360/n)*i}deg)`;
+    wrap.appendChild(ray);
+  }
+})();
+
+// ナビゲーションボタン（テスト用トースト表示のみ）
+const toast = document.getElementById('toast');
+let toastTimer=null;
+document.querySelectorAll('.navBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    toast.textContent = btn.dataset.name + '画面（テスト・未接続）';
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>toast.classList.remove('show'), 1400);
+  });
+});
+
+// 3) 「僕もかわいがって〜」：他の文字が近づいてアピールする
+function availableApproachers(exclude){
+  return Array.from(document.querySelectorAll('.critter')).filter(el=> el!==exclude && el._wanderStep && !el._busy && !el._approaching);
+}
+function triggerJealousApproach(target){
+  const candidates = availableApproachers(target);
+  if(candidates.length===0) return;
+  const el = candidates[Math.floor(Math.random()*candidates.length)];
+  el._approaching = true;
+  el._busy = true;
+  stopWander(el);
+  const scene = document.getElementById('scene');
+  const sceneRect = scene.getBoundingClientRect();
+  const tRect = target.getBoundingClientRect();
+  const b = wanderBounds();
+  const nearLeft = Math.min(b.max, Math.max(b.min, tRect.left - sceneRect.left + (Math.random()<0.5?-50:50)));
+  el.style.transition = 'left 1.1s ease-in-out';
+  el.style.left = nearLeft+'px';
+  const bubble = document.createElement('div');
+  bubble.className = 'speechBubble';
+  bubble.textContent = '僕もかわいがって〜';
+  el.appendChild(bubble);
+  el._bubble = bubble;
+  setTimeout(()=>{
+    const g = el.querySelector('.g');
+    (function appealJump(){
+      if(!el._approaching) return;
+      g.classList.remove('giddyJump'); void g.offsetWidth; g.classList.add('giddyJump');
+      el._appealTimer = setTimeout(appealJump, 700);
+    })();
+  }, 1150);
+}
+
+// 1) 雲：タップで少し膨らむ／稀に雨が降り、みんなで整列してダンス
+let cloudTapCount = 0, raining = false;
+function setupCloudTaps(){
+  document.querySelectorAll('.cloud').forEach(cloud=>{
+    cloud.style.pointerEvents = 'auto';
+    cloud.style.cursor = 'pointer';
+    cloud.addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      puffCloud(cloud);
+      cloudTapCount++;
+      if(cloudTapCount>=4 && !raining && Math.random()<0.35) startRain();
+    });
+  });
+}
+function puffCloud(cloud){
+  cloud.style.transition = 'transform .18s ease-out';
+  cloud.style.transform = 'scale(1.12)';
+  setTimeout(()=>{ cloud.style.transform = 'scale(1)'; }, 180);
+}
+function startRain(){
+  raining = true; cloudTapCount = 0;
+  const scene = document.getElementById('scene');
+  const drops = [];
+  for(let i=0;i<40;i++){
+    const d = document.createElement('div');
+    d.className = 'rainDrop';
+    d.style.left = (Math.random()*100)+'%';
+    d.style.animationDuration = (0.6+Math.random()*0.5)+'s';
+    d.style.animationDelay = (Math.random()*1)+'s';
+    scene.appendChild(d);
+    drops.push(d);
+  }
+  const all = Array.from(document.querySelectorAll('.critter'));
+  const grounded = all.filter(el=> !el.classList.contains('type-float'));
+  const b = wanderBounds();
+  const spacing = grounded.length>1 ? (b.max-b.min)/(grounded.length-1) : 0;
+  grounded.forEach((el,i)=>{
+    stopWander(el); el._busy = true;
+    el.style.transition = 'left .9s ease-in-out';
+    el.style.left = (grounded.length>1 ? b.min+spacing*i : (b.min+b.max)/2) + 'px';
+  });
+  setTimeout(()=>{
+    all.forEach(el=>{
+      stopWander(el); el._busy = true;
+      el.querySelector('.g').classList.add('rainDance');
+    });
+  }, grounded.length ? 950 : 0);
+  setTimeout(()=>{
+    drops.forEach(d=>d.remove());
+    all.forEach(el=>{
+      el.querySelector('.g').classList.remove('rainDance');
+      el._busy = false;
+      resumeWander(el);
+    });
+    raining = false;
+  }, 7000);
+}
+
+// 2) 太陽：タップでたまにパンが落ち、文字が喜んで食べに行く（最大10個）
+let breadCount = 0;
+function setupSunTap(){
+  const sun = document.getElementById('sunWrap');
+  sun.style.pointerEvents = 'auto';
+  sun.style.cursor = 'pointer';
+  sun.addEventListener('pointerdown', (e)=>{
+    e.stopPropagation();
+    if(breadCount<10 && Math.random()<0.4) dropBread();
+  });
+}
+function dropBread(){
+  breadCount++;
+  const scene = document.getElementById('scene');
+  const bread = document.createElement('div');
+  bread.className = 'breadDrop';
+  const ground = groundTop();
+  const left = 20 + Math.random()*Math.max(40, scene.clientWidth-60);
+  bread.style.left = left+'px';
+  bread.style.top = (ground-40)+'px';
+  scene.appendChild(bread);
+  requestAnimationFrame(()=>{
+    bread.style.transition = 'top .5s cubic-bezier(.4,0,1,1)';
+    bread.style.top = (ground-4)+'px';
+  });
+  setTimeout(()=> summonBreadEater(bread), 700);
+}
+function summonBreadEater(breadEl){
+  if(!breadEl.isConnected) return;
+  const eaters = Array.from(document.querySelectorAll('.critter')).filter(el=>!el._busy && el._wanderStep);
+  if(eaters.length===0){ breadEl.remove(); breadCount=Math.max(0,breadCount-1); return; }
+  const eater = eaters[Math.floor(Math.random()*eaters.length)];
+  eater._busy = true;
+  stopWander(eater);
+  const scene = document.getElementById('scene');
+  const sceneRect = scene.getBoundingClientRect();
+  const br = breadEl.getBoundingClientRect();
+  eater.style.transition = 'left .9s ease-in-out, top .9s ease-in-out, bottom .9s ease-in-out';
+  eater.style.left = (br.left - sceneRect.left - 6) + 'px';
+  eater.style.bottom = '8%';
+  eater.style.top = 'auto';
+  setTimeout(()=>{
+    reactHappy(eater);
+    setTimeout(()=>{
+      breadEl.remove();
+      breadCount = Math.max(0, breadCount-1);
+      eater._busy = false;
+      resumeWander(eater);
+    }, 500);
+  }, 950);
+}
+
+// 4) 木をタップしてるとたまにボールが落ち、文字同士がパス回しする（15秒で消える）
+let ballActive = false;
+function spawnBall(tree){
+  ballActive = true;
+  const scene = document.getElementById('scene');
+  const sceneRect = scene.getBoundingClientRect();
+  const treeRect = tree.getBoundingClientRect();
+  const ball = document.createElement('div');
+  ball.className = 'ball';
+  ball.style.left = (treeRect.left - sceneRect.left + treeRect.width*0.5) + 'px';
+  ball.style.top = (treeRect.top - sceneRect.top + treeRect.height*0.6) + 'px';
+  scene.appendChild(ball);
+  const ground = groundTop();
+  requestAnimationFrame(()=>{
+    ball.style.transition = 'top .5s ease-out';
+    ball.style.top = ground+'px';
+  });
+  setTimeout(()=> startBallPlay(ball), 600);
+  setTimeout(()=>{
+    ball.remove();
+    ballActive = false;
+    document.querySelectorAll('.critter').forEach(el=>{
+      if(el._ballPlaying){ el._ballPlaying=false; el._busy=false; resumeWander(el); }
+    });
+  }, 15600);
+}
+function startBallPlay(ball){
+  function pass(){
+    if(!ball.isConnected) return;
+    const players = Array.from(document.querySelectorAll('.critter')).filter(el=> !el.classList.contains('type-float') && (!el._busy || el._ballPlaying));
+    if(players.length===0){ setTimeout(pass, 1200); return; }
+    const el = players[Math.floor(Math.random()*players.length)];
+    el._ballPlaying = true; el._busy = true;
+    stopWander(el);
+    const scene = document.getElementById('scene');
+    const sceneRect = scene.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    ball.style.transition = 'left .55s ease-in-out, top .55s ease-in-out';
+    ball.style.left = (r.left - sceneRect.left + r.width*0.5) + 'px';
+    ball.style.top = groundTop() + 'px';
+    setTimeout(()=>{
+      const g = el.querySelector('.g');
+      g.classList.remove('hopJump'); void g.offsetWidth; g.classList.add('hopJump');
+      if(ball.isConnected) setTimeout(pass, 900+Math.random()*500);
+    }, 560);
+  }
+  pass();
+}
+
+spawnCritters();
+spawnTree();
+setupCloudTaps();
+setupSunTap();
+</script>
+</body>
+</html>

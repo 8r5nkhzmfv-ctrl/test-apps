@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>שרש探し — 創世記1章 語根収集ゲーム</title>
+<style>
+  :root{
+    --parchment:#EFE6D2;
+    --parchment-dark:#E3D6B8;
+    --ink:#2B2118;
+    --ink-soft:#5A4B3A;
+    --gold:#9C7A2E;
+    --gold-glow: 156,122,46;
+    --miss:#7A3B32;
+    --miss-glow: 122,59,50;
+    --line:#C9B98F;
+    --ui-font: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top left, rgba(0,0,0,0.03), transparent 60%),
+      var(--parchment);
+    color:var(--ink);
+    font-family: "Frank Ruhl Libre","Times New Roman","David","SBL Hebrew",serif;
+    min-height:100vh;
+    padding:18px 12px 100px;
+    font-size:17px;
+  }
+  .wrap{max-width:800px;margin:0 auto;}
+
+  header{ text-align:center; margin-bottom:14px; }
+  .eyebrow{
+    font-family: var(--ui-font);
+    letter-spacing:0.14em;
+    font-size:12px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  h1{ font-size:30px; margin:6px 0 4px; font-weight:600; letter-spacing:0.02em; }
+  .sub{ font-family: var(--ui-font); font-size:15px; color:var(--ink-soft); }
+
+  .panel{
+    background:rgba(255,255,255,0.35);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+
+  .mode-tabs{ display:flex; gap:8px; margin-bottom:16px; }
+  .mode-tab{
+    flex:1;
+    font-family: var(--ui-font);
+    font-size:15px;
+    padding:11px 8px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:rgba(255,255,255,0.4);
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .mode-tab.active{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#fff;
+  }
+
+  .control-row{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    font-family: var(--ui-font);
+  }
+  .control-row label{font-size:15px;color:var(--ink-soft);}
+  select{
+    font-family: var(--ui-font);
+    font-size:17px;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--parchment);
+    color:var(--ink);
+    flex:1;
+    min-width:180px;
+  }
+  button{
+    font-family: var(--ui-font);
+    font-size:15px;
+    padding:10px 16px;
+    border-radius:8px;
+    border:1px solid var(--gold);
+    background:transparent;
+    color:var(--gold);
+    cursor:pointer;
+  }
+  button.solid{
+    background:var(--gold);
+    color:#fff;
+    border-color:var(--gold);
+  }
+  button:active{transform:translateY(1px);}
+
+  .target-display{ margin-top:14px; display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  .target-root{ font-size:38px; letter-spacing:0.06em; direction:rtl; }
+  .target-meta{ font-family: var(--ui-font); font-size:14px; color:var(--ink-soft); line-height:1.6; }
+  .badge{
+    display:inline-block; font-size:12px; padding:2px 8px; border-radius:10px;
+    margin-inline-start:4px; vertical-align:middle;
+  }
+  .badge.high{background:#4d6b4d33;color:#3a5a3a;}
+  .badge.estimated{background:#8a5a2233;color:#7a4a1a;}
+
+  /* クイズモード：出現箇所数を目立たせるバッジ */
+  .occur-badge{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    min-width:72px; min-height:72px;
+    background: linear-gradient(135deg, #C9432B, #E0673B);
+    color:#fff;
+    border-radius:18px;
+    padding:8px 12px;
+    box-shadow:0 4px 16px rgba(201,67,43,0.4);
+    animation: occurPulse 1.5s ease-in-out infinite;
+  }
+  .occur-badge .occur-num{
+    font-family: var(--ui-font);
+    font-size:32px; font-weight:800; line-height:1;
+  }
+  .occur-badge .occur-label{
+    font-family: var(--ui-font);
+    font-size:12px; margin-top:3px;
+  }
+  @keyframes occurPulse{
+    0%,100%{ transform: scale(1) rotate(0deg); }
+    50%{ transform: scale(1.1) rotate(-3deg); }
+  }
+
+  .quiz-explain{
+    display:none;
+    margin-top:12px;
+    padding:12px 14px;
+    border-radius:10px;
+    background:rgba(70,110,150,0.12);
+    border:1px solid #46709650;
+    font-family: var(--ui-font);
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink);
+  }
+  .quiz-explain.show{ display:block; }
+  .word.revealed{
+    background: rgba(70,110,150,0.30);
+    color:#22344a;
+  }
+
+  .progress-row{
+    margin-top:12px; font-family: var(--ui-font); font-size:15px; color:var(--ink-soft);
+    display:flex; justify-content:space-between;
+  }
+  .progress-bar{ height:8px; border-radius:4px; background:var(--parchment-dark); overflow:hidden; margin-top:8px; }
+  .progress-fill{ height:100%; background:var(--gold); width:0%; transition:width .35s ease; }
+
+  /* 常時表示される小さな進捗ウィンドウ */
+  .float-widget{
+    position:fixed;
+    top:14px;
+    right:14px;
+    z-index:50;
+    background:rgba(43,33,24,0.92);
+    color:var(--parchment);
+    font-family: var(--ui-font);
+    border-radius:14px;
+    padding:8px 14px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.25);
+    text-align:center;
+    min-width:84px;
+    backdrop-filter: blur(2px);
+  }
+  .float-widget .fw-root{
+    font-family: "Frank Ruhl Libre","Times New Roman",serif;
+    direction:rtl;
+    font-size:16px;
+    line-height:1.1;
+    margin-bottom:2px;
+    opacity:0.9;
+  }
+  .float-widget .fw-count{
+    font-size:20px;
+    font-weight:700;
+    line-height:1.1;
+  }
+  .float-widget .fw-bar{
+    height:4px;
+    border-radius:3px;
+    background:rgba(255,255,255,0.25);
+    margin-top:5px;
+    overflow:hidden;
+  }
+  .float-widget .fw-fill{
+    height:100%;
+    background:#e9c873;
+    width:0%;
+    transition:width .3s ease;
+  }
+
+  .text-panel{
+    background:rgba(255,255,255,0.4);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:26px 22px;
+    direction:rtl;
+    line-height:1.4;
+    font-size:47px;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  .verse{margin-bottom:6px;}
+  .vnum{
+    font-family: var(--ui-font);
+    font-size:13px;
+    color:var(--ink-soft);
+    vertical-align:super;
+    margin-inline-start:3px;
+  }
+  .word{
+    cursor:pointer;
+    padding:3px 5px;
+    border-radius:6px;
+    transition: background .25s ease, color .25s ease, transform .15s ease;
+    display:inline-block;
+    touch-action: pan-y;
+  }
+  .word.plain:hover{background:rgba(0,0,0,0.04);}
+  .word.found{
+    color:#4a3510;
+    background: rgba(var(--gold-glow), 0.28);
+    text-shadow: 0 0 8px rgba(var(--gold-glow),0.5);
+  }
+  .word.miss-flash{
+    background: rgba(var(--miss-glow), 0.30);
+    animation: shake .3s ease;
+  }
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    25%{transform:translateX(-2px);}
+    75%{transform:translateX(2px);}
+  }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(10px);
+    background:var(--ink); color:var(--parchment);
+    font-family: var(--ui-font); font-size:15px;
+    padding:12px 20px; border-radius:9px;
+    opacity:0; pointer-events:none;
+    transition:opacity .25s ease, transform .25s ease;
+    max-width:85%; text-align:center; z-index:80;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  footer{
+    text-align:center; font-family: var(--ui-font); font-size:12px;
+    color:var(--ink-soft); margin-top:24px;
+  }
+
+  /* リザルト画面 */
+  .result-overlay{
+    display:none;
+    position:fixed; inset:0; z-index:100;
+    background:rgba(20,15,10,0.55);
+    align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .result-overlay.show{display:flex;}
+  .result-card{
+    background:var(--parchment);
+    border:1px solid var(--line);
+    border-radius:16px;
+    max-width:520px;
+    width:100%;
+    max-height:88vh;
+    overflow-y:auto;
+    padding:26px 24px;
+    font-family: var(--ui-font);
+    box-shadow:0 12px 40px rgba(0,0,0,0.35);
+  }
+  .result-eyebrow{
+    font-size:12px; letter-spacing:0.12em; color:var(--ink-soft); text-transform:uppercase;
+  }
+  .result-root{
+    font-family:"Frank Ruhl Libre","Times New Roman",serif;
+    direction:rtl;
+    font-size:46px;
+    margin:6px 0 2px;
+  }
+  .result-sub{ font-size:14px; color:var(--ink-soft); margin-bottom:16px; }
+  .stat-grid{
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:18px;
+  }
+  .stat-box{
+    background:rgba(255,255,255,0.5);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 6px;
+    text-align:center;
+  }
+  .stat-box .num{ font-size:22px; font-weight:700; color:var(--ink); }
+  .stat-box .lbl{ font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .learn-section{
+    background:rgba(255,255,255,0.5);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:14px;
+    font-size:14px;
+    line-height:1.7;
+    color:var(--ink);
+  }
+  .learn-section h3{
+    margin:0 0 8px;
+    font-size:13px;
+    color:var(--ink-soft);
+    letter-spacing:0.04em;
+  }
+  .learn-section .heb{ direction:rtl; font-family:"Frank Ruhl Libre",serif; font-size:17px; }
+  .verse-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .verse-tag{
+    background:rgba(var(--gold-glow),0.18);
+    border:1px solid var(--gold);
+    color:var(--ink);
+    font-size:12px;
+    padding:2px 8px;
+    border-radius:8px;
+  }
+  .confuse-row{ display:flex; justify-content:space-between; padding:3px 0; }
+  .result-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+  .result-actions button{ flex:1; min-width:120px; }
+
+  /* 解説モード（フェーズ式） */
+  .phase-nav{
+    display:flex; justify-content:center; gap:10px;
+    margin-bottom:20px;
+  }
+  .phase-dot{
+    width:38px; height:38px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--ui-font); font-size:15px; font-weight:700;
+    background:rgba(255,255,255,0.5);
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition: all .2s ease;
+  }
+  .phase-dot.active{ background:var(--gold); color:#fff; border-color:var(--gold); transform:scale(1.08); }
+  .phase-dot.done{ border-color:var(--gold); color:var(--gold); }
+  .phase-track{
+    height:3px; background:var(--parchment-dark); border-radius:2px;
+    max-width:280px; margin:-12px auto 20px; overflow:hidden;
+  }
+  .phase-track-fill{ height:100%; background:var(--gold); width:0%; transition:width .3s ease; }
+
+  .phase-card{
+    background:rgba(255,255,255,0.45);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:28px 24px;
+    margin-bottom:16px;
+    font-family: var(--ui-font);
+    font-size:15px;
+    line-height:1.9;
+    color:var(--ink);
+    box-shadow:0 2px 10px rgba(0,0,0,0.04);
+    animation: phaseIn .3s ease;
+  }
+  @keyframes phaseIn{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .phase-icon{ font-size:32px; text-align:center; margin-bottom:6px; }
+  .phase-eyebrow{
+    text-align:center; font-size:12px; letter-spacing:0.16em;
+    text-transform:uppercase; color:var(--gold); font-weight:700;
+    margin-bottom:6px;
+  }
+  .phase-title{
+    text-align:center; font-size:21px; font-weight:700;
+    margin:0 0 18px; color:var(--ink);
+  }
+  .phase-card p{ margin:0 0 12px; }
+  .phase-card ul{ margin:0 0 12px; padding-inline-start:20px; }
+  .phase-divider{ border:none; border-top:1px solid var(--line); margin:16px 0; }
+
+  .phase-nav-buttons{
+    display:flex; justify-content:space-between; gap:10px;
+    margin-top:4px; margin-bottom:20px;
+  }
+  .phase-nav-buttons button{ flex:1; font-size:16px; padding:12px 16px; }
+  .phase-nav-buttons button:disabled{
+    opacity:0.35; cursor:default;
+  }
+
+  .heb-inline{
+    direction:rtl;
+    unicode-bidi:isolate;
+    font-family:"Frank Ruhl Libre","Times New Roman",serif;
+    font-size:1.3em;
+    padding:0 2px;
+  }
+  .root-letter{ color:#B0522D; font-weight:700; }
+  .step-arrow{ color:var(--ink-soft); font-family: var(--ui-font); margin:0 8px; }
+  .step-row{
+    display:flex; align-items:center; justify-content:center;
+    flex-wrap:wrap; gap:8px; margin:14px 0;
+    background:rgba(255,255,255,0.5);
+    border-radius:10px; padding:10px 14px;
+  }
+  #practicePanel .word{ cursor:pointer; }
+  .practice-done{
+    display:none;
+    margin-top:14px;
+    padding:12px 14px;
+    border-radius:10px;
+    background:rgba(var(--gold-glow),0.15);
+    border:1px solid var(--gold);
+    font-size:14px;
+    line-height:1.7;
+  }
+  .practice-done.show{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="float-widget" id="floatWidget">
+  <div class="fw-root" id="fwRoot">—</div>
+  <div class="fw-count" id="fwCount">0 / 0</div>
+  <div class="fw-bar"><div class="fw-fill" id="fwFill"></div></div>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Genesis 1:1–2:3 · Hebrew Root Hunt</div>
+    <h1>שֹׁרֶשׁ 探し</h1>
+    <div class="sub">創世記1章〜2章3節：同じ語根（シェレシュ）の単語をすべてタップして集めよう</div>
+  </header>
+
+  <div class="mode-tabs">
+    <button id="modeFullBtn" class="mode-tab active">📜 全文で探す</button>
+    <button id="modeQuizBtn" class="mode-tab">🎯 一節10問チャレンジ</button>
+    <button id="modeExplainBtn" class="mode-tab">📖 解説</button>
+  </div>
+
+  <div id="fullModeView">
+    <div class="panel">
+      <div class="control-row">
+        <label for="rootSelect">自分で選ぶ</label>
+        <select id="rootSelect"></select>
+      </div>
+      <div class="control-row" style="margin-top:10px;">
+        <button id="randomBtn" class="solid">🎲 ランダムに出題してもらう</button>
+      </div>
+      <div class="target-display">
+        <div class="target-root" id="targetRoot">—</div>
+        <div class="target-meta" id="targetMeta"></div>
+      </div>
+      <div class="progress-row">
+        <span id="progressText">0 / 0</span>
+        <span id="missText">誤タップ 0</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="text-panel" id="textPanel"></div>
+  </div>
+
+  <div id="quizModeView" style="display:none;">
+    <div class="panel">
+      <div class="progress-row" style="margin-top:0;">
+        <span id="quizProgressText">問 1 / 10</span>
+        <span id="quizMissText">誤タップ 0</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="quizProgressFill"></div></div>
+      <div class="target-display">
+        <div class="target-root" id="quizTargetRoot">—</div>
+        <div class="occur-badge" id="quizOccurBadge">
+          <span class="occur-num" id="quizOccurNum">0</span>
+          <span class="occur-label">箇所</span>
+        </div>
+        <div class="target-meta" id="quizTargetMeta"></div>
+      </div>
+      <div class="control-row" style="margin-top:12px;">
+        <button id="quizGiveUpBtn">🏳️ ギブアップ（正解を見る）</button>
+        <button id="quizNextBtn" class="solid" style="display:none;">次の問題へ →</button>
+      </div>
+      <div class="quiz-explain" id="quizExplain"></div>
+    </div>
+
+    <div class="text-panel" id="quizVersePanel"></div>
+  </div>
+
+  <div id="explainModeView" style="display:none;">
+
+    <div class="phase-nav" id="phaseNav">
+      <div class="phase-dot" data-phase="0">1</div>
+      <div class="phase-dot" data-phase="1">2</div>
+      <div class="phase-dot" data-phase="2">3</div>
+      <div class="phase-dot" data-phase="3">4</div>
+    </div>
+    <div class="phase-track"><div class="phase-track-fill" id="phaseTrackFill"></div></div>
+
+    <div class="phase-card" data-phase="0">
+      <div class="phase-icon">📘</div>
+      <div class="phase-eyebrow">Step 1 / 4</div>
+      <div class="phase-title">語根（シェレシュ）とは何か</div>
+      <p>ヘブル語の単語の多くは、3つ（まれに2つや4つ）の子音からなる「語根」を土台にして作られる。語根そのものは単語ではなく、意味の芯となる抽象的な骨組み。</p>
+      <p>そこに母音のパターンや接頭辞・接尾辞を組み合わせることで、動詞・名詞・形容詞など具体的な単語になる。骨組みが語根、肉付けが母音パターンや接辞、というイメージ。</p>
+    </div>
+
+    <div class="phase-card" data-phase="1" style="display:none;">
+      <div class="phase-icon">🧩</div>
+      <div class="phase-eyebrow">Step 2 / 4</div>
+      <div class="phase-title">語根の例：<span class="heb-inline">ב־ר־א</span>（創る）</div>
+      <p>この章の冒頭に出てくる語根<span class="heb-inline">ברא</span>（B-R-A、意味：創造する）を例にする。</p>
+      <div class="step-row">
+        <span class="heb-inline">ב　ר　א</span>
+        <span>語根そのもの（まだ発音も時制も確定しない）</span>
+      </div>
+      <div class="step-row">
+        <span class="step-arrow">↓ 完了形・三人称男性単数の母音パターンを入れる</span>
+      </div>
+      <div class="step-row">
+        <span class="heb-inline" id="exWord1"></span>
+        <span>「彼は創った」</span>
+      </div>
+      <div class="step-row">
+        <span class="step-arrow">↓ さらに「ワウ継続」の接頭辞と未完了の接頭辞を付ける</span>
+      </div>
+      <div class="step-row">
+        <span class="heb-inline" id="exWord2"></span>
+        <span>「そして彼は創った」</span>
+      </div>
+      <p>色のついた文字（<span class="root-letter">例</span>）が語根の3子音。形が変わっても、この3文字の骨組みは変わらない。</p>
+    </div>
+
+    <div class="phase-card" data-phase="2" style="display:none;">
+      <div class="phase-icon">📜</div>
+      <div class="phase-eyebrow">Step 3 / 4</div>
+      <div class="phase-title">実例：本文の中の<span class="heb-inline">ברא</span></div>
+      <p>この語根は創世記1章〜2章3節の中に6回登場する。色のついた部分がすべて同じ語根。</p>
+      <div id="exampleVerses"></div>
+    </div>
+
+    <div class="phase-card" data-phase="3" style="display:none;">
+      <div class="phase-icon">🎯</div>
+      <div class="phase-eyebrow">Step 4 / 4</div>
+      <div class="phase-title">練習：<span class="heb-inline">ברא</span> をタップして探す</div>
+      <p>語根の3文字にあらかじめ色をつけてある。同じ色の形を持つ単語を、下の本文からすべてタップして見つける（全6箇所）。</p>
+      <div class="progress-row" style="margin-top:6px;">
+        <span id="practiceProgressText">0 / 6</span>
+        <span id="practiceMissText">誤タップ 0</span>
+      </div>
+      <div class="text-panel" id="practicePanel" style="margin-top:10px;"></div>
+      <div class="practice-done" id="practiceDone"></div>
+    </div>
+
+    <div class="phase-nav-buttons">
+      <button id="phasePrevBtn">← 前へ</button>
+      <button id="phaseNextBtn" class="solid">次へ →</button>
+    </div>
+
+  </div>
+
+  <footer>逐語訳データに基づく語根推定。一部の語根は学術的に確定していない推定（バッジ「推定」表示）を含む。</footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-card" id="resultCard"></div>
+</div>
+
+<script src="game_data.js"></script>
+<script>
+(function(){
+  const DATA = window.GENESIS1_DATA;
+  const roots = DATA.roots.filter(r => r.count >= 2);
+
+  // 各語根の日本語での意味（すべての語根に対応。html側のみで完結させるため、
+  // game_data.js側は変更せずここに保持する）
+  const ROOT_MEANINGS = {
+    'אלה':'神（エロヒームの語根、固有名的用法）',
+    'היה':'ある、なる',
+    'ארץ':'地、大地',
+    'כל':'すべて、全部',
+    'יום':'日',
+    'אור':'光',
+    'שמים':'天、空',
+    'מים':'水',
+    'אמר':'言う',
+    'עשה':'作る、行う',
+    'זרע':'種、種をまく',
+    'מין':'種類',
+    'רקע':'広げる、打ち延ばす（→大空）',
+    'ראה':'見る',
+    'חיה':'生きる、生き物',
+    'טוב':'良い',
+    'עוף':'飛ぶ、鳥',
+    'רמש':'はう、はうもの',
+    'ברא':'創造する',
+    'ערב':'夕方',
+    'בקר':'朝',
+    'כן':'そのように（副詞）',
+    'פרה':'実を結ぶ、実り豊かになる',
+    'בדל':'分ける、区別する',
+    'קרא':'呼ぶ、名づける',
+    'חשך':'暗い、暗闇',
+    'פנה':'顔、面、向く',
+    'לילה':'夜',
+    'ים':'海',
+    'עשב':'草',
+    'עץ':'木',
+    'נפש':'命、魂、生き物',
+    'דשא':'若草',
+    'גדל':'大きい、成長する',
+    'משל':'支配する',
+    'שרץ':'群がる、うようよ動く',
+    'ברך':'祝福する',
+    'רבה':'増える、多くなる',
+    'בהמה':'家畜',
+    'אדם':'人、（土に由来）',
+    'צלם':'像、似姿',
+    'שבע':'七',
+    'מלאכה':'仕事、業',
+    'אחד':'一つ',
+    'שנה(二)':'二つ、第二（数詞）',
+    'קוה':'集まる、望む、待ち望む',
+    'יבש':'乾く',
+    'יצא':'出る、出て来る',
+    'נתן':'与える',
+    'מלא':'満ちる、満たす',
+    'רדה':'治める、支配する',
+    'דג':'魚',
+    'הנה':'見よ（間投詞）',
+    'אכל':'食べる',
+    'כלה':'終わる、完成する',
+    'שבת':'休む、やめる',
+    'ראש':'頭、初め',
+    'תהו':'空虚、荒れ果てた',
+    'בהו':'何もない、空っぽ',
+    'תהם':'深い淵',
+    'רוח':'霊、風、息',
+    'רחף':'舞う、覆うように動く',
+    'תוך':'中、真ん中',
+    'קום':'立つ、起き上がる',
+    'שלש':'三',
+    'אות':'しるし',
+    'יעד':'定める、指定する',
+    'שנה(年)':'年',
+    'קטן':'小さい',
+    'כוכב':'星',
+    'רבע':'四',
+    'תנין':'海の巨獣、竜',
+    'כנף':'翼',
+    'חמש':'五',
+    'דמה':'似る、似せる',
+    'זכר':'男性',
+    'נקב':'女性、穴をあける',
+    'כבש':'従わせる、征服する',
+    'ירק':'青草、緑のもの',
+    'מאד':'非常に、とても',
+    'שש':'六',
+    'צבא':'大群、軍勢',
+    'קדש':'聖である、聖別する',
+  };
+  function meaningOf(rootKey){
+    return ROOT_MEANINGS[rootKey] || '（意味未登録）';
+  }
+
+  const textPanel = document.getElementById('textPanel');
+  const rootSelect = document.getElementById('rootSelect');
+  const targetRootEl = document.getElementById('targetRoot');
+  const targetMetaEl = document.getElementById('targetMeta');
+  const progressText = document.getElementById('progressText');
+  const missText = document.getElementById('missText');
+  const progressFill = document.getElementById('progressFill');
+  const toastEl = document.getElementById('toast');
+  const fwRoot = document.getElementById('fwRoot');
+  const fwCount = document.getElementById('fwCount');
+  const fwFill = document.getElementById('fwFill');
+  const resultOverlay = document.getElementById('resultOverlay');
+  const resultCard = document.getElementById('resultCard');
+  const floatWidget = document.getElementById('floatWidget');
+  const modeFullBtn = document.getElementById('modeFullBtn');
+  const modeQuizBtn = document.getElementById('modeQuizBtn');
+  const fullModeView = document.getElementById('fullModeView');
+  const quizModeView = document.getElementById('quizModeView');
+  const quizVersePanel = document.getElementById('quizVersePanel');
+  const quizProgressText = document.getElementById('quizProgressText');
+  const quizMissText = document.getElementById('quizMissText');
+  const quizProgressFill = document.getElementById('quizProgressFill');
+  const quizTargetRoot = document.getElementById('quizTargetRoot');
+  const quizTargetMeta = document.getElementById('quizTargetMeta');
+  const quizOccurNum = document.getElementById('quizOccurNum');
+  const quizGiveUpBtn = document.getElementById('quizGiveUpBtn');
+  const quizNextBtn = document.getElementById('quizNextBtn');
+  const quizExplain = document.getElementById('quizExplain');
+  const modeExplainBtn = document.getElementById('modeExplainBtn');
+  const explainModeView = document.getElementById('explainModeView');
+  const exampleVerses = document.getElementById('exampleVerses');
+  const practicePanel = document.getElementById('practicePanel');
+  const practiceProgressText = document.getElementById('practiceProgressText');
+  const practiceMissText = document.getElementById('practiceMissText');
+  const practiceDone = document.getElementById('practiceDone');
+  const phaseDots = Array.from(document.querySelectorAll('.phase-dot'));
+  const phaseCards = Array.from(document.querySelectorAll('.phase-card'));
+  const phaseTrackFill = document.getElementById('phaseTrackFill');
+  const phasePrevBtn = document.getElementById('phasePrevBtn');
+  const phaseNextBtn = document.getElementById('phaseNextBtn');
+
+  let currentRoot = null;
+  let totalTargets = 0;
+  let foundCount = 0;
+  let missCount = 0;
+  let missByRoot = {};   // 誤タップで叩いた「他の語根」の内訳
+  let missNonTaggable = 0; // 対象外語（前置詞等）への誤タップ
+  let wordSpans = [];
+  let usedRoots = []; // ランダム出題の重複回避用
+
+  roots.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.root;
+    opt.textContent = `${r.root}（${r.count}回）`;
+    rootSelect.appendChild(opt);
+  });
+
+  function showToast(msg, ms=1400){
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>toastEl.classList.remove('show'), ms);
+  }
+
+  // ---- タップ判定（スクロール中の誤タップ対策） ----
+  // pointerdown〜pointerup の移動距離・経過時間を見て、
+  // 「指を動かさず短時間で離した」場合のみタップとして扱う。
+  const TAP_MOVE_LIMIT = 10;  // px
+  const TAP_TIME_LIMIT = 450; // ms
+
+  function attachTapHandler(span, handler){
+    let sx=0, sy=0, st=0, tracking=false;
+    span.addEventListener('pointerdown', (e) => {
+      sx = e.clientX; sy = e.clientY; st = Date.now(); tracking = true;
+    }, {passive:true});
+    span.addEventListener('pointercancel', () => { tracking = false; });
+    span.addEventListener('pointerup', (e) => {
+      if(!tracking) return;
+      tracking = false;
+      const dx = Math.abs(e.clientX - sx);
+      const dy = Math.abs(e.clientY - sy);
+      const dt = Date.now() - st;
+      if(dx <= TAP_MOVE_LIMIT && dy <= TAP_MOVE_LIMIT && dt <= TAP_TIME_LIMIT){
+        handler(span);
+      }
+      // 条件を満たさない場合＝スクロール操作とみなし、無視する
+    });
+  }
+
+  function renderText(){
+    textPanel.innerHTML = '';
+    wordSpans = [];
+    DATA.verses.forEach(v => {
+      const verseDiv = document.createElement('div');
+      verseDiv.className = 'verse';
+      const vnum = document.createElement('span');
+      vnum.className = 'vnum';
+      vnum.textContent = `${v.ch}:${v.v}`;
+      verseDiv.appendChild(vnum);
+      verseDiv.appendChild(document.createTextNode(' '));
+      v.w.forEach(word => {
+        const span = document.createElement('span');
+        span.textContent = word.s;
+        span.className = 'word ' + (word.r ? 'taggable' : 'plain');
+        if(word.r) span.dataset.root = word.r;
+        span.dataset.gloss = word.g || '';
+        span.dataset.verse = `${v.ch}:${v.v}`;
+        attachTapHandler(span, onWordTap);
+        verseDiv.appendChild(span);
+        verseDiv.appendChild(document.createTextNode(' '));
+        wordSpans.push(span);
+      });
+      textPanel.appendChild(verseDiv);
+    });
+  }
+
+  function setTarget(rootKey){
+    currentRoot = rootKey;
+    const info = roots.find(r => r.root === rootKey);
+    targetRootEl.textContent = rootKey;
+    fwRoot.textContent = rootKey;
+    let meta = `全 ${info.count} 回`;
+    let badge = `<span class="badge ${info.conf}">${info.conf==='high' ? '確度：高' : '推定'}</span>`;
+    targetMetaEl.innerHTML = `意味：${meaningOf(rootKey)}<br>` + meta + badge + (info.note ? `<br>${info.note}` : '');
+    totalTargets = info.count;
+    foundCount = 0;
+    missCount = 0;
+    missByRoot = {};
+    missNonTaggable = 0;
+    updateProgress();
+    resultOverlay.classList.remove('show');
+    wordSpans.forEach(span => {
+      span.classList.remove('found');
+      span.classList.remove('miss-flash');
+    });
+  }
+
+  function updateProgress(){
+    progressText.textContent = `${foundCount} / ${totalTargets}`;
+    missText.textContent = `誤タップ ${missCount}`;
+    const pct = totalTargets ? (foundCount/totalTargets)*100 : 0;
+    progressFill.style.width = `${pct}%`;
+    fwCount.textContent = `${foundCount} / ${totalTargets}`;
+    fwFill.style.width = `${pct}%`;
+  }
+
+  function onWordTap(span){
+    if(!currentRoot) return;
+    if(span.classList.contains('found')) return;
+    if(span.dataset.root === currentRoot){
+      span.classList.add('found');
+      foundCount++;
+      updateProgress();
+      if(foundCount === totalTargets){
+        setTimeout(showResult, 350); // 発見アニメーションを見せてから表示
+      }
+    } else {
+      span.classList.add('miss-flash');
+      missCount++;
+      if(span.dataset.root){
+        missByRoot[span.dataset.root] = (missByRoot[span.dataset.root]||0) + 1;
+        showToast(`これは別の語根「${span.dataset.root}」— ${span.dataset.gloss}`);
+      } else {
+        missNonTaggable++;
+        showToast('この語は対象外（前置詞・接続詞など）');
+      }
+      updateProgress();
+      setTimeout(()=>span.classList.remove('miss-flash'), 300);
+    }
+  }
+
+  function pickRandomRoot(){
+    let pool = roots.filter(r => r.root !== currentRoot && !usedRoots.includes(r.root));
+    if(pool.length === 0){ usedRoots = []; pool = roots.filter(r => r.root !== currentRoot); }
+    const pick = pool[Math.floor(Math.random()*pool.length)];
+    usedRoots.push(pick.root);
+    return pick.root;
+  }
+
+  function verseListFor(rootKey){
+    const list = [];
+    DATA.verses.forEach(v => {
+      if(v.w.some(w => w.r === rootKey)) list.push(`${v.ch}:${v.v}`);
+    });
+    return list;
+  }
+
+  function showResult(){
+    const info = roots.find(r => r.root === currentRoot);
+    const accuracy = (foundCount + missCount) > 0
+      ? Math.round((foundCount/(foundCount+missCount))*100)
+      : 100;
+    const verses = verseListFor(currentRoot);
+
+    // まぎらわしかった語根（実際に誤タップされたもの）を回数順に
+    const confuseEntries = Object.entries(missByRoot).sort((a,b)=>b[1]-a[1]);
+
+    let confuseHtml = '';
+    if(confuseEntries.length){
+      confuseHtml = `<div class="learn-section">
+        <h3>まぎらわしかった語根</h3>
+        ${confuseEntries.map(([r,c]) => {
+          const ri = DATA.roots.find(x=>x.root===r);
+          return `<div class="confuse-row"><span class="heb">${r}</span><span>${c}回タップ${ri && ri.note ? ' — ' + ri.note : ''}</span></div>`;
+        }).join('')}
+      </div>`;
+    } else if(missNonTaggable > 0){
+      confuseHtml = `<div class="learn-section">
+        <h3>まぎらわしかった語根</h3>
+        <div class="confuse-row"><span>前置詞・接続詞など対象外の語</span><span>${missNonTaggable}回タップ</span></div>
+      </div>`;
+    } else {
+      confuseHtml = `<div class="learn-section">
+        <h3>まぎらわしかった語根</h3>
+        <div>誤タップなし。<b class="heb">${currentRoot}</b> の形をしっかり見分けられている。</div>
+      </div>`;
+    }
+
+    resultCard.innerHTML = `
+      <div class="result-eyebrow">収集完了</div>
+      <div class="result-root">${currentRoot}</div>
+      <div class="result-sub">${info.note ? info.note : '同じ語根の単語を全て見つけた'}
+        <span class="badge ${info.conf}">${info.conf==='high' ? '確度：高' : '推定'}</span>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-box"><div class="num">${foundCount}/${totalTargets}</div><div class="lbl">収集数</div></div>
+        <div class="stat-box"><div class="num">${missCount}</div><div class="lbl">誤タップ</div></div>
+        <div class="stat-box"><div class="num">${accuracy}%</div><div class="lbl">正解率</div></div>
+      </div>
+
+      <div class="learn-section">
+        <h3>この語根が登場する節</h3>
+        <div class="verse-tags">
+          ${verses.map(v => `<span class="verse-tag">${v}</span>`).join('')}
+        </div>
+      </div>
+
+      ${confuseHtml}
+
+      <div class="result-actions">
+        <button id="retryBtn">同じ語根をもう一度</button>
+        <button id="randomNextBtn" class="solid">🎲 次はランダムで</button>
+      </div>
+      <div class="result-actions">
+        <button id="chooseBtn">自分で語根を選ぶ</button>
+      </div>
+    `;
+    resultOverlay.classList.add('show');
+
+    document.getElementById('retryBtn').onclick = () => setTarget(currentRoot);
+    document.getElementById('randomNextBtn').onclick = () => {
+      const r = pickRandomRoot();
+      rootSelect.value = r;
+      setTarget(r);
+    };
+    document.getElementById('chooseBtn').onclick = () => {
+      resultOverlay.classList.remove('show');
+      rootSelect.focus();
+    };
+  }
+
+  rootSelect.addEventListener('change', () => setTarget(rootSelect.value));
+  document.getElementById('randomBtn').addEventListener('click', () => {
+    const r = pickRandomRoot();
+    rootSelect.value = r;
+    setTarget(r);
+  });
+
+  // ===================== 10問チャレンジモード =====================
+  // ランダムに語根を1つ選び、その語根が登場する節を1つだけ表示。
+  // 節の中からその語根の単語だけをタップする、を10問繰り返す。
+  const QUIZ_LENGTH = 10;
+  let quizQuestions = [];
+  let quizIndex = 0;
+  let quizFoundInVerse = 0;
+  let quizTotalInVerse = 0;
+  let quizMissTotal = 0;
+  let quizMissThisQ = 0;
+  let quizPerfectCount = 0;
+  let quizGiveUpCount = 0;
+  let quizGaveUpThisQ = false;
+  let quizRootsUsed = [];
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  // (節, 語根) の組み合わせのうち、その節に対象語根が実際に登場するものだけを列挙
+  function buildQuestionPool(){
+    const pool = [];
+    DATA.verses.forEach((v, vi) => {
+      const rootsInVerse = new Set(v.w.filter(w => w.r).map(w => w.r));
+      rootsInVerse.forEach(r => {
+        if(roots.some(x => x.root === r)){
+          pool.push({verseIndex: vi, root: r});
+        }
+      });
+    });
+    return pool;
+  }
+
+  function startQuiz(){
+    const pool = buildQuestionPool();
+    quizQuestions = shuffle(pool).slice(0, QUIZ_LENGTH);
+    quizIndex = 0;
+    quizMissTotal = 0;
+    quizPerfectCount = 0;
+    quizGiveUpCount = 0;
+    quizRootsUsed = [];
+    resultOverlay.classList.remove('show');
+    renderQuizQuestion();
+  }
+
+  function renderQuizQuestion(){
+    if(quizIndex >= quizQuestions.length){
+      showQuizFinalResult();
+      return;
+    }
+    const q = quizQuestions[quizIndex];
+    const verse = DATA.verses[q.verseIndex];
+    const rootInfo = DATA.roots.find(r => r.root === q.root);
+    quizRootsUsed.push(q.root);
+    quizFoundInVerse = 0;
+    quizMissThisQ = 0;
+    quizGaveUpThisQ = false;
+    quizTotalInVerse = verse.w.filter(w => w.r === q.root).length;
+
+    quizProgressText.textContent = `問 ${quizIndex+1} / ${QUIZ_LENGTH}`;
+    quizMissText.textContent = `誤タップ ${quizMissTotal}`;
+    quizProgressFill.style.width = `${(quizIndex/QUIZ_LENGTH)*100}%`;
+    quizTargetRoot.textContent = q.root;
+    quizOccurNum.textContent = quizTotalInVerse;
+    const badge = `<span class="badge ${rootInfo.conf}">${rootInfo.conf==='high' ? '確度：高' : '推定'}</span>`;
+    quizTargetMeta.innerHTML = `意味：${meaningOf(q.root)}` + badge + (rootInfo.note ? `<br>${rootInfo.note}` : '');
+
+    quizGiveUpBtn.style.display = '';
+    quizNextBtn.style.display = 'none';
+    quizExplain.classList.remove('show');
+    quizExplain.innerHTML = '';
+
+    quizVersePanel.innerHTML = '';
+    const verseDiv = document.createElement('div');
+    verseDiv.className = 'verse';
+    const vnum = document.createElement('span');
+    vnum.className = 'vnum';
+    vnum.textContent = `${verse.ch}:${verse.v}`;
+    verseDiv.appendChild(vnum);
+    verseDiv.appendChild(document.createTextNode(' '));
+    verse.w.forEach(word => {
+      const span = document.createElement('span');
+      span.textContent = word.s;
+      span.className = 'word ' + (word.r ? 'taggable' : 'plain');
+      if(word.r) span.dataset.root = word.r;
+      span.dataset.gloss = word.g || '';
+      attachTapHandler(span, onQuizWordTap);
+      verseDiv.appendChild(span);
+      verseDiv.appendChild(document.createTextNode(' '));
+    });
+    quizVersePanel.appendChild(verseDiv);
+  }
+
+  function onQuizWordTap(span){
+    if(quizGaveUpThisQ) return;
+    const q = quizQuestions[quizIndex];
+    if(span.classList.contains('found')) return;
+    if(span.dataset.root === q.root){
+      span.classList.add('found');
+      quizFoundInVerse++;
+      if(quizFoundInVerse === quizTotalInVerse){
+        const perfect = quizMissThisQ === 0;
+        if(perfect) quizPerfectCount++;
+        showToast(perfect ? '正解！ノーミス' : '正解', 900);
+        setTimeout(() => { quizIndex++; renderQuizQuestion(); }, 700);
+      }
+    } else {
+      span.classList.add('miss-flash');
+      quizMissTotal++;
+      quizMissThisQ++;
+      quizMissText.textContent = `誤タップ ${quizMissTotal}`;
+      if(span.dataset.root){
+        showToast(`これは別の語根「${span.dataset.root}」— ${span.dataset.gloss}`);
+      } else {
+        showToast('この語は対象外（前置詞・接続詞など）');
+      }
+      setTimeout(()=>span.classList.remove('miss-flash'), 300);
+    }
+  }
+
+  function giveUpQuestion(){
+    if(quizGaveUpThisQ) return;
+    quizGaveUpThisQ = true;
+    quizGiveUpCount++;
+    const q = quizQuestions[quizIndex];
+    const rootInfo = DATA.roots.find(r => r.root === q.root);
+    // 未発見の正解語をすべて表示する
+    const spans = quizVersePanel.querySelectorAll('.word');
+    spans.forEach(span => {
+      if(span.dataset.root === q.root && !span.classList.contains('found')){
+        span.classList.add('revealed');
+      }
+    });
+    quizGiveUpBtn.style.display = 'none';
+    quizNextBtn.style.display = '';
+    quizExplain.innerHTML =
+      `<b>正解：<span class="heb-inline">${q.root}</span></b>（意味：${meaningOf(q.root)}）<br>` +
+      (rootInfo && rootInfo.note ? rootInfo.note : '青色で示した単語が、この節でこの語根にあたる箇所。');
+    quizExplain.classList.add('show');
+  }
+
+  quizGiveUpBtn.addEventListener('click', giveUpQuestion);
+  quizNextBtn.addEventListener('click', () => { quizIndex++; renderQuizQuestion(); });
+
+  function showQuizFinalResult(){
+    const uniqueRoots = [...new Set(quizRootsUsed)];
+    resultCard.innerHTML = `
+      <div class="result-eyebrow">10問チャレンジ・結果</div>
+      <div class="result-sub" style="font-size:20px;color:var(--ink);margin-top:6px;">全${QUIZ_LENGTH}問終了</div>
+
+      <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-box"><div class="num">${quizPerfectCount}/${QUIZ_LENGTH}</div><div class="lbl">ノーミス正解</div></div>
+        <div class="stat-box"><div class="num">${quizMissTotal}</div><div class="lbl">誤タップ合計</div></div>
+        <div class="stat-box"><div class="num">${quizGiveUpCount}</div><div class="lbl">ギブアップ</div></div>
+        <div class="stat-box"><div class="num">${uniqueRoots.length}</div><div class="lbl">出題語根数</div></div>
+      </div>
+
+      <div class="learn-section">
+        <h3>今回出題された語根</h3>
+        <div class="verse-tags">
+          ${uniqueRoots.map(r => `<span class="verse-tag heb" title="${meaningOf(r)}">${r}（${meaningOf(r)}）</span>`).join('')}
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <button id="quizRetryBtn" class="solid">🎲 もう10問</button>
+      </div>
+      <div class="result-actions">
+        <button id="quizBackBtn">全文モードに戻る</button>
+      </div>
+    `;
+    resultOverlay.classList.add('show');
+    document.getElementById('quizRetryBtn').onclick = () => startQuiz();
+    document.getElementById('quizBackBtn').onclick = () => {
+      resultOverlay.classList.remove('show');
+      switchMode('full');
+    };
+  }
+
+  function switchMode(mode){
+    fullModeView.style.display = mode === 'full' ? '' : 'none';
+    quizModeView.style.display = mode === 'quiz' ? '' : 'none';
+    explainModeView.style.display = mode === 'explain' ? '' : 'none';
+    floatWidget.style.display = mode === 'full' ? '' : 'none';
+    modeFullBtn.classList.toggle('active', mode === 'full');
+    modeQuizBtn.classList.toggle('active', mode === 'quiz');
+    modeExplainBtn.classList.toggle('active', mode === 'explain');
+    resultOverlay.classList.remove('show');
+    if(mode === 'quiz') startQuiz();
+    if(mode === 'explain') showPhase(0);
+  }
+
+  modeFullBtn.addEventListener('click', () => switchMode('full'));
+  modeQuizBtn.addEventListener('click', () => switchMode('quiz'));
+  modeExplainBtn.addEventListener('click', () => switchMode('explain'));
+  // ================================================================
+
+  // ===================== 解説モード：フェーズ送り =====================
+  let explainPhase = 0;
+  const PHASE_COUNT = phaseCards.length;
+
+  function showPhase(i){
+    explainPhase = Math.max(0, Math.min(PHASE_COUNT - 1, i));
+    phaseCards.forEach(card => {
+      card.style.display = (Number(card.dataset.phase) === explainPhase) ? '' : 'none';
+    });
+    phaseDots.forEach(dot => {
+      const p = Number(dot.dataset.phase);
+      dot.classList.toggle('active', p === explainPhase);
+      dot.classList.toggle('done', p < explainPhase);
+    });
+    phaseTrackFill.style.width = `${(explainPhase/(PHASE_COUNT-1))*100}%`;
+    phasePrevBtn.disabled = (explainPhase === 0);
+    phaseNextBtn.disabled = (explainPhase === PHASE_COUNT - 1);
+    phaseNextBtn.textContent = (explainPhase === PHASE_COUNT - 1) ? '最後のステップ' : '次へ →';
+  }
+
+  phasePrevBtn.addEventListener('click', () => showPhase(explainPhase - 1));
+  phaseNextBtn.addEventListener('click', () => showPhase(explainPhase + 1));
+  phaseDots.forEach(dot => {
+    dot.addEventListener('click', () => showPhase(Number(dot.dataset.phase)));
+  });
+  // ================================================================
+
+  // ===================== 解説モード =====================
+  const PRACTICE_ROOT = 'ברא';
+  // 語根の3子音がどの「音節クラスタ」に当たるかを、対象となる2種類の表層形についてのみ手動指定
+  // （弱動詞の同化などがない強変化動詞なので、単純な子音抽出で対応できる）
+  const ROOT_LETTER_MAP = {
+    'בָּרָא':    [0,1,2],   // 語根3文字すべて
+    'וַיִּבְרָא': [2,3,4]    // 先頭2クラスタ(ו,י)は接頭辞。後ろ3つが語根
+  };
+
+  function clusterHebrew(str){
+    const isConsonant = ch => {
+      const cp = ch.codePointAt(0);
+      return cp >= 0x05D0 && cp <= 0x05EA;
+    };
+    const out = [];
+    let cur = '';
+    for(const ch of str){
+      if(isConsonant(ch)){
+        if(cur) out.push(cur);
+        cur = ch;
+      } else {
+        cur += ch;
+      }
+    }
+    if(cur) out.push(cur);
+    return out;
+  }
+
+  // surfaceの文字列を、語根部分だけ色付けしたノード群にして親要素へ追加する
+  function appendHighlighted(parent, surface){
+    const idx = ROOT_LETTER_MAP[surface];
+    const clusters = clusterHebrew(surface);
+    clusters.forEach((c, i) => {
+      if(idx && idx.includes(i)){
+        const rs = document.createElement('span');
+        rs.className = 'root-letter';
+        rs.textContent = c;
+        parent.appendChild(rs);
+      } else {
+        parent.appendChild(document.createTextNode(c));
+      }
+    });
+  }
+
+  function renderExplainStatic(){
+    // 2️⃣の例示単語
+    appendHighlighted(document.getElementById('exWord1'), 'בָּרָא');
+    appendHighlighted(document.getElementById('exWord2'), 'וַיִּבְרָא');
+
+    // 3️⃣ 実例：ברא を含む節を、色付きで（タップ不可・表示のみ）
+    const versesWithRoot = DATA.verses.filter(v => v.w.some(w => w.r === PRACTICE_ROOT));
+    exampleVerses.innerHTML = '';
+    const panel = document.createElement('div');
+    panel.className = 'text-panel';
+    versesWithRoot.forEach(v => {
+      const verseDiv = document.createElement('div');
+      verseDiv.className = 'verse';
+      const vnum = document.createElement('span');
+      vnum.className = 'vnum';
+      vnum.textContent = `${v.ch}:${v.v}`;
+      verseDiv.appendChild(vnum);
+      verseDiv.appendChild(document.createTextNode(' '));
+      v.w.forEach(word => {
+        const span = document.createElement('span');
+        span.className = 'word plain';
+        if(word.r === PRACTICE_ROOT){
+          appendHighlighted(span, word.s);
+        } else {
+          span.textContent = word.s;
+        }
+        verseDiv.appendChild(span);
+        verseDiv.appendChild(document.createTextNode(' '));
+      });
+      panel.appendChild(verseDiv);
+    });
+    exampleVerses.appendChild(panel);
+  }
+
+  let practiceFound = 0;
+  let practiceMiss = 0;
+  const PRACTICE_TOTAL = 6; // ברא の全出現回数
+
+  function renderPractice(){
+    practiceFound = 0;
+    practiceMiss = 0;
+    practiceProgressText.textContent = `0 / ${PRACTICE_TOTAL}`;
+    practiceMissText.textContent = '誤タップ 0';
+    practiceDone.classList.remove('show');
+    practiceDone.innerHTML = '';
+
+    practicePanel.innerHTML = '';
+    const versesWithRoot = DATA.verses.filter(v => v.w.some(w => w.r === PRACTICE_ROOT));
+    versesWithRoot.forEach(v => {
+      const verseDiv = document.createElement('div');
+      verseDiv.className = 'verse';
+      const vnum = document.createElement('span');
+      vnum.className = 'vnum';
+      vnum.textContent = `${v.ch}:${v.v}`;
+      verseDiv.appendChild(vnum);
+      verseDiv.appendChild(document.createTextNode(' '));
+      v.w.forEach(word => {
+        const span = document.createElement('span');
+        span.className = 'word ' + (word.r ? 'taggable' : 'plain');
+        if(word.r) span.dataset.root = word.r;
+        span.dataset.gloss = word.g || '';
+        if(word.r === PRACTICE_ROOT){
+          appendHighlighted(span, word.s);
+        } else {
+          span.textContent = word.s;
+        }
+        attachTapHandler(span, onPracticeWordTap);
+        verseDiv.appendChild(span);
+        verseDiv.appendChild(document.createTextNode(' '));
+      });
+      practicePanel.appendChild(verseDiv);
+    });
+  }
+
+  function onPracticeWordTap(span){
+    if(span.classList.contains('found')) return;
+    if(span.dataset.root === PRACTICE_ROOT){
+      span.classList.add('found');
+      practiceFound++;
+      practiceProgressText.textContent = `${practiceFound} / ${PRACTICE_TOTAL}`;
+      if(practiceFound === PRACTICE_TOTAL){
+        practiceDone.innerHTML =
+          `${PRACTICE_TOTAL}/${PRACTICE_TOTAL} 発見（誤タップ ${practiceMiss}回）。` +
+          `色のついた3文字 <span class="heb-inline root-letter">ברא</span> が、時制や接頭辞が変わっても共通していたことを確認した。`;
+        practiceDone.classList.add('show');
+      }
+    } else {
+      span.classList.add('miss-flash');
+      practiceMiss++;
+      practiceMissText.textContent = `誤タップ ${practiceMiss}`;
+      showToast(span.dataset.root ? `これは別の語根「${span.dataset.root}」` : 'この語は対象外（前置詞・接続詞など）');
+      setTimeout(()=>span.classList.remove('miss-flash'), 300);
+    }
+  }
+  // ================================================================
+
+  renderText();
+  renderExplainStatic();
+  renderPractice();
+  showPhase(0);
+  const defaultRoot = roots.find(r => r.root === 'ברא') ? 'ברא' : roots[0].root;
+  rootSelect.value = defaultRoot;
+  setTarget(defaultRoot);
+})();
+</script>
+</body>
+</html>

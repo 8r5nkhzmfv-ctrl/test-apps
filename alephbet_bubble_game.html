@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>アレフベート・バブルクイズ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+Hebrew:wght@400;500;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky1:#1c2b4a; --sky2:#0e1830;
+    --wood1:#8a5a34; --wood2:#5e3b20; --wood-edge:#3c2513;
+    --parchment:#eae0c6; --gold:#e8c98a;
+    --bubble1:rgba(255,255,255,.55); --bubble2:rgba(160,210,255,.35);
+    --good:#5fd08a; --bad:#e2604f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:auto;min-height:100%;}
+  body{
+    min-height:100vh;
+    min-height:100dvh; /* Safariのツールバー分の高さ変動に対応 */
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,.06), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(255,255,255,.05), transparent 45%),
+      linear-gradient(180deg, var(--sky1), var(--sky2));
+    font-family:'Noto Sans JP',sans-serif;
+    color:var(--parchment);
+    display:flex; align-items:flex-start; justify-content:center;
+    overflow-y:auto; overflow-x:hidden;
+    position:relative;
+    padding-top: max(18px, env(safe-area-inset-top));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+  .heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;unicode-bidi:isolate;}
+
+  /* 背景に漂う小さな装飾バブル */
+  .bg-bubble{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 25%, rgba(255,255,255,.18), rgba(255,255,255,.02) 70%);pointer-events:none;animation:drift linear infinite;}
+  @keyframes drift{ from{ transform:translateY(0);} to{ transform:translateY(-120vh);} }
+
+  .app{width:100%;max-width:460px;padding:20px 16px;position:relative;z-index:2;}
+
+  /* ===== スタート画面 ===== */
+  .panel{background:rgba(20,26,46,.55);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:28px 22px;backdrop-filter:blur(6px);box-shadow:0 20px 50px -20px rgba(0,0,0,.7);}
+  .app-title{font-family:'Noto Serif JP',serif;font-size:20px;font-weight:700;text-align:center;margin:0 0 4px;color:var(--gold);letter-spacing:.06em;}
+  .app-sub{font-size:12px;text-align:center;color:#b9c2d6;margin:0 0 24px;}
+  .step-label{font-size:11px;letter-spacing:.1em;color:#9fb0cf;margin:18px 0 8px;text-transform:uppercase;}
+  .choice-row{display:grid;gap:8px;}
+  .choice-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);color:var(--parchment);padding:12px 14px;border-radius:8px;font-size:14px;cursor:pointer;text-align:left;transition:background .15s, border-color .15s;}
+  .choice-btn:hover{background:rgba(255,255,255,.14);border-color:var(--gold);}
+  .choice-btn.selected{background:rgba(232,201,138,.18);border-color:var(--gold);}
+  .time-row{display:flex;gap:8px;}
+  .time-row .choice-btn{flex:1;text-align:center;}
+  .start-btn{margin-top:26px;width:100%;background:linear-gradient(180deg,#f2d38a,#c99c4e);color:#3a2705;border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;letter-spacing:.04em;cursor:pointer;box-shadow:0 8px 18px -6px rgba(0,0,0,.5);}
+  .start-btn:hover{filter:brightness(1.05);}
+  .hidden{display:none !important;}
+
+  /* ===== ゲーム画面 ===== */
+  .hud{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px;color:#cdd6ea;}
+  .hud b{color:var(--gold);font-size:16px;}
+  .timer-bar-wrap{height:6px;background:rgba(255,255,255,.12);border-radius:4px;overflow:hidden;margin-bottom:22px;}
+  .timer-bar{height:100%;background:linear-gradient(90deg,var(--good),var(--gold));width:100%;transition:width 1s linear;}
+  .timer-bar.warn{background:linear-gradient(90deg,#e2604f,#f2a24f);}
+
+  /* 看板 */
+  .signboard-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:8px;}
+  .chains{display:flex;gap:60px;margin-bottom:-4px;}
+  .chain{width:2px;height:16px;background:repeating-linear-gradient(180deg,#8a8f9c 0 4px, transparent 4px 8px);}
+  .signboard{
+    position:relative;
+    background:
+      linear-gradient(180deg, var(--wood1), var(--wood2));
+    border:4px solid var(--wood-edge);
+    border-radius:8px;
+    padding:26px 20px 22px;
+    width:100%;
+    min-height:150px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    box-shadow:0 14px 26px -12px rgba(0,0,0,.7), inset 0 0 0 2px rgba(255,255,255,.04);
+  }
+  .signboard::before, .signboard::after{
+    content:""; position:absolute; top:6px; width:8px; height:8px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #d8c184, #7a6635); box-shadow:0 1px 2px rgba(0,0,0,.6);
+  }
+  .signboard::before{ left:14px; }
+  .signboard::after{ right:14px; }
+  .sb-caption{font-size:11px;letter-spacing:.1em;color:#d8c9a8;opacity:.8;margin-bottom:10px;text-transform:uppercase;}
+  .sb-heb{
+    font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;font-size:56px;font-weight:700;color:#fff8ea;
+    text-shadow:0 2px 3px rgba(0,0,0,.4);
+    clip-path:inset(0 0% 0 0);
+    opacity:1;
+  }
+  .sb-jp{
+    font-family:'Caveat',cursive; font-size:34px; color:#fff8ea; text-shadow:0 2px 3px rgba(0,0,0,.4);
+  }
+  .sb-audio-icon{font-size:52px;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));}
+  .sb-write-in{
+    animation: writeIn .4s cubic-bezier(.22,1,.36,1) both;
+  }
+  @keyframes writeIn{
+    0%{ clip-path:inset(0 100% 0 0); opacity:0; }
+    100%{ clip-path:inset(0 0% 0 0); opacity:1; }
+  }
+  .ink-underline{width:70%;height:3px;margin-top:10px;position:relative;overflow:hidden;border-radius:2px;background:rgba(255,255,255,.08);}
+  .ink-underline i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--gold);animation:inkfill .38s ease .02s forwards;}
+  @keyframes inkfill{ to{ width:100%; } }
+
+  /* バブル */
+  .bubble-field{position:relative;height:250px;margin-top:26px;}
+  .bubble{
+    position:absolute;
+    width:96px;height:96px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(circle at 32% 26%, rgba(255,255,255,.85), rgba(255,255,255,.08) 40%, rgba(160,210,255,.12) 70%),
+      radial-gradient(circle at 70% 75%, rgba(120,180,255,.18), transparent 60%);
+    border:1px solid rgba(255,255,255,.55);
+    box-shadow: inset 0 0 12px rgba(255,255,255,.4), 0 8px 20px -8px rgba(0,0,0,.5);
+    cursor:pointer;
+    color:#0d1b33;
+    font-weight:700;
+    text-align:center;
+    padding:6px;
+    animation: bob 3.4s ease-in-out infinite, popIn .3s cubic-bezier(.22,1,.36,1) both;
+  }
+  .bubble .bt-heb{font-family:'Noto Sans Hebrew',sans-serif;direction:rtl;font-size:26px;}
+  .bubble .bt-jp{font-size:13px;line-height:1.3;}
+  @keyframes bob{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-10px);} }
+  @keyframes popIn{ 0%{ transform:scale(.4); opacity:0;} 100%{ transform:scale(1); opacity:1;} }
+  @keyframes popOut{
+    0%{ transform:scale(1); opacity:1; }
+    100%{ transform:scale(1.35); opacity:0; }
+  }
+  .bubble.pop{ animation:popOut .26s cubic-bezier(.22,1,.36,1) forwards; pointer-events:none; }
+  .bubble.correct{ box-shadow: inset 0 0 18px rgba(120,255,170,.7), 0 0 22px rgba(120,255,170,.5); }
+  .bubble.wrong{ box-shadow: inset 0 0 18px rgba(255,120,110,.7), 0 0 22px rgba(255,120,110,.5); }
+  .ring{
+    position:absolute; border-radius:50%; border:2px solid rgba(255,255,255,.7);
+    animation: ringOut .38s cubic-bezier(.22,1,.36,1) forwards; pointer-events:none;
+  }
+  @keyframes ringOut{ 0%{ transform:scale(.4); opacity:.85;} 100%{ transform:scale(1.9); opacity:0;} }
+
+  /* ===== 結果画面 ===== */
+  .result-panel{text-align:center;}
+  .result-score{font-family:'Noto Serif JP',serif;font-size:54px;font-weight:700;color:var(--gold);margin:10px 0 2px;}
+  .result-label{font-size:12px;color:#b9c2d6;letter-spacing:.08em;margin-bottom:26px;}
+</style>
+</head>
+<body>
+<div id="bg-bubbles"></div>
+<div class="app">
+
+  <!-- START -->
+  <div id="screen-start" class="panel">
+    <div class="app-title heb" style="font-size:26px;">אָלֶף בֵּית</div>
+    <div class="app-sub">アレフベート・バブルクイズ／時間内に何問正解できるか</div>
+
+    <div class="step-label">方向</div>
+    <div class="choice-row" id="dir-row"></div>
+
+    <div id="submode-block" class="hidden">
+      <div class="step-label">日本語→ヘブル語の出題方法</div>
+      <div class="choice-row" id="submode-row"></div>
+    </div>
+
+    <div class="step-label">制限時間</div>
+    <div class="time-row" id="time-row"></div>
+
+    <button class="start-btn" id="start-btn" onclick="startGame()">スタート</button>
+  </div>
+
+  <!-- GAME -->
+  <div id="screen-game" class="hidden">
+    <div class="hud">
+      <div>正解 <b id="hud-score">0</b></div>
+      <div id="hud-time">30<span style="font-size:11px;">秒</span></div>
+    </div>
+    <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+
+    <div class="signboard-wrap">
+      <div class="chains"><div class="chain"></div><div class="chain"></div></div>
+      <div class="signboard">
+        <div class="sb-caption" id="sb-caption">問題</div>
+        <div id="sb-content"></div>
+      </div>
+    </div>
+
+    <div class="bubble-field" id="bubble-field"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="screen-result" class="panel result-panel hidden">
+    <div class="app-title" style="font-size:18px;">終了！</div>
+    <div class="result-score"><span id="result-score">0</span></div>
+    <div class="result-label">問正解</div>
+    <button class="start-btn" onclick="backToStart()">もう一度</button>
+  </div>
+
+</div>
+
+<script>
+/* ============ 背景バブル装飾 ============ */
+(function(){
+  const wrap = document.getElementById('bg-bubbles');
+  wrap.style.cssText='position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:1;';
+  for(let i=0;i<14;i++){
+    const b=document.createElement('div'); b.className='bg-bubble';
+    const size = 10+Math.random()*40;
+    b.style.width=size+'px'; b.style.height=size+'px';
+    b.style.left=(Math.random()*100)+'vw';
+    b.style.top=(100+Math.random()*20)+'vh';
+    b.style.animationDuration=(10+Math.random()*14)+'s';
+    b.style.animationDelay=(Math.random()*10)+'s';
+    wrap.appendChild(b);
+  }
+})();
+
+/* ============ 音（Web Audio APIで生成、外部音源不要） ============ */
+let actx = null;
+function ensureAudio(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
+function tone(freq, start, dur, type, vol){
+  if(!actx) return;
+  const osc = actx.createOscillator(); const gain = actx.createGain();
+  osc.type = type||'sine'; osc.frequency.setValueAtTime(freq, actx.currentTime+start);
+  gain.gain.setValueAtTime(0, actx.currentTime+start);
+  gain.gain.linearRampToValueAtTime(vol||0.18, actx.currentTime+start+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime+start+dur);
+  osc.connect(gain); gain.connect(actx.destination);
+  osc.start(actx.currentTime+start); osc.stop(actx.currentTime+start+dur+0.02);
+}
+function playPop(){ tone(700,0,.06,'sine',0.12); tone(300,0.04,.05,'sine',0.08); }
+function playCorrect(){ tone(660,0,.12,'triangle',0.16); tone(880,0.1,.16,'triangle',0.18); }
+function playWrong(){ tone(260,0,.18,'sawtooth',0.14); tone(180,0.08,.2,'sawtooth',0.12); }
+
+function speakHebrew(text, rate){
+  try{
+    speechSynthesis.cancel();
+    setTimeout(()=>{
+      const u = new SpeechSynthesisUtterance(text);
+      const voices = speechSynthesis.getVoices();
+      const heVoice = voices.find(v=>v.lang && v.lang.toLowerCase().startsWith('he'));
+      if(heVoice) u.voice = heVoice;
+      u.lang = 'he-IL'; u.rate = rate || 0.85;
+      speechSynthesis.speak(u);
+    }, 60);
+  }catch(e){}
+}
+
+/* ============ データ：アレフベート（ソフィート含む） ============ */
+const LETTERS = [
+ {heb:'א',roman:'alef',kana:'アレフ'},{heb:'ב',roman:'bet',kana:'ベート'},
+ {heb:'ג',roman:'gimel',kana:'ギメル'},{heb:'ד',roman:'dalet',kana:'ダレット'},
+ {heb:'ה',roman:'he',kana:'ヘー'},{heb:'ו',roman:'vav',kana:'ヴァヴ'},
+ {heb:'ז',roman:'zayin',kana:'ザイン'},{heb:'ח',roman:'het',kana:'ヘット'},
+ {heb:'ט',roman:'tet',kana:'テット'},{heb:'י',roman:'yod',kana:'ヨッド'},
+ {heb:'כ',roman:'kaf',kana:'カフ'},{heb:'ל',roman:'lamed',kana:'ラメッド'},
+ {heb:'מ',roman:'mem',kana:'メム'},{heb:'נ',roman:'nun',kana:'ヌン'},
+ {heb:'ס',roman:'samekh',kana:'サメフ'},{heb:'ע',roman:'ayin',kana:'アイン'},
+ {heb:'פ',roman:'pe',kana:'ペー'},{heb:'צ',roman:'tsadi',kana:'ツァディ'},
+ {heb:'ק',roman:'qof',kana:'コフ'},{heb:'ר',roman:'resh',kana:'レーシュ'},
+ {heb:'ש',roman:'shin',kana:'シン'},{heb:'ת',roman:'tav',kana:'タヴ'},
+ {heb:'ך',roman:'khaf sofit',kana:'カフ',sofit:true},
+ {heb:'ם',roman:'mem sofit',kana:'メム',sofit:true},
+ {heb:'ן',roman:'nun sofit',kana:'ヌン',sofit:true},
+ {heb:'ף',roman:'fe sofit',kana:'ペー',sofit:true},
+ {heb:'ץ',roman:'tsadi sofit',kana:'ツァディ',sofit:true}
+];
+
+/* ============ 状態 ============ */
+let state = { direction:'h2j', submode:'text', timeLimit:30, timeLeft:30, score:0, attempts:0, timerId:null, locked:false };
+
+/* ============ スタート画面ウィザード ============ */
+function buildChoice(container, options, key, defaultVal){
+  container.innerHTML='';
+  options.forEach(o=>{
+    const b=document.createElement('button'); b.className='choice-btn'+(o.v===defaultVal?' selected':'');
+    b.textContent=o.label; b.dataset.v=o.v;
+    b.onclick=()=>{
+      [...container.children].forEach(c=>c.classList.remove('selected'));
+      b.classList.add('selected');
+      state[key]=o.v;
+      onWizardChange();
+    };
+    container.appendChild(b);
+  });
+}
+function onWizardChange(){
+  document.getElementById('submode-block').classList.toggle('hidden', state.direction!=='j2h');
+}
+buildChoice(document.getElementById('dir-row'), [
+  {v:'h2j', label:'ヘブル語 → 日本語'},
+  {v:'j2h', label:'日本語 → ヘブル語'}
+], 'direction', 'h2j');
+buildChoice(document.getElementById('submode-row'), [
+  {v:'text', label:'文字のみ（名前を見て文字を選ぶ）'},
+  {v:'audio', label:'音声のみ（音を聞いて文字を選ぶ）'}
+], 'submode', 'text');
+buildChoice(document.getElementById('time-row'), [
+  {v:30, label:'30秒'}, {v:60, label:'60秒'}, {v:90, label:'90秒'}
+], 'timeLimit', 30);
+onWizardChange();
+
+/* ============ ゲーム制御 ============ */
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function startGame(){
+  ensureAudio();
+  state.timeLeft = state.timeLimit;
+  state.score = 0; state.attempts = 0; state.locked = false;
+  document.getElementById('screen-start').classList.add('hidden');
+  document.getElementById('screen-result').classList.add('hidden');
+  document.getElementById('screen-game').classList.remove('hidden');
+  document.getElementById('hud-score').textContent = '0';
+  updateTimerUI();
+  clearInterval(state.timerId);
+  state.timerId = setInterval(tick, 1000);
+  nextQuestion();
+}
+function tick(){
+  state.timeLeft--;
+  updateTimerUI();
+  if(state.timeLeft<=0){ endGame(); }
+}
+function updateTimerUI(){
+  document.getElementById('hud-time').innerHTML = state.timeLeft+'<span style="font-size:11px;">秒</span>';
+  const pct = Math.max(0, (state.timeLeft/state.timeLimit)*100);
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = pct+'%';
+  bar.classList.toggle('warn', state.timeLeft<=10);
+}
+function endGame(){
+  clearInterval(state.timerId);
+  document.getElementById('screen-game').classList.add('hidden');
+  document.getElementById('screen-result').classList.remove('hidden');
+  document.getElementById('result-score').textContent = state.score;
+}
+function backToStart(){
+  document.getElementById('screen-result').classList.add('hidden');
+  document.getElementById('screen-start').classList.remove('hidden');
+}
+
+let currentQ = null;
+function questionPool(){
+  return state.direction==='j2h' ? LETTERS.filter(x=>!x.sofit) : LETTERS;
+}
+function nextQuestion(){
+  if(state.timeLeft<=0) return;
+  state.locked = false;
+  const pool = questionPool();
+  const idx = Math.floor(Math.random()*pool.length);
+  currentQ = pool[idx];
+  renderQuestion();
+}
+function renderQuestion(){
+  const sbContent = document.getElementById('sb-content');
+  const sbCaption = document.getElementById('sb-caption');
+  sbContent.innerHTML='';
+
+  if(state.direction==='h2j'){
+    sbCaption.textContent = 'この文字の読みは？';
+    const el = document.createElement('div'); el.className='sb-heb sb-write-in'; el.textContent = currentQ.heb;
+    sbContent.appendChild(el);
+    const ul = document.createElement('div'); ul.className='ink-underline'; ul.innerHTML='<i></i>';
+    sbContent.appendChild(ul);
+  } else if(state.submode==='text'){
+    sbCaption.textContent = 'この読みの文字は？';
+    const el = document.createElement('div'); el.className='sb-jp sb-write-in'; el.textContent = currentQ.kana;
+    sbContent.appendChild(el);
+  } else {
+    sbCaption.textContent = 'この音の文字は？（タップで再生）';
+    const el = document.createElement('div'); el.className='sb-audio-icon sb-write-in'; el.textContent = '🔊';
+    el.onclick = ()=>speakHebrew(currentQ.heb, 0.8);
+    sbContent.appendChild(el);
+    setTimeout(()=>speakHebrew(currentQ.heb,0.8), 200);
+  }
+
+  renderBubbles();
+}
+function renderBubbles(){
+  const field = document.getElementById('bubble-field');
+  field.innerHTML='';
+  /* ソフィートと通常形は読みが同じため、同じ読みを持つ項目は選択肢が被らないよう除外する */
+  const pool = questionPool().filter(x=>x!==currentQ && x.kana!==currentQ.kana);
+  const distractors = shuffle(pool).slice(0,2);
+  const opts = shuffle([currentQ, ...distractors]);
+
+  const positions = [ {left:'6%', top:'10%'}, {left:'62%', top:'0%'}, {left:'32%', top:'52%'} ];
+  const posShuffled = shuffle(positions);
+
+  opts.forEach((opt,i)=>{
+    const b = document.createElement('div'); b.className='bubble';
+    b.style.left = posShuffled[i].left; b.style.top = posShuffled[i].top;
+    b.style.animationDelay = (i*0.035)+'s, '+(Math.random()*1.2)+'s';
+    if(state.direction==='h2j'){
+      const jp=document.createElement('div'); jp.className='bt-jp'; jp.textContent = opt.kana;
+      b.appendChild(jp);
+    } else {
+      const heb=document.createElement('div'); heb.className='bt-heb'; heb.textContent = opt.heb;
+      b.appendChild(heb);
+    }
+    b.onclick = ()=>onBubbleTap(b, opt);
+    field.appendChild(b);
+  });
+}
+function onBubbleTap(el, opt){
+  if(state.locked || state.timeLeft<=0) return;
+  state.locked = true;
+  const correct = opt===currentQ;
+  playPop();
+  spawnRing(el);
+  el.classList.add(correct?'correct':'wrong');
+  document.querySelectorAll('.bubble').forEach(b=>{ b.classList.add('pop'); });
+  state.attempts++;
+  if(correct){ state.score++; document.getElementById('hud-score').textContent = state.score; setTimeout(playCorrect,40); }
+  else { setTimeout(playWrong,40); }
+  setTimeout(()=>{ if(state.timeLeft>0) nextQuestion(); }, 360);
+}
+function spawnRing(el){
+  const field = document.getElementById('bubble-field');
+  const r = document.createElement('div'); r.className='ring';
+  const rect = el.getBoundingClientRect(); const fieldRect = field.getBoundingClientRect();
+  const size = rect.width;
+  r.style.width=size+'px'; r.style.height=size+'px';
+  r.style.left = (rect.left-fieldRect.left)+'px'; r.style.top = (rect.top-fieldRect.top)+'px';
+  field.appendChild(r);
+  setTimeout(()=>r.remove(),400);
+}
+</script>
+</body>
+</html>
