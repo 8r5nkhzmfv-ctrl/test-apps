@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>ヘブル文字スパイダー</title>
+<style>
+:root{--w:min(9vw,66px);--h:calc(var(--w)*1.42);--g:min(.8vw,8px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+body{margin:0;background:#0e5a38;background:radial-gradient(circle at 50% 30%,#14754a,#0a3f27);color:#fff;font-family:system-ui,"Noto Sans Hebrew","David","Arial Hebrew","Hiragino Sans","Noto Sans JP",sans-serif;min-height:100vh}
+#bar{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px}
+button,select{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid #ffffff55;background:#00000040;color:#fff;cursor:pointer}
+button:active{background:#00000080}
+select option{color:#000}
+#info{font-size:14px;opacity:.9}
+#rule{text-align:center;font-size:13px;opacity:.85;padding:0 10px 4px;max-width:680px;margin:0 auto;line-height:1.5}
+#desc{text-align:center;font-size:14px;min-height:22px;padding:0 8px;color:#fde047}
+#board{width:calc(var(--w)*10 + var(--g)*9);margin:6px auto 40px}
+.row{display:grid;grid-template-columns:repeat(10,var(--w));gap:var(--g);margin-bottom:calc(var(--g)*2)}
+#top{margin-bottom:14px}
+.slot{width:var(--w);min-height:var(--h);border-radius:8%;border:2px dashed #ffffff40;position:relative}
+.slot.s{cursor:pointer}
+.badge{position:absolute;right:-4px;bottom:-6px;background:#fde047;color:#000;border-radius:10px;font-size:11px;padding:1px 6px;font-weight:700;z-index:5}
+.dn{display:flex;align-items:center;justify-content:center;font-size:calc(var(--w)*.5);opacity:.35}
+.dn.ok{opacity:1;background:#00000040;border-style:solid}
+.card{position:absolute;left:0;width:var(--w);height:var(--h);border-radius:8%;background:#fff;color:#111;border:1px solid #0006;box-shadow:0 1px 3px #0006;font-weight:700;overflow:hidden}
+.card .hd{position:absolute;left:0;right:0;top:0;height:calc(var(--w)*.44);display:flex;align-items:center;justify-content:space-between;padding:0 7%;background:#f2f2f2;border-bottom:1px solid #0002}
+.card .hd b{font-size:calc(var(--w)*.4);line-height:1;direction:rtl;unicode-bidi:isolate}
+.card .hd i{font-style:normal;font-size:calc(var(--w)*.27)}
+.card .ct{position:absolute;left:0;right:0;top:calc(var(--w)*.46);bottom:calc(var(--w)*.22);display:flex;align-items:center;justify-content:center;font-size:calc(var(--w)*.5);direction:rtl}
+.card .nm{position:absolute;left:0;right:0;bottom:3%;text-align:center;font-size:calc(var(--w)*.17);color:#444}
+.card.down{background:repeating-linear-gradient(45deg,#1d4ed8 0 6px,#1e40af 6px 12px);border:3px solid #fff}
+.card.sel{outline:3px solid #fde047;z-index:3}
+.card.hint{outline:3px dashed #38bdf8;z-index:3}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;padding:10px 18px;border-radius:10px;font-size:15px;display:none;z-index:50;max-width:90vw;text-align:center}
+#win{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-size:32px;z-index:99}
+</style>
+</head>
+<body>
+<div id="bar">
+  <button id="bNew">新規</button>
+  <button id="bUndo">戻す</button>
+  <button id="bHint">ヒント</button>
+  <select id="sSuit">
+    <option value="1">1スート（易）</option>
+    <option value="2">2スート</option>
+    <option value="4">4スート（難）</option>
+  </select>
+  <span id="info"></span>
+</div>
+<div id="rule">場札の一番下の札を、<b>順位が1つ大きい札</b>の上に移すの上に置く（例：ג の上に ב）。同じスートで連続した並びは、まとめて移動できる。ץ(900)→א(1) の27枚を同スートで揃えると消える。山札は、全列に1枚ずつ配る（空列があると配れない）。</div>
+<div id="desc"></div>
+<div id="board">
+  <div class="row" id="top"></div>
+  <div class="row" id="tab"></div>
+</div>
+<div id="toast"></div>
+<div id="win"><div>🎉 全完成！</div><button id="bAgain">もう一度</button></div>
+<script>
+const SU=['♠','♥','♦','♣'];
+const SC=['#111','#c62828','#1565c0','#2e7d32'];
+// ランク1〜27：22文字＋語末形5（ゲマトリア順）。[文字,名前,読み,原義,数値]
+const HB=[
+['','','','',''],
+['א','אלף','アレフ','牛',1],['ב','בית','ベート','家',2],['ג','גימל','ギメル','ラクダ',3],['ד','דלת','ダレト','扉',4],
+['ה','הא','ヘー','窓／見よ',5],['ו','וו','ヴァヴ','釘',6],['ז','זין','ザイン','武器',7],['ח','חית','ヘート','垣',8],
+['ט','טית','テート','容器（推定）',9],['י','יוד','ヨッド','手',10],['כ','כף','カフ','手のひら',20],['ל','למד','ラメド','牛追い棒',30],
+['מ','מם','メム','水',40],['נ','נון','ヌン','魚',50],['ס','סמך','サメク','支え',60],['ע','עין','アイン','目',70],
+['פ','פא','ペー','口',80],['צ','צדי','ツァディ','釣り針（推定）',90],['ק','קוף','コフ','針の穴（推定）',100],['ר','ריש','レーシュ','頭',200],
+['ש','שין','シン','歯',300],['ת','תו','タヴ','印',400],
+['ך','כף סופית','カフ語末形','手のひら（語末形）',500],['ם','מם סופית','メム語末形','水（語末形）',600],['ן','נון סופית','ヌン語末形','魚（語末形）',700],
+['ף','פא סופית','ペー語末形','口（語末形）',800],['ץ','צדי סופית','ツァディ語末形','釣り針（語末形）',900]];
+const MAXR=27, COLS=10, SETS=4;
+let S,hist=[],sel=null,moves=0,suits=1,hintO=null,toastT=null;
+
+function newGame(){
+  const d=[];
+  for(let k=0;k<SETS;k++){
+    const s=suits===1?0:(suits===2?k%2:k);
+    for(let r=1;r<=MAXR;r++)d.push({s,r,up:false});
+  }
+  for(let i=d.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[d[i],d[j]]=[d[j],d[i]]}
+  const tab=Array.from({length:COLS},()=>[]);
+  for(let i=0;i<54;i++)tab[i%COLS].push(d.pop());
+  tab.forEach(p=>p[p.length-1].up=true);
+  S={stock:d,tab,done:[]};
+  hist=[];sel=null;hintO=null;moves=0;
+  document.getElementById('win').style.display='none';
+  render();
+}
+const snap=()=>{hist.push(JSON.stringify(S));if(hist.length>500)hist.shift()};
+function undo(){if(hist.length){S=JSON.parse(hist.pop());sel=null;hintO=null;moves=Math.max(0,moves-1);render()}}
+function toast(m){
+  const t=document.getElementById('toast');t.textContent=m;t.style.display='block';
+  clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',2600);
+}
+
+function canPick(c,idx){
+  const p=S.tab[c];
+  if(idx<0||idx>=p.length||!p[idx].up)return false;
+  for(let j=idx;j<p.length-1;j++)if(p[j].s!==p[j+1].s||p[j].r!==p[j+1].r+1)return false;
+  return true;
+}
+function canDrop(first,c){
+  const p=S.tab[c];
+  if(!p.length)return true;
+  return p[p.length-1].r===first.r+1;
+}
+function checkRuns(){
+  let got=false;
+  for(let c=0;c<COLS;c++){
+    const p=S.tab[c];
+    if(p.length<MAXR)continue;
+    const base=p.length-MAXR;let ok=true;
+    for(let j=0;j<MAXR;j++){const k=p[base+j];if(!k.up||k.s!==p[base].s||k.r!==MAXR-j){ok=false;break}}
+    if(ok){
+      const s=p[base].s;
+      p.splice(base,MAXR);S.done.push(s);got=true;
+      if(p.length)p[p.length-1].up=true;
+      toast(`${SU[s]}の27文字（ץ→א）完成`);
+    }
+  }
+  return got;
+}
+function checkWin(){if(S.done.length===SETS)document.getElementById('win').style.display='flex'}
+
+function move(from,idx,to){
+  const p=S.tab[from];
+  if(from===to||!canPick(from,idx)||!canDrop(p[idx],to))return false;
+  snap();
+  const cs=p.splice(idx);
+  if(p.length)p[p.length-1].up=true;
+  S.tab[to].push(...cs);
+  sel=null;hintO=null;moves++;
+  checkRuns();render();checkWin();
+  return true;
+}
+function deal(){
+  if(!S.stock.length){toast('山札なし');return}
+  if(S.tab.some(p=>!p.length)){toast('空列を埋めてから配る');return}
+  snap();
+  for(let c=0;c<COLS&&S.stock.length;c++){const k=S.stock.pop();k.up=true;S.tab[c].push(k)}
+  sel=null;hintO=null;moves++;
+  checkRuns();render();checkWin();
+}
+
+// 最良の移動先（ダブルクリック用・ヒント共通）
+function bestDest(from,idx){
+  const p=S.tab[from],first=p[idx];
+  let best=-1,bs=-1;
+  for(let k=0;k<COLS;k++){
+    if(k===from||!canDrop(first,k))continue;
+    const q=S.tab[k];let sc;
+    if(!q.length){if(idx===0)continue;sc=1}
+    else sc=q[q.length-1].s===first.s?3:1.5;
+    // 既に連続している並びを崩さない
+    if(idx>0&&p[idx-1].up&&p[idx-1].s===first.s&&p[idx-1].r===first.r+1)continue;
+    if(idx>0&&!p[idx-1].up)sc+=2;
+    if(sc>bs){bs=sc;best=k}
+  }
+  return best<0?null:{k:best,sc:bs};
+}
+function hint(){
+  let best=null;
+  for(let c=0;c<COLS;c++){
+    const p=S.tab[c];
+    for(let idx=0;idx<p.length;idx++){
+      if(!canPick(c,idx))continue;
+      const d=bestDest(c,idx);
+      if(d&&(!best||d.sc>best.sc))best={c,idx,k:d.k,sc:d.sc};
+    }
+  }
+  sel=null;
+  if(!best){hintO=null;toast(S.stock.length?'有効な移動なし。山札を配る':'有効な移動なし');render();return}
+  hintO=best;render();
+}
+
+function onClick(e){
+  const el=e.target.closest('[data-k]');
+  if(!el){sel=null;hintO=null;render();return}
+  if(el.dataset.k==='stock')return deal();
+  const c=+el.dataset.c,idx=+el.dataset.idx;
+  hintO=null;
+  if(sel&&sel.c!==c){if(move(sel.c,sel.idx,c))return}
+  if(idx>=0&&S.tab[c][idx]&&S.tab[c][idx].up){
+    if(sel&&sel.c===c&&sel.idx===idx)sel=null;
+    else if(canPick(c,idx))sel={c,idx};
+    else{sel=null;toast('同じスートで連続した並びのみ移動可')}
+  }else sel=null;
+  render();
+}
+function onDbl(e){
+  const el=e.target.closest('[data-k="tab"]');if(!el)return;
+  const c=+el.dataset.c,idx=+el.dataset.idx;
+  if(idx<0||!canPick(c,idx))return;
+  const d=bestDest(c,idx);
+  if(d)move(c,idx,d.k);else{sel=null;render()}
+}
+
+function cardEl(k,top,cls){
+  const d=document.createElement('div');
+  d.className='card'+(k.up?'':' down')+(cls||'');
+  d.style.top=top;
+  if(k.up){
+    const h=HB[k.r];
+    d.style.color=SC[k.s];
+    d.innerHTML=`<div class="hd"><i>${SU[k.s]}</i><b>${h[0]}</b></div><div class="ct">${h[0]}</div><div class="nm">${h[4]}</div>`;
+  }
+  return d;
+}
+function render(){
+  const top=document.getElementById('top');top.innerHTML='';
+  const st=document.createElement('div');st.className='slot s';st.dataset.k='stock';
+  if(S.stock.length){
+    st.appendChild(cardEl({up:false},'-2px'));
+    const b=document.createElement('div');b.className='badge';b.textContent='×'+Math.ceil(S.stock.length/COLS);st.appendChild(b);
+  }else st.innerHTML='<div class="dn" style="position:absolute;inset:0">–</div>';
+  top.appendChild(st);
+  for(let i=0;i<5;i++)top.appendChild(document.createElement('div'));
+  for(let i=0;i<SETS;i++){
+    const d=document.createElement('div');
+    const done=i<S.done.length;
+    d.className='slot dn'+(done?' ok':'');
+    if(done){d.textContent=SU[S.done[i]];d.style.color=SC[S.done[i]];d.style.background='#fff'}
+    else d.textContent='✓';
+    top.appendChild(d);
+  }
+  const tb=document.getElementById('tab');tb.innerHTML='';
+  S.tab.forEach((p,c)=>{
+    const col=document.createElement('div');col.className='slot';col.style.border=p.length?'none':'';
+    col.dataset.k='tab';col.dataset.c=c;col.dataset.idx=-1;
+    let off=0,last=0;
+    p.forEach((k,idx)=>{
+      last=off;
+      let cls='';
+      if(sel&&sel.c===c&&idx>=sel.idx)cls+=' sel';
+      if(hintO){
+        if(hintO.c===c&&idx>=hintO.idx)cls+=' hint';
+        if(hintO.k===c&&idx===p.length-1)cls+=' hint';
+      }
+      const e=cardEl(k,`calc(var(--h)*${off})`,cls);
+      e.dataset.k='tab';e.dataset.c=c;e.dataset.idx=idx;
+      col.appendChild(e);
+      off+=k.up?0.32:0.12;
+    });
+    col.style.height=`calc(var(--h)*${p.length?last+1:1})`;
+    if(!p.length&&hintO&&hintO.k===c)col.style.borderColor='#38bdf8';
+    tb.appendChild(col);
+  });
+  const dd=document.getElementById('desc');
+  if(sel){const k=S.tab[sel.c][sel.idx],h=HB[k.r],n=S.tab[sel.c].length-sel.idx;
+    dd.textContent=`${h[0]}　${h[1]}（${h[2]}）｜原義：${h[3]}｜数値：${h[4]}${n>1?`｜${n}枚移動`:''}`}
+  else dd.textContent='';
+  document.getElementById('info').textContent=`手数 ${moves}　完成 ${S.done.length}/${SETS}`;
+}
+
+document.getElementById('board').addEventListener('click',onClick);
+document.getElementById('board').addEventListener('dblclick',onDbl);
+document.getElementById('bNew').onclick=newGame;
+document.getElementById('bAgain').onclick=newGame;
+document.getElementById('bUndo').onclick=undo;
+document.getElementById('bHint').onclick=hint;
+document.getElementById('sSuit').onchange=e=>{suits=+e.target.value;newGame()};
+document.addEventListener('click',e=>{if(!e.target.closest('#board')&&!e.target.closest('#bar')){sel=null;hintO=null;render()}});
+newGame();
+</script>
+</body>
+</html>

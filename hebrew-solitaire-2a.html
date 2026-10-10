@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>語根ソリティア A（文字順）</title>
+<style>
+:root{--w:min(12.4vw,84px);--h:calc(var(--w)*1.42);--g:min(1.2vw,10px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+body{margin:0;background:#0e5a38;background:radial-gradient(circle at 50% 30%,#14754a,#0a3f27);color:#fff;font-family:system-ui,"Noto Sans Hebrew","David","Arial Hebrew","Hiragino Sans","Noto Sans JP",sans-serif;min-height:100vh}
+#bar{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px}
+button{font:inherit;font-size:14px;padding:6px 12px;border-radius:8px;border:1px solid #ffffff55;background:#00000040;color:#fff;cursor:pointer}
+button:active{background:#00000080}
+label{font-size:14px;display:flex;align-items:center;gap:4px}
+#info{font-size:14px;opacity:.9}
+#rule{text-align:center;font-size:13px;opacity:.85;padding:0 10px 4px;max-width:640px;margin:0 auto;line-height:1.5}
+#desc{text-align:center;font-size:14px;min-height:22px;padding:0 8px;color:#fde047}
+#board{width:calc(var(--w)*7 + var(--g)*6);margin:6px auto 20px}
+.row{display:grid;grid-template-columns:repeat(7,var(--w));gap:var(--g);margin-bottom:calc(var(--g)*2)}
+#top{margin-bottom:28px}
+.slot{width:var(--w);height:var(--h);border-radius:8%;border:2px dashed #ffffff40;position:relative}
+.slot.s{cursor:pointer}
+.flab{position:absolute;top:calc(100% + 3px);left:-10%;right:-10%;text-align:center;font-size:11px;white-space:nowrap;opacity:.9;direction:rtl}
+.card{position:absolute;left:0;width:var(--w);height:var(--h);border-radius:8%;background:#fff;color:#111;border:1px solid #0006;box-shadow:0 1px 3px #0006;font-weight:700;overflow:hidden}
+.card .hd{position:absolute;left:0;right:0;top:0;height:calc(var(--w)*.3);display:flex;justify-content:space-between;align-items:center;padding:0 6%;font-size:calc(var(--w)*.19);background:#eee;border-bottom:1px solid #0002}
+.card .rk{font-size:calc(var(--w)*.2);min-width:1em}
+.card .rt{direction:rtl;unicode-bidi:isolate;font-weight:700}
+.card .rt .on{color:#c62828}
+.card .rt .off{color:#aaa;font-weight:400}
+.card .gp{color:#fff;font-weight:700;font-size:calc(var(--w)*.17)}
+.card .hd.g{color:#fff}
+.card .ct{position:absolute;left:0;right:0;top:calc(var(--w)*.3);bottom:calc(var(--w)*.26);display:flex;align-items:center;justify-content:center;direction:rtl}
+body.A .card .ct{font-size:calc(var(--w)*.5)}
+body.B .card .ct{font-size:calc(var(--w)*.3)}
+.card .nm{position:absolute;left:0;right:0;bottom:4%;text-align:center;font-size:calc(var(--w)*.15);font-weight:600;color:#333;white-space:nowrap}
+.card.down{background:repeating-linear-gradient(45deg,#1d4ed8 0 6px,#1e40af 6px 12px);border:3px solid #fff}
+.card.sel{outline:3px solid #fde047;transform:translateY(-3px)}
+#done{width:calc(var(--w)*7 + var(--g)*6);margin:0 auto 40px;display:flex;flex-wrap:wrap;gap:6px;font-size:13px}
+.chip{background:#00000050;border-radius:8px;padding:4px 8px;line-height:1.6}
+.chip b{direction:rtl;unicode-bidi:isolate;margin:0 3px;font-size:15px}
+.chip i{font-style:normal;color:#fff;border-radius:4px;padding:1px 6px;margin-right:4px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;padding:10px 18px;border-radius:10px;font-size:15px;display:none;z-index:50}
+#win{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-size:32px;z-index:99}
+</style>
+</head>
+<body>
+<div id="bar">
+  <button id="bNew">新規</button>
+  <button id="bUndo">戻す</button>
+  <button id="bAuto">自動完成</button>
+  
+  <span id="info"></span>
+</div>
+<div id="rule">語根（3文字）を完成させる。組札は①→②→③の順（同じ語根）。場札は、同じ語根で番号が小さい札を大きい札の上に重ねる。空き列には何でも置ける。札の赤文字が、その札の担当文字。</div>
+<div id="desc"></div>
+<div id="board">
+  <div class="row" id="top"></div>
+  <div class="row" id="tab"></div>
+</div>
+<div id="done"></div>
+<div id="toast"></div>
+<div id="win"><div>🎉 全完成！</div><button id="bAgain">もう一度</button></div>
+<script>
+const MODE='A';
+const N=3;
+const GROUPS=[
+['שמר','守る'],['אהב','愛する'],['ברך','祝福する'],['ספר','数える'],
+['ישב','座る'],['ידע','知る'],['כתב','書く'],['קדש','聖別する'],
+['מלך','統治する'],['שפט','裁く'],['ראה','見る'],['שמע','聞く'],
+['אכל','食べる'],['בנה','建てる'],['עבד','仕える'],['זכר','覚える']
+].map(([root,gl])=>({root,gl,label:root}));
+const NG=GROUPS.length, NF=5;
+document.body.classList.add(MODE);
+let S,hist=[],sel=null,moves=0,autoTimer=null,hint=true,toastT=null;
+
+function newGame(){
+  clearInterval(autoTimer);
+  const d=[];
+  for(let g=0;g<NG;g++)for(let r=1;r<=N;r++)d.push({g,r,up:false});
+  for(let i=d.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[d[i],d[j]]=[d[j],d[i]]}
+  const tab=[];
+  for(let i=0;i<7;i++){tab.push(d.splice(0,i+1));tab[i][i].up=true}
+  S={stock:d,waste:[],found:Array.from({length:NF},()=>[]),tab,done:[]};
+  hist=[];sel=null;moves=0;
+  document.getElementById('win').style.display='none';
+  render();
+}
+const snap=()=>{hist.push(JSON.stringify(S));if(hist.length>400)hist.shift()};
+function undo(){clearInterval(autoTimer);if(hist.length){S=JSON.parse(hist.pop());sel=null;moves=Math.max(0,moves-1);render()}}
+
+function getSel(){
+  if(!sel)return null;
+  if(sel.t==='waste')return S.waste.length?[S.waste[S.waste.length-1]]:null;
+  if(sel.t==='tab')return S.tab[sel.i].slice(sel.idx);
+  if(sel.t==='found'){const f=S.found[sel.i];return f.length?[f[f.length-1]]:null}
+}
+// 場札：空列は何でも可。それ以外は「同じグループで、順位が小さい札」を載せる
+function canTab(c,pile){
+  if(!pile.length)return true;
+  const t=pile[pile.length-1];
+  return t.up&&t.g===c.g&&c.r<t.r;
+}
+// 組札：空なら順位1、そうでなければ同じグループの次の順位
+function canFoundIdx(c,i){
+  const f=S.found[i];
+  if(!f.length)return c.r===1;
+  const t=f[f.length-1];
+  return t.g===c.g&&c.r===t.r+1;
+}
+function findSlot(c){for(let i=0;i<NF;i++)if(canFoundIdx(c,i))return i;return -1}
+
+function move(dest){
+  const cs=getSel();if(!cs)return false;
+  let fi=-1;
+  if(dest.t==='tab'){
+    if(sel.t==='tab'&&sel.i===dest.i)return false;
+    if(!canTab(cs[0],S.tab[dest.i]))return false;
+  }else{
+    if(cs.length!==1||sel.t==='found')return false;
+    fi=dest.i!=null?dest.i:findSlot(cs[0]);
+    if(fi<0||!canFoundIdx(cs[0],fi))return false;
+  }
+  snap();
+  if(sel.t==='waste')S.waste.pop();
+  else if(sel.t==='tab'){
+    S.tab[sel.i].splice(sel.idx);
+    const p=S.tab[sel.i];if(p.length)p[p.length-1].up=true;
+  }else S.found[sel.i].pop();
+  if(dest.t==='tab')S.tab[dest.i].push(...cs);
+  else{
+    S.found[fi].push(cs[0]);
+    if(S.found[fi].length===N){
+      const g=cs[0].g;S.done.push(g);S.found[fi]=[];toast(doneMsg(g));
+    }
+  }
+  sel=null;moves++;render();checkWin();
+  return true;
+}
+function checkWin(){
+  if(S.done.length===NG){clearInterval(autoTimer);document.getElementById('win').style.display='flex'}
+}
+function toast(m){
+  const t=document.getElementById('toast');t.textContent=m;t.style.display='block';
+  clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',2800);
+}
+
+function clickStock(){
+  clearInterval(autoTimer);
+  snap();sel=null;moves++;
+  if(S.stock.length){const c=S.stock.pop();c.up=true;S.waste.push(c)}
+  else if(S.waste.length){while(S.waste.length){const c=S.waste.pop();c.up=false;S.stock.push(c)}}
+  else{hist.pop();moves--}
+  render();
+}
+
+function onClick(e){
+  const el=e.target.closest('[data-k]');
+  if(!el){sel=null;render();return}
+  const k=el.dataset.k,i=+el.dataset.i,idx=+el.dataset.idx;
+  if(k==='stock')return clickStock();
+  if(k==='waste'){sel=(sel&&sel.t==='waste')?null:{t:'waste'};return render()}
+  if(k==='found'){
+    if(sel&&move({t:'found',i}))return;
+    const f=S.found[i];
+    sel=(f.length&&!(sel&&sel.t==='found'&&sel.i===i))?{t:'found',i}:null;return render();
+  }
+  if(k==='tab'){
+    const pile=S.tab[i];
+    if(sel&&!(sel.t==='tab'&&sel.i===i)){if(move({t:'tab',i}))return}
+    if(idx>=0&&pile[idx]&&pile[idx].up){
+      const same=sel&&sel.t==='tab'&&sel.i===i&&sel.idx===idx;
+      sel=same?null:{t:'tab',i,idx};
+    }else sel=null;
+    render();
+  }
+}
+function onDbl(e){
+  const el=e.target.closest('[data-k]');if(!el)return;
+  const k=el.dataset.k,i=+el.dataset.i;
+  if(k==='waste'){sel={t:'waste'}}
+  else if(k==='tab'){const p=S.tab[i];if(!p.length)return;sel={t:'tab',i,idx:p.length-1}}
+  else return;
+  if(!move({t:'found'})){sel=null;render()}
+}
+
+function autoComplete(){
+  clearInterval(autoTimer);
+  autoTimer=setInterval(()=>{
+    let done=false;
+    const cands=[];
+    if(S.waste.length)cands.push({t:'waste'});
+    S.tab.forEach((p,i)=>{if(p.length)cands.push({t:'tab',i,idx:p.length-1})});
+    for(const c of cands){
+      sel=c;const cs=getSel();
+      if(cs&&cs[0].up&&findSlot(cs[0])>=0&&move({t:'found'})){done=true;break}
+    }
+    if(!done){sel=null;clearInterval(autoTimer);render()}
+  },120);
+}
+
+function cardHTML(c){
+  const G=GROUPS[c.g];
+  const hl=[...G.root].map((ch,i)=>`<span class="${i===c.r-1?'on':'off'}">${ch}</span>`).join('');
+  return `<div class="hd"><span class="rk">${'①②③'[c.r-1]}</span><span class="rt">${hl}</span></div><div class="ct">${G.root[c.r-1]}</div><div class="nm">${G.gl}</div>`;
+}
+function slotLabel(g,len){const G=GROUPS[g];return [...G.root].map((ch,i)=>i<len?ch:'＿').join('')+' '+G.gl}
+function descOf(c){const G=GROUPS[c.g];return `${G.root}（${G.gl}）｜${c.r}文字目：${G.root[c.r-1]}`}
+function doneMsg(g){const G=GROUPS[g];return `完成：${G.root}（${G.gl}）`}
+function doneChip(g){const G=GROUPS[g];return `<span class="chip"><b>${G.root}</b>${G.gl}</span>`}
+
+function cardEl(c,top,extra){
+  const d=document.createElement('div');
+  d.className='card'+(c.up?'':' down')+(extra||'');
+  d.style.top=top;
+  if(c.up)d.innerHTML=cardHTML(c);
+  return d;
+}
+function render(){
+  const top=document.getElementById('top');top.innerHTML='';
+  const st=document.createElement('div');st.className='slot s';st.dataset.k='stock';
+  if(S.stock.length)st.appendChild(cardEl({up:false},'-2px'));
+  else st.innerHTML='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:calc(var(--w)*.5);opacity:.4">↻</div>';
+  top.appendChild(st);
+  const wa=document.createElement('div');wa.className='slot';wa.style.border='none';
+  if(S.waste.length){
+    const e=cardEl(S.waste[S.waste.length-1],'0',sel&&sel.t==='waste'?' sel':'');
+    e.dataset.k='waste';wa.appendChild(e);
+  }
+  top.appendChild(wa);
+  for(let s=0;s<NF;s++){
+    const f=document.createElement('div');f.className='slot';f.dataset.k='found';f.dataset.i=s;
+    const p=S.found[s];
+    if(p.length){
+      const isSel=sel&&sel.t==='found'&&sel.i===s;
+      const e=cardEl(p[p.length-1],'-2px',isSel?' sel':'');e.style.left='-2px';
+      f.appendChild(e);
+      const lb=document.createElement('div');lb.className='flab';lb.innerHTML=slotLabel(p[0].g,p.length);f.appendChild(lb);
+    }
+    top.appendChild(f);
+  }
+  const tb=document.getElementById('tab');tb.innerHTML='';
+  S.tab.forEach((p,i)=>{
+    const col=document.createElement('div');col.className='slot';col.style.border=p.length?'none':'';
+    col.dataset.k='tab';col.dataset.i=i;col.dataset.idx=-1;
+    let off=0;
+    p.forEach((c,idx)=>{
+      const isSel=sel&&sel.t==='tab'&&sel.i===i&&idx>=sel.idx;
+      const e=cardEl(c,`calc(var(--h)*${off})`,isSel?' sel':'');
+      e.dataset.k='tab';e.dataset.i=i;e.dataset.idx=idx;
+      col.appendChild(e);
+      off+=c.up?0.27:0.12;
+    });
+    col.style.height=`calc(var(--h)*${Math.max(1,off+1)})`;
+    tb.appendChild(col);
+  });
+  const cs=getSel();
+  document.getElementById('desc').textContent=cs?descOf(cs[0]):'';
+  document.getElementById('done').innerHTML=S.done.map(doneChip).join('');
+  document.getElementById('info').textContent=`手数 ${moves}　完成 ${S.done.length}/${NG}`;
+}
+
+document.getElementById('board').addEventListener('click',onClick);
+document.getElementById('board').addEventListener('dblclick',onDbl);
+document.getElementById('bNew').onclick=newGame;
+document.getElementById('bAgain').onclick=newGame;
+document.getElementById('bUndo').onclick=undo;
+document.getElementById('bAuto').onclick=autoComplete;
+const hc=document.getElementById('cHint');
+if(hc)hc.onchange=e=>{hint=e.target.checked;render()};
+document.addEventListener('click',e=>{if(!e.target.closest('#board')&&!e.target.closest('#bar')){sel=null;render()}});
+newGame();
+</script>
+</body>
+</html>
