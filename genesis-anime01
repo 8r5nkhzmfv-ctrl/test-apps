@@ -1,0 +1,482 @@
+以下を `genesis-quiz.html` として保存し、ブラウザで開くと遊べます。創世記1:1〜2:3の流れに沿った14問入りで、ヘブル語の読み上げ、選択肢、正誤表示、背景アニメーションをまとめています。読み上げ音声は端末・ブラウザにヘブル語音声がある場合に利用できます。
+
+```html
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>創世記クイズ｜1:1–2:3</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f7f2df;
+      --muted: #c9c5b6;
+      --gold: #f6cf75;
+      --panel: rgba(8, 18, 36, .78);
+      --line: rgba(255, 255, 255, .18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--ink);
+      background: #081426;
+      font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+    }
+
+    /* 背景の星 */
+    .sky {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      z-index: -2;
+      background:
+        radial-gradient(ellipse at 50% 100%, #305d76 0, transparent 48%),
+        linear-gradient(#071225 0%, #142c47 55%, #38576a 100%);
+    }
+
+    .stars {
+      position: absolute;
+      inset: 0;
+      opacity: .8;
+      background-image:
+        radial-gradient(2px 2px at 10% 18%, white 50%, transparent 60%),
+        radial-gradient(1px 1px at 25% 37%, white 50%, transparent 60%),
+        radial-gradient(2px 2px at 68% 13%, white 50%, transparent 60%),
+        radial-gradient(1px 1px at 84% 28%, white 50%, transparent 60%),
+        radial-gradient(1px 1px at 51% 24%, white 50%, transparent 60%),
+        radial-gradient(2px 2px at 91% 55%, white 50%, transparent 60%),
+        radial-gradient(1px 1px at 36% 11%, white 50%, transparent 60%);
+      animation: twinkle 4s ease-in-out infinite alternate;
+    }
+
+    .sun {
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      left: 50%;
+      top: 22%;
+      border-radius: 50%;
+      transform: translate(-50%, 20px) scale(.4);
+      opacity: 0;
+      background: radial-gradient(circle, #fffbd0 0, #ffd879 30%, #fa9a4a 68%, transparent 72%);
+      filter: blur(2px);
+      transition: opacity 1.5s, transform 2s;
+    }
+
+    .horizon {
+      position: absolute;
+      left: -10%;
+      right: -10%;
+      bottom: -14vh;
+      height: 38vh;
+      border-radius: 50% 50% 0 0;
+      background: linear-gradient(#1a473e, #09231f);
+      box-shadow: 0 -18px 50px rgba(95, 175, 137, .16);
+      transition: background 1.5s;
+    }
+
+    .water {
+      position: absolute;
+      left: -10%;
+      right: -10%;
+      bottom: 8vh;
+      height: 17vh;
+      border-radius: 50%;
+      opacity: .52;
+      background: linear-gradient(180deg, #66b9d1, #145173);
+      animation: wave 7s ease-in-out infinite alternate;
+      transition: opacity 1s, height 1s;
+    }
+
+    .glow {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      background: radial-gradient(ellipse at 50% 30%, rgba(255, 228, 155, .62), transparent 55%);
+      transition: opacity 1.2s;
+    }
+
+    body.day-light .glow { opacity: .8; }
+    body.day-light .sun { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    body.day-water .water { opacity: .86; height: 24vh; }
+    body.day-land .horizon { background: linear-gradient(#638b55, #183a2a); }
+    body.day-stars .stars { opacity: 1; }
+    body.day-life .horizon { background: linear-gradient(#77a85c, #23472c); }
+    body.day-rest .glow { opacity: .24; }
+
+    @keyframes twinkle { to { opacity: .35; } }
+    @keyframes wave { to { transform: translateX(4%) scaleY(.9); } }
+
+    main {
+      width: min(760px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 40px;
+    }
+
+    header { text-align: center; margin-bottom: 18px; }
+    h1 { margin: 0 0 5px; font-size: clamp(1.35rem, 4vw, 2rem); }
+    .subtitle { margin: 0; color: var(--muted); }
+
+    .card {
+      padding: clamp(18px, 5vw, 34px);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, .3);
+      backdrop-filter: blur(10px);
+    }
+
+    .topline {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: .95rem;
+    }
+
+    .progress {
+      height: 7px;
+      margin: 12px 0 24px;
+      overflow: hidden;
+      border-radius: 10px;
+      background: rgba(255,255,255,.14);
+    }
+
+    .progress > div {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--gold);
+      transition: width .35s;
+    }
+
+    .hebrew {
+      margin: 22px 0 12px;
+      color: #fff5cf;
+      font-family: "Noto Sans Hebrew", "Arial", sans-serif;
+      font-size: clamp(2rem, 8vw, 3.3rem);
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .prompt { text-align: center; color: var(--muted); margin: 0 0 20px; }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 18px;
+    }
+
+    button {
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .listen, .next, .restart {
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 12px;
+      padding: 10px 16px;
+      background: rgba(255,255,255,.1);
+    }
+
+    .listen:hover, .next:hover, .restart:hover { background: rgba(255,255,255,.18); }
+
+    .choices { display: grid; gap: 10px; }
+
+    .choice {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--ink);
+      background: rgba(255,255,255,.07);
+      text-align: left;
+      transition: background .2s, transform .2s;
+    }
+
+    .choice:hover:not(:disabled) {
+      background: rgba(255,255,255,.15);
+      transform: translateY(-1px);
+    }
+
+    .choice:disabled { cursor: default; opacity: .9; }
+    .choice.correct { border-color: #7ee0a4; background: rgba(39, 142, 84, .32); }
+    .choice.wrong { border-color: #ff9292; background: rgba(160, 50, 50, .32); }
+
+    .feedback {
+      min-height: 32px;
+      margin: 16px 0 4px;
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .explanation { color: var(--muted); text-align: center; min-height: 24px; }
+    .next-wrap { display: flex; justify-content: center; margin-top: 16px; }
+    .next { display: none; background: #c18e35; color: #17130a; border: 0; font-weight: 700; }
+    .note { margin: 17px auto 0; max-width: 690px; color: #d4d2c8; font-size: .83rem; line-height: 1.6; }
+    .result { text-align: center; }
+    .result-score { color: var(--gold); font-size: 2rem; font-weight: 800; }
+    .hidden { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sky" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="glow"></div>
+    <div class="sun"></div>
+    <div class="water"></div>
+    <div class="horizon"></div>
+  </div>
+
+  <main>
+    <header>
+      <h1>創世記クイズ</h1>
+      <p class="subtitle">創世記 1:1–2:3｜ヘブル語を聞いて、日本語訳を選ぼう</p>
+    </header>
+
+    <section class="card" id="quiz">
+      <div class="topline">
+        <span id="dayLabel"></span>
+        <span id="counter"></span>
+      </div>
+      <div class="progress"><div id="progressBar"></div></div>
+
+      <div class="hebrew" id="hebrew" lang="he" dir="rtl"></div>
+      <p class="prompt">このヘブル語の意味を選んでください</p>
+
+      <div class="actions">
+        <button class="listen" id="listen" type="button">🔊 ヘブル語を読む</button>
+      </div>
+
+      <div class="choices" id="choices"></div>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+      <div class="explanation" id="explanation"></div>
+      <div class="next-wrap">
+        <button class="next" id="next" type="button">次の問題 →</button>
+      </div>
+    </section>
+
+    <section class="card result hidden" id="result">
+      <h2>クイズ終了！</h2>
+      <p class="result-score" id="score"></p>
+      <p id="resultText"></p>
+      <button class="restart" id="restart" type="button">もう一度挑戦</button>
+    </section>
+
+    <p class="note">
+      読み上げ音声はブラウザや端末にヘブル語音声がある場合に再生されます。
+      聖句は学習用の抜粋です。正確な引用・公開に使う場合は、使用する聖書本文と日本語訳をご確認ください。
+    </p>
+  </main>
+
+  <script>
+    const questions = [
+      {
+        day: "冒頭｜創世記 1:1",
+        hebrew: "בְּרֵאשִׁית בָּרָא אֱלֹהִים",
+        answer: "初めに、神は創造された",
+        options: ["初めに、神は創造された", "地は草を生えさせよ", "神は第七日に休まれた"],
+        scene: ""
+      },
+      {
+        day: "第一日｜創世記 1:3",
+        hebrew: "יְהִי אוֹר",
+        answer: "光あれ",
+        options: ["光あれ", "大空があれ", "海の水は集まれ"],
+        scene: "day-light"
+      },
+      {
+        day: "第二日｜創世記 1:6",
+        hebrew: "יְהִי רָקִיעַ",
+        answer: "大空があれ",
+        options: ["地に草が生えよ", "大空があれ", "鳥は地の上を飛べ"],
+        scene: "day-water"
+      },
+      {
+        day: "第三日｜創世記 1:9",
+        hebrew: "יִקָּווּ הַמַּיִם",
+        answer: "水は一つ所に集まれ",
+        options: ["光と闇を分けよ", "水は一つ所に集まれ", "魚は海に満ちよ"],
+        scene: "day-land"
+      },
+      {
+        day: "第三日｜創世記 1:11",
+        hebrew: "תַּדְשֵׁא הָאָרֶץ דֶּשֶׁא",
+        answer: "地は草を生えさせよ",
+        options: ["地は草を生えさせよ", "大空に光るものがあれ", "人をわたしたちのかたちに造ろう"],
+        scene: "day-land"
+      },
+      {
+        day: "第四日｜創世記 1:14",
+        hebrew: "יְהִי מְאֹרֹת בִּרְקִיעַ הַשָּׁמָיִם",
+        answer: "天の大空に光るものがあれ",
+        options: ["天の大空に光るものがあれ", "地は草を生えさせよ", "水は一つ所に集まれ"],
+        scene: "day-stars"
+      },
+      {
+        day: "第五日｜創世記 1:20",
+        hebrew: "יִשְׁרְצוּ הַמַּיִם",
+        answer: "水には生き物が群がれ",
+        options: ["水には生き物が群がれ", "地に人を造ろう", "神は休まれた"],
+        scene: "day-water"
+      },
+      {
+        day: "第五日｜創世記 1:20",
+        hebrew: "וְעוֹף יְעוֹפֵף עַל־הָאָרֶץ",
+        answer: "鳥は地の上を飛べ",
+        options: ["鳥は地の上を飛べ", "星は空を照らせ", "海の水は引け"],
+        scene: "day-stars"
+      },
+      {
+        day: "第六日｜創世記 1:24",
+        hebrew: "תּוֹצֵא הָאָרֶץ נֶפֶשׁ חַיָּה",
+        answer: "地は生き物を生み出せ",
+        options: ["地は生き物を生み出せ", "大空があれ", "光あれ"],
+        scene: "day-life"
+      },
+      {
+        day: "第六日｜創世記 1:26",
+        hebrew: "נַעֲשֶׂה אָדָם בְּצַלְמֵנוּ",
+        answer: "人をわたしたちのかたちに造ろう",
+        options: ["人をわたしたちのかたちに造ろう", "水は一つ所に集まれ", "鳥は海に満ちよ"],
+        scene: "day-life"
+      },
+      {
+        day: "第六日｜創世記 1:27",
+        hebrew: "זָכָר וּנְקֵבָה בָּרָא אֹתָם",
+        answer: "男と女に創造された",
+        options: ["男と女に創造された", "昼と夜に分けられた", "空と海に分けられた"],
+        scene: "day-life"
+      },
+      {
+        day: "第六日｜創世記 1:31",
+        hebrew: "וְהִנֵּה־טוֹב מְאֹד",
+        answer: "見よ、それは非常に良かった",
+        options: ["見よ、それは非常に良かった", "地はまだ形がなかった", "水は一つ所に集まれ"],
+        scene: "day-life"
+      },
+      {
+        day: "第七日｜創世記 2:2",
+        hebrew: "וַיִּשְׁבֹּת בַּיּוֹם הַשְּׁבִיעִי",
+        answer: "第七日に休まれた",
+        options: ["第七日に休まれた", "第七日に光を造られた", "第七日に海を分けられた"],
+        scene: "day-rest"
+      },
+      {
+        day: "第七日｜創世記 2:3",
+        hebrew: "וַיְבָרֶךְ אֱלֹהִים אֶת־יוֹם הַשְּׁבִיעִי",
+        answer: "神は第七日を祝福された",
+        options: ["神は第七日を祝福された", "神は太陽を祝福された", "神は海を祝福された"],
+        scene: "day-rest"
+      }
+    ];
+
+    let index = 0;
+    let correctCount = 0;
+    let answered = false;
+
+    const $ = id => document.getElementById(id);
+    const hebrewEl = $("hebrew");
+    const choicesEl = $("choices");
+
+    function showQuestion() {
+      answered = false;
+      const q = questions[index];
+
+      document.body.className = q.scene;
+      $("dayLabel").textContent = q.day;
+      $("counter").textContent = `${index + 1} / ${questions.length}`;
+      $("progressBar").style.width = `${(index / questions.length) * 100}%`;
+      hebrewEl.textContent = q.hebrew;
+      $("feedback").textContent = "";
+      $("explanation").textContent = "";
+      $("next").style.display = "none";
+      choicesEl.innerHTML = "";
+
+      q.options.forEach(option => {
+        const button = document.createElement("button");
+        button.className = "choice";
+        button.type = "button";
+        button.textContent = option;
+        button.addEventListener("click", () => chooseAnswer(button, option, q));
+        choicesEl.appendChild(button);
+      });
+    }
+
+    function chooseAnswer(button, option, question) {
+      if (answered) return;
+      answered = true;
+
+      const buttons = [...choicesEl.querySelectorAll("button")];
+      buttons.forEach(b => {
+        b.disabled = true;
+        if (b.textContent === question.answer) b.classList.add("correct");
+      });
+
+      if (option === question.answer) {
+        correctCount++;
+        $("feedback").textContent = "正解 ✅";
+        $("feedback").style.color = "#91f0b1";
+      } else {
+        button.classList.add("wrong");
+        $("feedback").textContent = "不正解 ❌";
+        $("feedback").style.color = "#ffaaaa";
+      }
+
+      $("explanation").textContent = `正しい訳：${question.answer}`;
+      $("next").textContent = index === questions.length - 1 ? "結果を見る →" : "次の問題 →";
+      $("next").style.display = "inline-block";
+    }
+
+    $("listen").addEventListener("click", () => {
+      if (!("speechSynthesis" in window)) {
+        $("explanation").textContent = "このブラウザは読み上げに対応していません。";
+        return;
+      }
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(questions[index].hebrew);
+      utterance.lang = "he-IL";
+      utterance.rate = 0.78;
+      speechSynthesis.speak(utterance);
+    });
+
+    $("next").addEventListener("click", () => {
+      index++;
+      if (index < questions.length) {
+        showQuestion();
+      } else {
+        $("quiz").classList.add("hidden");
+        $("result").classList.remove("hidden");
+        $("score").textContent = `${correctCount} / ${questions.length} 問正解`;
+        $("resultText").textContent =
+          correctCount === questions.length ? "全問正解！創造の物語をよく学びました。" :
+          "挑戦ありがとう！もう一度遊んで、ヘブル語と訳を見比べてみましょう。";
+        $("progressBar").style.width = "100%";
+        document.body.className = "day-rest";
+      }
+    });
+
+    $("restart").addEventListener("click", () => {
+      index = 0;
+      correctCount = 0;
+      $("result").classList.add("hidden");
+      $("quiz").classList.remove("hidden");
+      showQuestion();
+    });
+
+    showQuestion();
+  </script>
+</body>
+</html>
+```
