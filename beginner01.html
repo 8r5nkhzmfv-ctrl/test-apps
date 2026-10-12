@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>右から左へ！ヘブライ文字の冒険</title>
+
+  <style>
+    :root {
+      --ink: #302c26;
+      --cream: #fff9ec;
+      --paper: #fffdf7;
+      --blue: #d9f1f7;
+      --blue-dark: #a9d5e1;
+      --yellow: #f5dc72;
+      --gold: #b79537;
+      --pink: #f3a5a6;
+      --green: #5b8a56;
+      --red: #c4564b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px 14px;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 14%, #f5dc72 0 5px, transparent 6px),
+        radial-gradient(circle at 88% 22%, #d9f1f7 0 7px, transparent 8px),
+        var(--cream);
+      font-family: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN",
+        "Yu Gothic", sans-serif;
+    }
+
+    .game {
+      width: min(100%, 440px);
+      padding: 22px;
+      border: 3px solid var(--ink);
+      border-radius: 30px;
+      background: var(--paper);
+      box-shadow: 0 8px 0 var(--blue-dark);
+      text-align: center;
+    }
+
+    .mascot {
+      width: 126px;
+      height: 104px;
+      margin: 0 auto 8px;
+    }
+
+    h1 {
+      margin: 2px 0 4px;
+      font-size: 1.5rem;
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      color: #746a57;
+      font-size: .9rem;
+    }
+
+    .progress-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: .88rem;
+      font-weight: 700;
+    }
+
+    .progress {
+      height: 14px;
+      margin-bottom: 20px;
+      overflow: hidden;
+      border: 2px solid var(--ink);
+      border-radius: 99px;
+      background: white;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: var(--yellow);
+      transition: width .3s ease;
+    }
+
+    .card {
+      padding: 19px 14px;
+      border: 2px solid var(--ink);
+      border-radius: 22px;
+      background: var(--blue);
+    }
+
+    .prompt {
+      margin: 0 0 8px;
+      color: #655e50;
+      font-size: .9rem;
+    }
+
+    .hebrew {
+      margin: 4px 0;
+      font-family: "Arial", "Times New Roman", serif;
+      font-size: 3.2rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .direction-hint {
+      margin: 8px 0 0;
+      color: #655e50;
+      font-size: .85rem;
+      font-weight: 700;
+    }
+
+    .direction-arrow {
+      display: inline-block;
+      margin-left: 5px;
+      color: var(--green);
+      font-size: 1.25rem;
+    }
+
+    .letter-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0 12px;
+      direction: rtl;
+    }
+
+    .letter-tile {
+      width: 76px;
+      height: 76px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      font-family: "Arial", "Times New Roman", serif;
+      font-size: 2.6rem;
+      background: var(--paper);
+    }
+
+    .letter-tile.selected {
+      background: var(--yellow);
+      transform: translateY(-3px);
+    }
+
+    .letter-tile.done {
+      background: #e3f2dc;
+      border-color: var(--green);
+    }
+
+    .answers {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      width: 100%;
+      min-height: 52px;
+      padding: 12px 14px;
+      border: 2px solid var(--ink);
+      border-radius: 17px;
+      color: var(--ink);
+      background: var(--paper);
+      font: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #d8d0bd;
+      transition: transform .12s, box-shadow .12s, background .12s;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 0 #d8d0bd;
+      background: #fff4c9;
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #d8d0bd;
+    }
+
+    button:disabled { cursor: default; }
+
+    button.correct {
+      background: #e3f2dc;
+      border-color: var(--green);
+    }
+
+    button.incorrect {
+      background: #fce5df;
+      border-color: var(--red);
+    }
+
+    .feedback {
+      min-height: 28px;
+      margin: 13px 0 0;
+      font-weight: 700;
+    }
+
+    .next, .restart {
+      display: none;
+      margin-top: 12px;
+      background: var(--yellow);
+    }
+
+    .result {
+      display: none;
+      padding: 15px 8px 4px;
+    }
+
+    .result-score {
+      margin: 4px 0;
+      color: var(--gold);
+      font-size: 2.6rem;
+      font-weight: 800;
+    }
+
+    .result-message { margin: 0 0 12px; }
+
+    .small-note {
+      margin: 17px 0 0;
+      color: #827965;
+      font-size: .75rem;
+    }
+
+    .screen[hidden] { display: none; }
+
+    @media (max-width: 360px) {
+      .game { padding: 17px; }
+      h1 { font-size: 1.3rem; }
+      .letter-tile { width: 64px; height: 68px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="game">
+    <!-- にこにこしたどんぶりのマスコット -->
+    <svg class="mascot" viewBox="0 0 150 120" role="img"
+         aria-label="にこにこしたどんぶり">
+      <path d="M19 49 Q22 18 75 16 Q128 18 131 49 L119 86
+               Q112 106 75 108 Q38 106 31 86 Z"
+            fill="#d9f1f7" stroke="#302c26" stroke-width="4"
+            stroke-linejoin="round"/>
+      <ellipse cx="75" cy="48" rx="57" ry="30"
+               fill="#fffdf7" stroke="#302c26" stroke-width="4"/>
+      <path d="M37 49 Q42 29 75 29 Q108 29 113 49"
+            fill="none" stroke="#eee8d9" stroke-width="5"
+            stroke-linecap="round"/>
+      <circle cx="59" cy="73" r="3.5" fill="#302c26"/>
+      <circle cx="91" cy="73" r="3.5" fill="#302c26"/>
+      <ellipse cx="49" cy="81" rx="7" ry="3.5" fill="#f3a5a6"/>
+      <ellipse cx="101" cy="81" rx="7" ry="3.5" fill="#f3a5a6"/>
+      <path d="M70 80 Q75 87 80 80" fill="none" stroke="#302c26"
+            stroke-width="3" stroke-linecap="round"/>
+      <path d="M36 92 Q75 105 114 92" fill="none" stroke="#a9d5e1"
+            stroke-width="3" stroke-linecap="round"/>
+    </svg>
+
+    <h1>右から左へ！</h1>
+    <p class="subtitle">ヘブライ文字の小さな冒険</p>
+
+    <!-- 読む方向の練習 -->
+    <section id="direction-screen" class="screen">
+      <div class="progress-row">
+        <span>ステップ 1 / 2</span>
+        <span>読む向き</span>
+      </div>
+      <div class="progress" aria-label="学習の進行状況">
+        <div class="progress-fill" style="width: 25%"></div>
+      </div>
+
+      <div class="card">
+        <p class="prompt">ヘブライ語は、どちらから読む？</p>
+        <p class="direction-hint">
+          いちばん右の文字から順番にタップしよう
+          <span class="direction-arrow" aria-hidden="true">←</span>
+        </p>
+
+        <div class="letter-row" id="direction-letters" lang="he" dir="rtl">
+          <button class="letter-tile" data-order="0" aria-label="最初の文字">א</button>
+          <button class="letter-tile" data-order="1" aria-label="2番目の文字">ב</button>
+          <button class="letter-tile" data-order="2" aria-label="3番目の文字">ג</button>
+        </div>
+
+        <p class="feedback" id="direction-feedback" aria-live="polite">
+          右端の文字から始めてみよう。
+        </p>
+      </div>
+
+      <button class="next" id="start-letters">文字を見てみよう →</button>
+    </section>
+
+    <!-- 文字の名前クイズ -->
+    <section id="quiz-screen" class="screen" hidden>
+      <div class="progress-row">
+        <span id="question-count">1 / 5</span>
+        <span id="score-label">正解 0</span>
+      </div>
+      <div class="progress" aria-label="クイズの進行状況">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <div class="card">
+        <p class="prompt">この文字の名前は？</p>
+        <p class="hebrew" id="letter" lang="he" dir="rtl"></p>
+        <p class="direction-hint">読む向き：右から左へ <span class="direction-arrow">←</span></p>
+      </div>
+
+      <div class="answers" id="answers"></div>
+      <p class="feedback" id="feedback" aria-live="polite"></p>
+      <button class="next" id="next-button">次の問題へ →</button>
+    </section>
+
+    <!-- 結果 -->
+    <section class="result" id="result-screen">
+      <p>冒険おしまい！</p>
+      <p class="result-score" id="final-score"></p>
+      <p class="result-message" id="final-message"></p>
+      <button class="restart" id="restart-button">もう一度遊ぶ</button>
+    </section>
+
+    <p class="small-note">あせらず、ひとつずつ覚えていこう 🌟</p>
+  </main>
+
+  <script>
+    const questions = [
+      { letter: "א", name: "アレフ", choices: ["アレフ", "ベート", "ギメル"], correct: 0 },
+      { letter: "ב", name: "ベート", choices: ["ダレット", "ベート", "ヘー"], correct: 1 },
+      { letter: "ג", name: "ギメル", choices: ["ギメル", "アレフ", "ヴァヴ"], correct: 0 },
+      { letter: "ד", name: "ダレット", choices: ["ヘー", "ギメル", "ダレット"], correct: 2 },
+      { letter: "ה", name: "ヘー", choices: ["ベート", "ヘー", "アレフ"], correct: 1 }
+    ];
+
+    let directionStep = 0;
+    let current = 0;
+    let score = 0;
+    let answered = false;
+
+    const directionTiles = [
+      ...document.querySelectorAll("#direction-letters .letter-tile")
+    ];
+
+    const directionFeedback =
+      document.getElementById("direction-feedback");
+
+    // 右端から順にタップする練習
+    directionTiles.forEach(tile => {
+      tile.addEventListener("click", () => {
+        const order = Number(tile.dataset.order);
+
+        if (tile.classList.contains("done")) return;
+
+        if (order === directionStep) {
+          tile.classList.add("done");
+          tile.disabled = true;
+          directionStep++;
+
+          if (directionStep === directionTiles.length) {
+            directionFeedback.textContent =
+              "できた！右から左へ読む感覚がつかめたね。";
+            directionFeedback.style.color = "var(--green)";
+            document.getElementById("start-letters").style.display = "block";
+          } else {
+            directionFeedback.textContent =
+              "その調子！次も右から左へ進もう。";
+            directionFeedback.style.color = "var(--green)";
+          }
+        } else {
+          directionFeedback.textContent =
+            "もう一度。いちばん右の文字から始めよう。";
+          directionFeedback.style.color = "var(--red)";
+        }
+      });
+    });
+
+    document.getElementById("start-letters").addEventListener("click", () => {
+      document.getElementById("direction-screen").hidden = true;
+      document.getElementById("quiz-screen").hidden = false;
+      showQuestion();
+    });
+
+    function showQuestion() {
+      answered = false;
+      const q = questions[current];
+
+      document.getElementById("question-count").textContent =
+        `${current + 1} / ${questions.length}`;
+      document.getElementById("score-label").textContent =
+        `正解 ${score}`;
+      document.getElementById("progress-fill").style.width =
+        `${(current / questions.length) * 100}%`;
+
+      document.getElementById("letter").textContent = q.letter;
+      document.getElementById("feedback").textContent = "";
+      document.getElementById("next-button").style.display = "none";
+
+      const answers = document.getElementById("answers");
+      answers.innerHTML = "";
+
+      q.choices.forEach((choice, index) => {
+        const button = document.createElement("button");
+        button.textContent = choice;
+        button.addEventListener("click", () => chooseAnswer(index));
+        answers.appendChild(button);
+      });
+    }
+
+    function chooseAnswer(selected) {
+      if (answered) return;
+      answered = true;
+
+      const q = questions[current];
+      const buttons = document.querySelectorAll("#answers button");
+      const feedback = document.getElementById("feedback");
+
+      buttons.forEach(button => button.disabled = true);
+      buttons[q.correct].classList.add("correct");
+
+      if (selected === q.correct) {
+        score++;
+        feedback.textContent = `正解！これは${q.name}。`;
+        feedback.style.color = "var(--green)";
+      } else {
+        buttons[selected].classList.add("incorrect");
+        feedback.textContent = `おしい！これは${q.name}。`;
+        feedback.style.color = "var(--red)";
+      }
+
+      document.getElementById("score-label").textContent = `正解 ${score}`;
+
+      const nextButton = document.getElementById("next-button");
+      nextButton.textContent =
+        current === questions.length - 1 ? "結果を見る →" : "次の文字へ →";
+      nextButton.style.display = "block";
+    }
+
+    document.getElementById("next-button").addEventListener("click", () => {
+      current++;
+
+      if (current < questions.length) {
+        showQuestion();
+        return;
+      }
+
+      document.getElementById("quiz-screen").hidden = true;
+      document.getElementById("result-screen").style.display = "block";
+      document.getElementById("progress-fill").style.width = "100%";
+      document.getElementById("final-score").textContent =
+        `${score} / ${questions.length}`;
+
+      document.getElementById("final-message").textContent =
+        score === questions.length
+          ? "読む向きも文字もばっちり！すばらしい！"
+          : score >= 3
+            ? "いい感じ！文字の形が見えてきたね。"
+            : "もう一度遊んで、少しずつ覚えよう！";
+
+      document.getElementById("restart-button").style.display = "block";
+    });
+
+    document.getElementById("restart-button").addEventListener("click", () => {
+      location.reload();
+    });
+  </script>
+</body>
+</html>
