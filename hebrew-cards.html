@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>毎日のヘブル語</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #f4f1ea;
+      color: #282923;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(100%, 480px);
+      text-align: center;
+    }
+
+    h1 { margin-bottom: 6px; }
+    .subtitle { margin-top: 0; color: #686960; }
+
+    .card {
+      margin: 24px 0 16px;
+      padding: 32px 24px;
+      border-radius: 20px;
+      background: white;
+      box-shadow: 0 8px 28px #29291d15;
+    }
+
+    .count { color: #77786f; font-size: 14px; }
+
+    .hebrew {
+      margin: 24px 0 12px;
+      font-size: clamp(42px, 12vw, 64px);
+      direction: rtl;
+      line-height: 1.4;
+    }
+
+    .pronunciation {
+      color: #686960;
+      font-size: 18px;
+    }
+
+    .answer {
+      min-height: 34px;
+      margin-top: 24px;
+      font-size: 20px;
+      font-weight: 650;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 14px 18px;
+      border: 0;
+      border-radius: 12px;
+      background: #365c4a;
+      color: white;
+      font: inherit;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover { background: #294938; }
+    button.secondary { background: #77786f; }
+    button:disabled { opacity: .5; cursor: default; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>毎日のヘブル語</h1>
+    <p class="subtitle">日常会話を、1日1フレーズ</p>
+
+    <section class="card" aria-live="polite">
+      <div class="count" id="count"></div>
+      <div class="hebrew" id="hebrew" lang="he" dir="rtl"></div>
+      <div class="pronunciation" id="pronunciation"></div>
+      <div class="answer" id="answer"></div>
+    </section>
+
+    <button id="reveal">答えを見る</button>
+    <button class="secondary" id="learned">今日のカードを覚えた</button>
+  </main>
+
+  <script>
+    // カードを追加するときは、この配列に同じ形式で項目を足してください。
+    const cards = [
+      { he: "שלום", sound: "シャローム", ja: "こんにちは／さようなら" },
+      { he: "מה שלומך?", sound: "マ・シュロムハ？（男性に）／マ・シュロメフ？（女性に）", ja: "お元気ですか？" },
+      { he: "תודה", sound: "トダー", ja: "ありがとう" },
+      { he: "בבקשה", sound: "ベヴァカシャ", ja: "どうぞ／お願いします／どういたしまして" },
+      { he: "כן", sound: "ケン", ja: "はい" },
+      { he: "לא", sound: "ロー", ja: "いいえ" },
+      { he: "סליחה", sound: "スリハ", ja: "すみません／ごめんなさい" },
+      { he: "איך קוראים לך?", sound: "エイフ・コルイム・レハ？（男性に）／ラフ？（女性に）", ja: "お名前は何ですか？" },
+      { he: "קוראים לי ...", sound: "コルイム・リー …", ja: "私の名前は…です" },
+      { he: "אני לא מבין", sound: "アニー・ロー・メヴィーン（男性話者）", ja: "分かりません（男性話者）" },
+      { he: "אני לא מבינה", sound: "アニー・ロー・メヴィナー（女性話者）", ja: "分かりません（女性話者）" },
+      { he: "כמה זה עולה?", sound: "カマ・ゼ・オレ？", ja: "これはいくらですか？" },
+      { he: "איפה השירותים?", sound: "エイフォー・ハ・シェルーティーム？", ja: "トイレはどこですか？" },
+      { he: "להתראות", sound: "レヒトラオート", ja: "また会いましょう／さようなら" }
+    ];
+
+    const today = new Date();
+    const todayKey = [
+      today.getFullYear(),
+      String(today.getMonth() + 1).padStart(2, "0"),
+      String(today.getDate()).padStart(2, "0")
+    ].join("-");
+
+    const saved = JSON.parse(localStorage.getItem("hebrewCards") || "{}");
+    let index = Math.min(saved.index || 0, cards.length - 1);
+    let revealed = false;
+
+    const hebrew = document.getElementById("hebrew");
+    const pronunciation = document.getElementById("pronunciation");
+    const answer = document.getElementById("answer");
+    const count = document.getElementById("count");
+    const revealButton = document.getElementById("reveal");
+    const learnedButton = document.getElementById("learned");
+
+    function render() {
+      const card = cards[index];
+      hebrew.textContent = card.he;
+      pronunciation.textContent = card.sound;
+      answer.textContent = revealed ? card.ja : "";
+      count.textContent = `カード ${index + 1} / ${cards.length}`;
+      revealButton.textContent = revealed ? "答えを隠す" : "答えを見る";
+
+      const alreadyLearnedToday = saved.learnedDate === todayKey;
+      learnedButton.disabled = alreadyLearnedToday || index === cards.length - 1;
+      learnedButton.textContent = alreadyLearnedToday
+        ? "今日は学習済みです"
+        : index === cards.length - 1
+          ? "カードはすべて完了"
+          : "今日のカードを覚えた";
+    }
+
+    revealButton.addEventListener("click", () => {
+      revealed = !revealed;
+      render();
+    });
+
+    learnedButton.addEventListener("click", () => {
+      if (learnedButton.disabled) return;
+      saved.index = index + 1;
+      saved.learnedDate = todayKey;
+      localStorage.setItem("hebrewCards", JSON.stringify(saved));
+      index++;
+      revealed = false;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
