@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JohanneAnaginosko - ヨハネによる福音書 ギリシャ語1か月マスター</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gentium+Plus:ital,wght@0,400;0,700;1,400&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper: {
+                            50: '#fcfaf5',
+                            100: '#f6f1e5',
+                            200: '#e8dec8',
+                            300: '#d7c6a5',
+                            800: '#4a3f2d',
+                            900: '#2c2317',
+                        },
+                        brand: {
+                            navy: '#1e293b',
+                            burgundy: '#881337',
+                            gold: '#b45309',
+                            olive: '#15803d',
+                            purple: '#6b21a8'
+                        }
+                    },
+                    fontFamily: {
+                        greek: ['Gentium Plus', 'Georgia', 'serif'],
+                        sans: ['Noto Sans JP', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #fcfaf5;
+            color: #2c2317;
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .greek-text {
+            font-family: 'Gentium Plus', serif;
+        }
+        
+        /* Word Badges for Parsing */
+        .word-badge {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            margin: 0.15rem;
+            padding: 0.25rem 0.55rem;
+            border-radius: 0.6rem;
+            border: 2px solid transparent;
+        }
+        .word-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        .word-badge.selected {
+            border-color: #2563eb !important;
+            background-color: #eff6ff !important;
+            transform: scale(1.06);
+            box-shadow: 0 4px 14px rgba(37,99,235,0.25);
+        }
+
+        /* Color Coding Rules */
+        .color-on .role-subject { background-color: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+        .color-on .role-verb { background-color: #ffe4e6; color: #9f1239; border-color: #fecdd3; }
+        .color-on .role-article { background-color: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
+        .color-on .role-prep { background-color: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+        .color-on .role-object { background-color: #fef3c7; color: #92400e; border-color: #fde68a; }
+        .color-on .role-other { background-color: #f1f5f9; color: #334155; border-color: #e2e8f0; }
+
+        .color-off .word-badge {
+            background-color: #f6f1e5;
+            color: #2c2317;
+            border-color: #e8dec8;
+        }
+
+        /* Flashcard 3D Flip */
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 sm:p-6 max-w-6xl mx-auto">
+
+    <!-- TOP HEADER -->
+    <header class="mb-6 border-b border-paper-200 pb-4">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="text-center md:text-left">
+                <div class="flex items-center justify-center md:justify-start gap-2">
+                    <span class="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full border border-amber-300">
+                        新約聖書コイネー・ギリシャ語
+                    </span>
+                    <span class="bg-emerald-100 text-emerald-900 text-xs font-bold px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1">
+                        <span>✨ Complete Edition</span>
+                    </span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-paper-900 mt-2 tracking-tight">
+                    JohanneAnaginosko <span class="text-amber-800 font-serif italic text-xl font-normal">ヨハネを解読する</span>
+                </h1>
+                <p class="text-xs sm:text-sm text-gray-600 mt-0.5">
+                    ヨハネによる福音書 1〜3章を1か月で楽しくマスターする完全読解プログラム
+                </p>
+            </div>
+
+            <!-- Header Actions: Audio & Progress Dashboard -->
+            <div class="flex items-center gap-2">
+                <button id="btn-audio-header" onclick="playCurrentVerseAudio()" class="flex items-center gap-2 bg-amber-800 hover:bg-amber-900 text-white px-4 py-2.5 rounded-2xl shadow-md transition-all active:scale-95 text-xs sm:text-sm font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                    <span>選択節を聴く</span>
+                </button>
+                <button onclick="openProgressModal()" class="flex items-center gap-1.5 bg-white border border-paper-200 hover:bg-paper-100 text-paper-900 px-3.5 py-2.5 rounded-2xl shadow-sm transition-all text-xs sm:text-sm font-semibold">
+                    <span>🏆</span>
+                    <span>進捗</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- WEEK SELECTOR TABS -->
+    <nav class="mb-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 bg-paper-100 p-2 rounded-2xl border border-paper-200">
+            <button onclick="selectWeek(1)" id="week-tab-1" class="week-tab-btn flex flex-col p-3 rounded-xl transition-all text-left bg-white shadow-sm border border-amber-200">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-extrabold text-amber-800 uppercase tracking-wider">第1週</span>
+                    <span id="badge-week-1" class="text-xs">⚪</span>
+                </div>
+                <span class="text-sm font-bold text-paper-900 mt-1">ロゴスの神秘</span>
+                <span class="text-[11px] text-gray-500 mt-0.5">ヨハネ 1:1–5</span>
+            </button>
+
+            <button onclick="selectWeek(2)" id="week-tab-2" class="week-tab-btn flex flex-col p-3 rounded-xl transition-all text-left hover:bg-paper-50 opacity-80">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-extrabold text-gray-500 uppercase tracking-wider">第2週</span>
+                    <span id="badge-week-2" class="text-xs">⚪</span>
+                </div>
+                <span class="text-sm font-bold text-paper-900 mt-1">証しと召命</span>
+                <span class="text-[11px] text-gray-500 mt-0.5">ヨハネ 1:14, 29, 35-37</span>
+            </button>
+
+            <button onclick="selectWeek(3)" id="week-tab-3" class="week-tab-btn flex flex-col p-3 rounded-xl transition-all text-left hover:bg-paper-50 opacity-80">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-extrabold text-gray-500 uppercase tracking-wider">第3週</span>
+                    <span id="badge-week-3" class="text-xs">⚪</span>
+                </div>
+                <span class="text-sm font-bold text-paper-900 mt-1">カナの婚礼とイエス</span>
+                <span class="text-[11px] text-gray-500 mt-0.5">ヨハネ 2:1–5, 11</span>
+            </button>
+
+            <button onclick="selectWeek(4)" id="week-tab-4" class="week-tab-btn flex flex-col p-3 rounded-xl transition-all text-left hover:bg-paper-50 opacity-80">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-extrabold text-gray-500 uppercase tracking-wider">第4週</span>
+                    <span id="badge-week-4" class="text-xs">⚪</span>
+                </div>
+                <span class="text-sm font-bold text-paper-900 mt-1">新しい命と神の愛</span>
+                <span class="text-[11px] text-gray-500 mt-0.5">ヨハネ 3:3, 16–17</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MODE SWITCHER (Read, Puzzle, Flashcard) -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6 bg-white p-2 rounded-2xl border border-paper-200 shadow-sm">
+        <div class="flex space-x-1 w-full sm:w-auto">
+            <button onclick="switchMode('reader')" id="mode-btn-reader" class="mode-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-800 text-white shadow-sm">
+                📖 解読・解説モード
+            </button>
+            <button onclick="switchMode('puzzle')" id="mode-btn-puzzle" class="mode-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-gray-600 hover:text-paper-900">
+                🧩 語順パズルゲーム
+            </button>
+            <button onclick="switchMode('flashcard')" id="mode-btn-flashcard" class="mode-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-gray-600 hover:text-paper-900">
+                🎴 単語ドリル
+            </button>
+        </div>
+
+        <!-- Syntax Color Toggle -->
+        <div class="flex items-center space-x-2 px-3 py-1">
+            <span class="text-xs text-gray-600 font-medium">文法カラー:</span>
+            <button id="toggle-color" onclick="toggleColorCoding()" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out bg-amber-800">
+                <span id="toggle-dot" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-5"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-grow">
+
+        <!-- ================= MODE 1: READER & PARSING ================= -->
+        <div id="mode-reader" class="mode-panel block space-y-6">
+
+            <!-- Verse Selection Dropdown -->
+            <div class="flex items-center justify-between bg-paper-100 px-4 py-2.5 rounded-xl border border-paper-200">
+                <span class="text-xs font-bold text-amber-900 uppercase tracking-wider">学習する節を選択:</span>
+                <select id="verse-select" onchange="changeSelectedVerse(this.value)" class="bg-white text-paper-900 border border-paper-300 text-xs sm:text-sm rounded-lg px-3 py-1.5 font-bold focus:outline-none focus:ring-2 focus:ring-amber-800">
+                    <!-- Populated dynamically per week -->
+                </select>
+            </div>
+
+            <!-- Verse Greek Box -->
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-paper-200 shadow-sm text-center color-on" id="verse-box-container">
+                <div class="flex justify-between items-center mb-3">
+                    <span id="verse-ref-label" class="text-xs font-extrabold uppercase tracking-widest text-amber-800">
+                        JOHN 1:1
+                    </span>
+                    <span id="week-focus-label" class="text-xs font-medium text-gray-500 bg-paper-100 px-2.5 py-0.5 rounded-full">
+                        焦点: BE動詞と主語
+                    </span>
+                </div>
+
+                <div class="greek-text text-2xl sm:text-4xl leading-relaxed sm:leading-loose font-normal flex flex-wrap justify-center items-center gap-1.5 sm:gap-2 my-2" id="greek-words-interactive">
+                    <!-- Words rendered via JS -->
+                </div>
+
+                <!-- Japanese Translation -->
+                <div class="mt-4 pt-4 border-t border-paper-100">
+                    <p class="text-xs text-gray-400 font-semibold mb-1">【新共同訳/直訳ガイド】</p>
+                    <p id="verse-jp-translation" class="text-base sm:text-lg font-bold text-paper-900">
+                        初めに言があった。言は神と共にあった。言は神であった。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Word Parsing Detail Card -->
+            <div id="word-detail-card" class="bg-paper-100 border border-paper-200 rounded-3xl p-5 sm:p-6 shadow-sm">
+                <div id="detail-placeholder" class="text-center py-6 text-gray-500">
+                    <p class="text-base font-semibold">👆 上のギリシャ語単語をタップしてください</p>
+                    <p class="text-xs text-gray-400 mt-1">原形・品詞・格変化/活用・直訳・学習ポイントが表示されます</p>
+                </div>
+
+                <div id="detail-content" class="hidden">
+                    <div class="flex flex-wrap items-start justify-between border-b border-paper-200 pb-3 mb-4 gap-2">
+                        <div>
+                            <span id="card-pos-badge" class="text-xs font-bold px-2.5 py-1 rounded-md uppercase tracking-wider bg-amber-200 text-amber-900">
+                                品詞
+                            </span>
+                            <h2 class="greek-text text-3xl font-bold text-paper-900 mt-1" id="card-greek">
+                                Ἐν
+                            </h2>
+                            <p class="text-xs text-gray-500 italic mt-0.5" id="card-translit">en</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-gray-400 block">辞書形 (原形)</span>
+                            <span class="greek-text text-xl font-bold text-amber-900" id="card-root">ἐν</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <div class="bg-white p-3.5 rounded-2xl border border-paper-200">
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">直訳 / 意味</span>
+                            <p class="text-base font-bold text-paper-900" id="card-meaning">〜において</p>
+                        </div>
+                        <div class="bg-white p-3.5 rounded-2xl border border-paper-200">
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">文法構造 (Parsing)</span>
+                            <p class="text-sm font-semibold text-amber-900" id="card-grammar">前置詞 (与格支配)</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl border border-paper-200">
+                        <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">学習ノート & ポイント</span>
+                        <p class="text-xs sm:text-sm text-gray-700 leading-relaxed" id="card-context">
+                            解説テキスト
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= MODE 2: WORD REORDER PUZZLE ================= -->
+        <div id="mode-puzzle" class="mode-panel hidden space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-paper-200 shadow-sm text-center">
+                <div class="mb-4">
+                    <span class="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">
+                        ギリシャ語 語順並べ替えチャレンジ
+                    </span>
+                    <h3 class="text-xl font-bold text-paper-900 mt-2" id="puzzle-verse-title">
+                        ヨハネ 1:1 の語順を正しく並べよう！
+                    </h3>
+                    <p class="text-xs sm:text-sm text-gray-600 mt-1" id="puzzle-translation-hint">
+                        「初めに言があった。言は神と共にあった...」
+                    </p>
+                </div>
+
+                <!-- Selected Words Drop Zone -->
+                <div class="min-h-[90px] bg-paper-50 p-4 rounded-2xl border-2 border-dashed border-paper-300 mb-6 flex flex-wrap items-center justify-center gap-2" id="puzzle-drop-zone">
+                    <span class="text-xs text-gray-400 italic pointer-events-none" id="puzzle-placeholder">
+                        下の単語をタップしてここに並べてください
+                    </span>
+                </div>
+
+                <!-- Available Scrambled Words Pool -->
+                <div class="flex flex-wrap items-center justify-center gap-2 mb-6" id="puzzle-pool-zone">
+                    <!-- Scrambled word buttons -->
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex justify-center items-center gap-3">
+                    <button onclick="resetPuzzle()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition-all">
+                        🔄 リセット
+                    </button>
+                    <button onclick="checkPuzzleAnswer()" class="bg-amber-800 hover:bg-amber-900 text-white font-bold px-6 py-2.5 rounded-xl text-xs sm:text-sm shadow-md transition-all active:scale-95">
+                        ✨ 答え合わせ
+                    </button>
+                </div>
+
+                <p id="puzzle-feedback" class="mt-4 text-sm font-bold min-h-[24px]"></p>
+            </div>
+        </div>
+
+        <!-- ================= MODE 3: FLASHCARDS ================= -->
+        <div id="mode-flashcard" class="mode-panel hidden space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-3xl border border-paper-200 shadow-sm text-center">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-xs font-bold text-amber-800 bg-amber-100 px-3 py-1 rounded-full">
+                        今週の最重要語彙ドリル
+                    </span>
+                    <span id="flashcard-counter" class="text-xs font-bold text-gray-500">
+                        1 / 5
+                    </span>
+                </div>
+
+                <!-- 3D Flip Card Container -->
+                <div class="perspective-1000 max-w-md mx-auto h-64 cursor-pointer" onclick="flipFlashcard()">
+                    <div id="flashcard-inner" class="relative w-full h-full duration-500 transform-style-3d shadow-md rounded-3xl border border-paper-200">
+                        <!-- FRONT -->
+                        <div class="absolute inset-0 w-full h-full bg-paper-100 rounded-3xl backface-hidden p-6 flex flex-col justify-between items-center border border-paper-200">
+                            <span class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">GREEK WORD</span>
+                            <div class="my-auto">
+                                <p class="greek-text text-4xl font-bold text-paper-900" id="card-front-greek">λόγος</p>
+                                <p class="text-xs text-gray-500 italic mt-1" id="card-front-translit">[logos]</p>
+                            </div>
+                            <span class="text-xs text-amber-800 font-medium">🔄 タップして裏返す</span>
+                        </div>
+
+                        <!-- BACK -->
+                        <div class="absolute inset-0 w-full h-full bg-amber-900 text-white rounded-3xl backface-hidden rotate-y-180 p-6 flex flex-col justify-between items-center">
+                            <span class="text-[10px] text-amber-200 uppercase font-bold tracking-widest">JAPANESE & GRAMMAR</span>
+                            <div class="my-auto">
+                                <p class="text-2xl font-bold text-amber-100" id="card-back-meaning">言（ロゴス） / 言葉</p>
+                                <p class="text-xs text-amber-200 mt-2 font-medium" id="card-back-grammar">男性・単数・主格</p>
+                            </div>
+                            <span class="text-xs text-amber-200 font-medium">🔄 タップして表に戻す</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flashcard Navigation -->
+                <div class="flex justify-center items-center gap-4 mt-6">
+                    <button onclick="prevFlashcard()" class="bg-paper-100 hover:bg-paper-200 text-paper-900 font-bold px-4 py-2 rounded-xl text-xs transition-all">
+                        ◀ 前の単語
+                    </button>
+                    <button onclick="nextFlashcard()" class="bg-amber-800 hover:bg-amber-900 text-white font-bold px-5 py-2 rounded-xl text-xs transition-all">
+                        次の単語 ▶
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- PROGRESS & BADGES MODAL -->
+    <div id="progress-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-3xl border border-paper-200 p-6 max-w-lg w-full shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-paper-100 pb-3">
+                <h3 class="text-lg font-bold text-paper-900 flex items-center gap-2">
+                    <span>🏆</span> 学習進捗ダッシュボード
+                </h3>
+                <button onclick="closeProgressModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 text-center">
+                <div class="bg-paper-50 p-3.5 rounded-2xl border border-paper-200">
+                    <span class="text-xs text-gray-500 block">通算マスター節数</span>
+                    <span id="stat-completed-verses" class="text-2xl font-extrabold text-amber-900">0 / 4</span>
+                </div>
+                <div class="bg-paper-50 p-3.5 rounded-2xl border border-paper-200">
+                    <span class="text-xs text-gray-500 block">パズルクリア数</span>
+                    <span id="stat-puzzles-cleared" class="text-2xl font-extrabold text-emerald-800">0</span>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">獲得したバッジ</h4>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div id="badge-card-1" class="p-2.5 rounded-xl border border-gray-200 text-gray-400 flex items-center gap-2">
+                        <span class="text-xl">📜</span>
+                        <div>
+                            <p class="font-bold">ロゴスの探求者</p>
+                            <p class="text-[10px]">第1週クリア</p>
+                        </div>
+                    </div>
+                    <div id="badge-card-2" class="p-2.5 rounded-xl border border-gray-200 text-gray-400 flex items-center gap-2">
+                        <span class="text-xl">🐑</span>
+                        <div>
+                            <p class="font-bold">証しと召命</p>
+                            <p class="text-[10px]">第2週クリア</p>
+                        </div>
+                    </div>
+                    <div id="badge-card-3" class="p-2.5 rounded-xl border border-gray-200 text-gray-400 flex items-center gap-2">
+                        <span class="text-xl">🍷</span>
+                        <div>
+                            <p class="font-bold">カナの奇跡</p>
+                            <p class="text-[10px]">第3週クリア</p>
+                        </div>
+                    </div>
+                    <div id="badge-card-4" class="p-2.5 rounded-xl border border-gray-200 text-gray-400 flex items-center gap-2">
+                        <span class="text-xl">💖</span>
+                        <div>
+                            <p class="font-bold">ヨハネ3:16マスター</p>
+                            <p class="text-[10px]">第4週クリア</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 text-right">
+                <button onclick="closeProgressModal()" class="bg-amber-800 text-white font-bold px-4 py-2 rounded-xl text-xs">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIO NOTICE MODAL (Triggered when el-GR voice engine is missing) -->
+    <div id="audio-notice-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-2xl border border-paper-200">
+            <div class="text-3xl">🔊</div>
+            <h3 class="text-base font-bold text-paper-900">ギリシャ語音声エンジンについて</h3>
+            <p class="text-xs text-gray-600 leading-relaxed text-left bg-paper-50 p-3 rounded-2xl border border-paper-200">
+                お使いの端末・ブラウザには現在、**古典/現代ギリシャ語（el-GR）の標準音声合成エンジン**がインストールされていません。<br><br>
+                ※英語等の別言語エンジンによる誤った読み上げ（"Greek..."の連発など）を防ぐため、自動再生を安全に停止しています。
+            </p>
+            <button onclick="closeAudioNotice()" class="bg-amber-800 text-white font-bold px-5 py-2 rounded-xl text-xs w-full">
+                了解しました
+            </button>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="mt-8 text-center border-t border-paper-200 pt-4 text-xs text-gray-400">
+        JohanneAnaginosko Complete Edition • John 1–3 Curriculum for Koine Greek
+    </footer>
+
+    <!-- JS DATA & APP LOGIC -->
+    <script>
+        // DATA CURRICULUM (Weeks 1 to 4)
+        const curriculumData = {
+            1: {
+                title: "第1週: ロゴスの神秘",
+                verses: [
+                    {
+                        ref: "ヨハネ 1:1",
+                        focus: "BE動詞 ἦν と主語",
+                        translation: "初めに言があった。言は神と共にあった。言は神であった。",
+                        words: [
+                            { id: 101, greek: "Ἐν", clean: "Ἐν", translit: "en", root: "ἐν", pos: "前置詞", roleClass: "role-prep", roleName: "前置詞", meaning: "〜において", grammar: "前置詞 (与格支配)", context: "時間の始まりを示す前置詞。" },
+                            { id: 102, greek: "ἀρχῇ", clean: "ἀρχῇ", translit: "archē", root: "ἀρχή", pos: "名詞", roleClass: "role-prep", roleName: "場所/時間", meaning: "初め / 起源", grammar: "女性・単数・与格", context: "ἐν の支配を受けて与格。" },
+                            { id: 103, greek: "ἦν", clean: "ἦν", translit: "ēn", root: "εἰμί", pos: "動詞", roleClass: "role-verb", roleName: "動詞", meaning: "存在していた", grammar: "未完了過去・3単", context: "継続的な存在を表すBE動詞。" },
+                            { id: 104, greek: "ὁ", clean: "ὁ", translit: "ho", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "男性・単数・主格", context: "主語を示す定冠詞。" },
+                            { id: 105, greek: "λόγος,", clean: "λόγος", translit: "logos", root: "λόγος", pos: "名詞", roleClass: "role-subject", roleName: "主語", meaning: "言（ロゴス）", grammar: "男性・単数・主格", context: "本節の主語。" },
+                            { id: 106, greek: "καὶ", clean: "καὶ", translit: "kai", root: "καί", pos: "接続詞", roleClass: "role-other", roleName: "接続詞", meaning: "そして", grammar: "等位接続詞", context: "節を繋ぐ。" },
+                            { id: 107, greek: "ὁ", clean: "ὁ", translit: "ho", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "男性・単数・主格", context: "主語を示す。" },
+                            { id: 108, greek: "λόγος", clean: "λόγος", translit: "logos", root: "λόγος", pos: "名詞", roleClass: "role-subject", roleName: "主語", meaning: "言（ロゴス）", grammar: "男性・単数・主格", context: "第2節の主語。" },
+                            { id: 109, greek: "ἦν", clean: "ἦν", translit: "ēn", root: "εἰμί", pos: "動詞", roleClass: "role-verb", roleName: "動詞", meaning: "存在していた", grammar: "未完了過去・3単", context: "第2節の動詞。" },
+                            { id: 110, greek: "πρὸς", clean: "πρὸς", translit: "pros", root: "πρός", pos: "前置詞", roleClass: "role-prep", roleName: "前置詞", meaning: "〜に向かって / 共に", grammar: "前置詞 (対格支配)", context: "神との親密な対面関係を表す。" },
+                            { id: 111, greek: "τὸν", clean: "τὸν", translit: "ton", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "男性・単数・対格", context: "神に冠する定冠詞。" },
+                            { id: 112, greek: "θεόν,", clean: "θεόν", translit: "theon", root: "θεός", pos: "名詞", roleClass: "role-object", roleName: "目的語", meaning: "神", grammar: "男性・単数・対格", context: "対格形の神。" },
+                            { id: 113, greek: "καὶ", clean: "καὶ", translit: "kai", root: "καί", pos: "接続詞", roleClass: "role-other", roleName: "接続詞", meaning: "そして", grammar: "等位接続詞", context: "第3節への接続。" },
+                            { id: 114, greek: "θεὸς", clean: "θεὸς", translit: "theos", root: "θεός", pos: "名詞 (述語)", roleClass: "role-object", roleName: "補語", meaning: "神 (性質)", grammar: "男性・単数・主格 (無冠詞)", context: "ロゴスの持つ神性を宣言。" },
+                            { id: 115, greek: "ἦν", clean: "ἦν", translit: "ēn", root: "εἰμί", pos: "動詞", roleClass: "role-verb", roleName: "動詞", meaning: "であった", grammar: "未完了過去・3単", context: "第3節の動詞。" },
+                            { id: 116, greek: "ὁ", clean: "ὁ", translit: "ho", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "男性・単数・主格", context: "主語判定の決め手。" },
+                            { id: 117, greek: "λόγος.", clean: "λόγος", translit: "logos", root: "λόγος", pos: "名詞", roleClass: "role-subject", roleName: "主語", meaning: "言（ロゴス）", grammar: "男性・単数・主格", context: "第3節の主語。" }
+                        ]
+                    },
+                    {
+                        ref: "ヨハネ 1:5",
+                        focus: "現在形動詞 と 対比構造",
+                        translation: "光は暗闇の中で輝いている。暗闇は光に勝たなかった。",
+                        words: [
+                            { id: 151, greek: "καὶ", clean: "καὶ", translit: "kai", root: "καί", pos: "接続詞", roleClass: "role-other", roleName: "接続詞", meaning: "そして", grammar: "等位接続詞", context: "文の冒頭。" },
+                            { id: 152, greek: "τὸ", clean: "τὸ", translit: "to", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "中性・単数・主格", context: "光（φῶς）に冠する定冠詞。" },
+                            { id: 153, greek: "φῶς", clean: "φῶς", translit: "phōs", root: "φῶς", pos: "名詞", roleClass: "role-subject", roleName: "主語", meaning: "光", grammar: "中性・単数・主格", context: "命の輝きとしての光。" },
+                            { id: 154, greek: "ἐν", clean: "ἐν", translit: "en", root: "ἐν", pos: "前置詞", roleClass: "role-prep", roleName: "前置詞", meaning: "〜の中で", grammar: "前置詞 (与格支配)", context: "場所を表す。" },
+                            { id: 155, greek: "τῇ", clean: "τῇ", translit: "tē", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "女性・単数・与格", context: "暗闇に冠する定冠詞。" },
+                            { id: 156, greek: "σκοτίᾳ", clean: "σκοτίᾳ", translit: "skotia", root: "σκοτία", pos: "名詞", roleClass: "role-prep", roleName: "場所", meaning: "暗闇", grammar: "女性・単数・与格", context: "世の暗闇。" },
+                            { id: 157, greek: "φαίνει,", clean: "φαίνει", translit: "phainei", root: "φαίνω", pos: "動詞", roleClass: "role-verb", roleName: "動詞", meaning: "輝いている", grammar: "現在・能動態・3単", context: "今も輝き続けている現在形。" }
+                        ]
+                    }
+                ],
+                flashcards: [
+                    { greek: "λόγος", translit: "logos", meaning: "言（ロゴス）/ 言葉", grammar: "男性名詞・主格" },
+                    { greek: "θεός", translit: "theos", meaning: "神", grammar: "男性名詞・主格" },
+                    { greek: "ἦν", translit: "ēn", meaning: "存在していた / であった", grammar: "動詞 εἰμί 未完了過去3単" },
+                    { greek: "φῶς", translit: "phōs", meaning: "光", grammar: "中性名詞・主格" },
+                    { greek: "ἀρχή", translit: "archē", meaning: "初め / 起源", grammar: "女性名詞・主格" }
+                ]
+            },
+            2: {
+                title: "第2週: 証しと召命",
+                verses: [
+                    {
+                        ref: "ヨハネ 1:14",
+                        focus: "受肉（言葉が肉体となった）",
+                        translation: "言は肉体となり、わたしたちの間に宿られた。",
+                        words: [
+                            { id: 201, greek: "καὶ", clean: "καὶ", translit: "kai", root: "καί", pos: "接続詞", roleClass: "role-other", roleName: "接続詞", meaning: "そして", grammar: "等位接続詞", context: "文章をつなぐ。" },
+                            { id: 202, greek: "ὁ", clean: "ὁ", translit: "ho", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "男性・単数・主格", context: "ロゴスに冠する冠詞。" },
+                            { id: 203, greek: "λόγος", clean: "λόγος", translit: "logos", root: "λόγος", pos: "名詞", roleClass: "role-subject", roleName: "主語", meaning: "言（ロゴス）", grammar: "男性・単数・主格", context: "主語。" },
+                            { id: 204, greek: "σὰρξ", clean: "σὰρξ", translit: "sarx", root: "σάρξ", pos: "名詞", roleClass: "role-object", roleName: "補語", meaning: "肉体 / 人間", grammar: "女性・単数・主格", context: "人間の儚い肉体を表す重要語。" },
+                            { id: 205, greek: "ἐγένετο", clean: "ἐγένετο", translit: "egeneto", root: "γίνομαι", pos: "動詞", roleClass: "role-verb", roleName: "動詞", meaning: "〜となった", grammar: "アオリスト・3単", context: "歴史的一回限りの出来事（受肉）。" }
+                        ]
+                    },
+                    {
+                        ref: "ヨハネ 1:29",
+                        focus: "神の小羊の宣言",
+                        translation: "見よ、世の罪を取り除く神の小羊だ。",
+                        words: [
+                            { id: 251, greek: "Ἴδε", clean: "Ἴδε", translit: "Ide", root: "ὁράω", pos: "動詞 (命令)", roleClass: "role-verb", roleName: "命令動詞", meaning: "見よ！", grammar: "アオリスト・命令・2単", context: "注意を惹きつける命令形。" },
+                            { id: 252, greek: "ὁ", clean: "ὁ", translit: "ho", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "男性・単数・主格", context: "小羊に冠する。" },
+                            { id: 253, greek: "ἀμνὸς", clean: "ἀμνὸς", translit: "amnos", root: "ἀμνός", pos: "名詞", roleClass: "role-subject", roleName: "主語/補語", meaning: "小羊", grammar: "男性・単数・主格", context: "生贄の小羊。" },
+                            { id: 254, greek: "τοῦ", clean: "τοῦ", translit: "tou", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "〜の", grammar: "男性・単数・属格", context: "所有の属格。" },
+                            { id: 255, greek: "θεοῦ", clean: "θεοῦ", translit: "theou", root: "θεός", pos: "名詞", roleClass: "role-object", roleName: "属格修飾", meaning: "神の", grammar: "男性・単数・属格", context: "「神の」小羊。" }
+                        ]
+                    }
+                ],
+                flashcards: [
+                    { greek: "σάρξ", translit: "sarx", meaning: "肉体 / 人間", grammar: "女性名詞・主格" },
+                    { greek: "ἐγένετο", translit: "egeneto", meaning: "〜になった / 生じた", grammar: "動詞 γίνομαι アオリスト3単" },
+                    { greek: "ἀμνός", translit: "amnos", meaning: "小羊", grammar: "男性名詞・主格" },
+                    { greek: "Ἴδε", translit: "Ide", meaning: "見よ！", grammar: "動詞命令形" }
+                ]
+            },
+            3: {
+                title: "第3週: カナの婚礼とイエス",
+                verses: [
+                    {
+                        ref: "ヨハネ 2:5",
+                        focus: "マリアの言葉と命令形",
+                        translation: "母は召使いまでに言った。「この方が言われることを、何でもしなさい。」",
+                        words: [
+                            { id: 301, greek: "ὅ narrative", clean: "ὅ", translit: "ho", root: "ὅς", pos: "関係代名詞", roleClass: "role-other", roleName: "代名詞", meaning: "〜すること何でも", grammar: "中性・単数", context: "イエスの指示指称。" },
+                            { id: 302, greek: "ἂν", clean: "an", translit: "an", root: "ἄν", pos: "小辞", roleClass: "role-other", roleName: "小辞", meaning: "〜であっても", grammar: "接続条件", context: "不確定要素を添える。" },
+                            { id: 303, greek: "λέγῃ", clean: "legē", translit: "legē", root: "λέγω", pos: "動詞", roleClass: "role-verb", roleName: "動詞", meaning: "お話しになる（こと）", grammar: "接続法・現在・3単", context: "イエスのお言葉。" },
+                            { id: 304, greek: "ὑμῖν,", clean: "hymin", translit: "hymin", root: "σύ", pos: "代名詞", roleClass: "role-object", roleName: "与格", meaning: "あなたがたに", grammar: "2人称・複数・与格", context: "召使いたちへ。" },
+                            { id: 305, greek: "ποιήσατε.", clean: "poiēsate", translit: "poiēsate", root: "ποιέω", pos: "動詞 (命令)", roleClass: "role-verb", roleName: "命令動詞", meaning: "実行しなさい！", grammar: "アオリスト・命令・2複", context: "力強い命令形！" }
+                        ]
+                    }
+                ],
+                flashcards: [
+                    { greek: "ποιέω", translit: "poieō", meaning: "行う / 作る", grammar: "動詞原形" },
+                    { greek: "ποιήσατε", translit: "poiēsate", meaning: "行いなさい！", grammar: "アオリスト命令形2複" },
+                    { greek: "λέγω", translit: "legō", meaning: "言う / 話す", grammar: "動詞原形" }
+                ]
+            },
+            4: {
+                title: "第4週: 新しい命と神の愛",
+                verses: [
+                    {
+                        ref: "ヨハネ 3:16",
+                        focus: "聖書で最も有名で重要な節",
+                        translation: "神は、その独り子をお与えになったほどに、世を愛された。",
+                        words: [
+                            { id: 401, greek: "Οὕτως", clean: "Οὕτως", translit: "Houtōs", root: "οὕτως", pos: "副詞", roleClass: "role-other", roleName: "副詞", meaning: "このように / 非常に", grammar: "副詞", context: "程度を強調する「これほどまでに」。" },
+                            { id: 402, greek: "γὰρ", clean: "gar", translit: "gar", root: "γάρ", pos: "接続詞", roleClass: "role-other", roleName: "接続詞", meaning: "なぜなら", grammar: "理由接続詞", context: "理由を説明。" },
+                            { id: 403, greek: "ἠγάπησεν", clean: "ēgapēsen", translit: "ēgapēsen", root: "ἀγαπάω", pos: "動詞", roleClass: "role-verb", roleName: "動詞", meaning: "愛された", grammar: "アオリスト・能動・3単", context: "十字架に結実する神の愛（アガペー）。" },
+                            { id: 404, greek: "ὁ", clean: "ho", translit: "ho", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "男性・単数・主格", context: "神に冠する冠詞。" },
+                            { id: 405, greek: "θεὸς", clean: "theos", translit: "theos", root: "θεός", pos: "名詞", roleClass: "role-subject", roleName: "主語", meaning: "神は", grammar: "男性・単数・主格", context: "文の主語。" },
+                            { id: 406, greek: "τὸν", clean: "ton", translit: "ton", root: "ὁ", pos: "定冠詞", roleClass: "role-article", roleName: "定冠詞", meaning: "その", grammar: "男性・単数・対格", context: "世（κόσμον）にかかる。" },
+                            { id: 407, greek: "κόσμον,", clean: "kosmon", translit: "kosmon", root: "κόσμος", pos: "名詞", roleClass: "role-object", roleName: "目的語", meaning: "世を / 世界を", grammar: "男性・単数・対格", context: "愛の対象である世界。" }
+                        ]
+                    }
+                ],
+                flashcards: [
+                    { greek: "ἀγαπάω", translit: "agapaō", meaning: "愛する (アガペー)", grammar: "動詞原形" },
+                    { greek: "ἠγάπησεν", translit: "ēgapēsen", meaning: "愛された", grammar: "動詞アオリスト3単" },
+                    { greek: "κόσμος", translit: "kosmos", meaning: "世 / 世界 / 宇宙", grammar: "男性名詞・主格" },
+                    { greek: "οὕτως", translit: "houtōs", meaning: "このように / これほどに", grammar: "副詞" }
+                ]
+            }
+        };
+
+        // APP STATE
+        let currentWeek = 1;
+        let currentVerseIndex = 0;
+        let currentMode = 'reader'; // reader, puzzle, flashcard
+        let isColorCoded = true;
+        let currentFlashcardIdx = 0;
+        let isCardFlipped = false;
+        
+        // Puzzle state
+        let puzzleSelectedWords = [];
+        let puzzleRemainingPool = [];
+
+        // Progress Tracking State
+        let userProgress = {
+            completedWeeks: [],
+            puzzleClearedCount: 0
+        };
+
+        // Audio Safety Flag
+        let availableGreekVoice = null;
+
+        // INITIALIZATION
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProgress();
+            checkGreekAudioVoice();
+            selectWeek(1);
+        });
+
+        // SAFE GREEK VOICE DETECTION (Fixes Speech Synthesis Bug)
+        function checkGreekAudioVoice() {
+            if (!('speechSynthesis' in window)) return;
+
+            const initVoices = () => {
+                const voices = window.speechSynthesis.getVoices();
+                // Strictly search for el-GR or el languages
+                availableGreekVoice = voices.find(v => v.lang === 'el-GR' || v.lang === 'el' || v.lang.startsWith('el'));
+            };
+
+            initVoices();
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = initVoices;
+            }
+        }
+
+        // PLAY AUDIO WITH STRICT SAFETY GUARD
+        function playCurrentVerseAudio() {
+            const currentVerse = curriculumData[currentWeek].verses[currentVerseIndex];
+            const textToSpeak = currentVerse.words.map(w => w.clean).join(' ');
+
+            if (!('speechSynthesis' in window)) {
+                showAudioNotice();
+                return;
+            }
+
+            // Re-check voices in case loaded asynchronously
+            if (!availableGreekVoice) {
+                const voices = window.speechSynthesis.getVoices();
+                availableGreekVoice = voices.find(v => v.lang === 'el-GR' || v.lang === 'el' || v.lang.startsWith('el'));
+            }
+
+            // SAFETY GUARD: If no Greek voice engine exists, DO NOT fall back to default English engine
+            if (!availableGreekVoice) {
+                showAudioNotice();
+                return;
+            }
+
+            // Cancel ongoing & speak purely Greek text
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            utterance.voice = availableGreekVoice;
+            utterance.lang = availableGreekVoice.lang;
+            utterance.rate = 0.85; // Slightly slower for clarity
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function showAudioNotice() {
+            document.getElementById('audio-notice-modal').classList.remove('hidden');
+        }
+
+        function closeAudioNotice() {
+            document.getElementById('audio-notice-modal').classList.add('hidden');
+        }
+
+        // WEEK SELECTION LOGIC
+        function selectWeek(weekNum) {
+            currentWeek = weekNum;
+            currentVerseIndex = 0;
+
+            // Update Tab Styles
+            for (let i = 1; i <= 4; i++) {
+                const tab = document.getElementById(`week-tab-${i}`);
+                if (i === weekNum) {
+                    tab.className = "week-tab-btn flex flex-col p-3 rounded-xl transition-all text-left bg-white shadow-sm border border-amber-300 ring-2 ring-amber-800/20";
+                } else {
+                    tab.className = "week-tab-btn flex flex-col p-3 rounded-xl transition-all text-left hover:bg-paper-50 opacity-80 border border-transparent";
+                }
+            }
+
+            // Populate Verses Dropdown
+            const selectEl = document.getElementById('verse-select');
+            selectEl.innerHTML = '';
+            curriculumData[weekNum].verses.forEach((v, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.innerText = `${v.ref} - ${v.focus}`;
+                selectEl.appendChild(opt);
+            });
+
+            loadVerseData();
+            initPuzzleMode();
+            initFlashcardMode();
+        }
+
+        function changeSelectedVerse(index) {
+            currentVerseIndex = parseInt(index);
+            loadVerseData();
+            initPuzzleMode();
+        }
+
+        // LOAD VERSE DATA (Reader Mode)
+        function loadVerseData() {
+            const verse = curriculumData[currentWeek].verses[currentVerseIndex];
+            
+            document.getElementById('verse-ref-label').innerText = `${verse.ref}`;
+            document.getElementById('week-focus-label').innerText = `焦点: ${verse.focus}`;
+            document.getElementById('verse-jp-translation').innerText = verse.translation;
+
+            // Render interactive Greek words
+            const container = document.getElementById('greek-words-interactive');
+            container.innerHTML = '';
+
+            verse.words.forEach(w => {
+                const span = document.createElement('span');
+                span.className = `word-badge ${w.roleClass}`;
+                span.innerText = w.greek;
+                span.id = `word-badge-${w.id}`;
+                span.onclick = () => selectWordDetail(w);
+                container.appendChild(span);
+            });
+
+            // Reset parsing card
+            document.getElementById('detail-placeholder').classList.remove('hidden');
+            document.getElementById('detail-content').classList.add('hidden');
+        }
+
+        // SELECT WORD FOR DETAILED PARSING CARD
+        function selectWordDetail(w) {
+            document.querySelectorAll('.word-badge').forEach(el => el.classList.remove('selected'));
+            const activeEl = document.getElementById(`word-badge-${w.id}`);
+            if (activeEl) activeEl.classList.add('selected');
+
+            document.getElementById('detail-placeholder').classList.add('hidden');
+            document.getElementById('detail-content').classList.remove('hidden');
+
+            document.getElementById('card-greek').innerText = w.greek;
+            document.getElementById('card-translit').innerText = `[${w.translit}]`;
+            document.getElementById('card-root').innerText = w.root;
+            document.getElementById('card-pos-badge').innerText = `${w.pos} (${w.roleName})`;
+            document.getElementById('card-meaning').innerText = w.meaning;
+            document.getElementById('card-grammar').innerText = w.grammar;
+            document.getElementById('card-context').innerText = w.context;
+        }
+
+        // MODE SWITCHING (Reader / Puzzle / Flashcard)
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`mode-${mode}`).classList.remove('hidden');
+
+            // Button Styles
+            ['reader', 'puzzle', 'flashcard'].forEach(m => {
+                const btn = document.getElementById(`mode-btn-${m}`);
+                if (m === mode) {
+                    btn.className = "mode-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-amber-800 text-white shadow-sm";
+                } else {
+                    btn.className = "mode-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-medium text-gray-600 hover:text-paper-900";
+                }
+            });
+        }
+
+        // WORD REORDER PUZZLE GAME LOGIC
+        function initPuzzleMode() {
+            const verse = curriculumData[currentWeek].verses[currentVerseIndex];
+            document.getElementById('puzzle-verse-title').innerText = `${verse.ref} の語順パズル`;
+            document.getElementById('puzzle-translation-hint').innerText = `「${verse.translation}」`;
+            document.getElementById('puzzle-feedback').innerText = '';
+
+            // Shuffle words
+            const originalWords = verse.words.map(w => w.clean);
+            puzzleRemainingPool = [...originalWords].sort(() => Math.random() - 0.5);
+            puzzleSelectedWords = [];
+
+            renderPuzzleZones();
+        }
+
+        function renderPuzzleZones() {
+            const dropZone = document.getElementById('puzzle-drop-zone');
+            const poolZone = document.getElementById('puzzle-pool-zone');
+
+            // Drop zone
+            dropZone.innerHTML = '';
+            if (puzzleSelectedWords.length === 0) {
+                dropZone.innerHTML = `<span class="text-xs text-gray-400 italic pointer-events-none">下の単語をタップしてここに並べてください</span>`;
+            } else {
+                puzzleSelectedWords.forEach((word, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = "greek-text text-lg sm:text-2xl font-bold bg-white text-paper-900 border border-amber-300 px-3 py-1 rounded-xl shadow-sm hover:bg-amber-50";
+                    btn.innerText = word;
+                    btn.onclick = () => deselectPuzzleWord(idx);
+                    dropZone.appendChild(btn);
+                });
+            }
+
+            // Pool zone
+            poolZone.innerHTML = '';
+            puzzleRemainingPool.forEach((word, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "greek-text text-lg sm:text-2xl font-bold bg-paper-100 text-paper-900 border border-paper-200 px-3 py-1 rounded-xl hover:bg-white shadow-sm active:scale-95 transition-all";
+                btn.innerText = word;
+                btn.onclick = () => selectPuzzleWord(idx);
+                poolZone.appendChild(btn);
+            });
+        }
+
+        function selectPuzzleWord(index) {
+            const word = puzzleRemainingPool.splice(index, 1)[0];
+            puzzleSelectedWords.push(word);
+            renderPuzzleZones();
+        }
+
+        function deselectPuzzleWord(index) {
+            const word = puzzleSelectedWords.splice(index, 1)[0];
+            puzzleRemainingPool.push(word);
+            renderPuzzleZones();
+        }
+
+        function resetPuzzle() {
+            initPuzzleMode();
+        }
+
+        function checkPuzzleAnswer() {
+            const verse = curriculumData[currentWeek].verses[currentVerseIndex];
+            const correctOrder = verse.words.map(w => w.clean).join(' ');
+            const userOrder = puzzleSelectedWords.join(' ');
+
+            const feedback = document.getElementById('puzzle-feedback');
+
+            if (userOrder === correctOrder) {
+                feedback.className = "mt-4 text-sm font-bold text-emerald-800 animate-bounce";
+                feedback.innerText = "🎉 Εὕρηκα!（エウレカ！正解です！）素晴らしいギリシャ語の語順感覚です！";
+
+                // Trigger confetti celebration
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 70, spread: 60, origin: { y: 0.7 } });
+                }
+
+                // Update Progress
+                userProgress.puzzleClearedCount++;
+                if (!userProgress.completedWeeks.includes(currentWeek)) {
+                    userProgress.completedWeeks.push(currentWeek);
+                }
+                saveProgress();
+            } else {
+                feedback.className = "mt-4 text-sm font-bold text-rose-800";
+                feedback.innerText = "❌ おしい！もう一度語順を確かめてチャレンジしてみましょう。";
+            }
+        }
+
+        // FLASHCARD DRILL LOGIC
+        function initFlashcardMode() {
+            currentFlashcardIdx = 0;
+            isCardFlipped = false;
+            updateFlashcardUI();
+        }
+
+        function updateFlashcardUI() {
+            const cards = curriculumData[currentWeek].flashcards;
+            const current = cards[currentFlashcardIdx];
+
+            document.getElementById('flashcard-counter').innerText = `${currentFlashcardIdx + 1} / ${cards.length}`;
+            document.getElementById('card-front-greek').innerText = current.greek;
+            document.getElementById('card-front-translit').innerText = `[${current.translit}]`;
+            document.getElementById('card-back-meaning').innerText = current.meaning;
+            document.getElementById('card-back-grammar').innerText = current.grammar;
+
+            // Reset flip
+            isCardFlipped = false;
+            document.getElementById('flashcard-inner').classList.remove('rotate-y-180');
+        }
+
+        function flipFlashcard() {
+            isCardFlipped = !isCardFlipped;
+            const inner = document.getElementById('flashcard-inner');
+            if (isCardFlipped) {
+                inner.classList.add('rotate-y-180');
+            } else {
+                inner.classList.remove('rotate-y-180');
+            }
+        }
+
+        function nextFlashcard() {
+            const cards = curriculumData[currentWeek].flashcards;
+            currentFlashcardIdx = (currentFlashcardIdx + 1) % cards.length;
+            updateFlashcardUI();
+        }
+
+        function prevFlashcard() {
+            const cards = curriculumData[currentWeek].flashcards;
+            currentFlashcardIdx = (currentFlashcardIdx - 1 + cards.length) % cards.length;
+            updateFlashcardUI();
+        }
+
+        // COLOR CODING TOGGLE
+        function toggleColorCoding() {
+            isColorCoded = !isColorCoded;
+            const container = document.getElementById('verse-box-container');
+            const dot = document.getElementById('toggle-dot');
+            const btn = document.getElementById('toggle-color');
+
+            if (isColorCoded) {
+                container.classList.add('color-on');
+                container.classList.remove('color-off');
+                dot.style.transform = 'translateX(1.25rem)';
+                btn.classList.add('bg-amber-800');
+            } else {
+                container.classList.add('color-off');
+                container.classList.remove('color-on');
+                dot.style.transform = 'translateX(0rem)';
+                btn.classList.remove('bg-amber-800');
+            }
+        }
+
+        // PROGRESS SAVING & DASHBOARD
+        function loadProgress() {
+            const saved = localStorage.getItem('johanne_progress');
+            if (saved) {
+                try { userProgress = JSON.parse(saved); } catch(e){}
+            }
+            updateBadgesUI();
+        }
+
+        function saveProgress() {
+            localStorage.setItem('johanne_progress', JSON.stringify(userProgress));
+            updateBadgesUI();
+        }
+
+        function updateBadgesUI() {
+            for (let w = 1; w <= 4; w++) {
+                const badgeEl = document.getElementById(`badge-week-${w}`);
+                const cardEl = document.getElementById(`badge-card-${w}`);
+                
+                if (userProgress.completedWeeks.includes(w)) {
+                    if (badgeEl) badgeEl.innerText = "✅";
+                    if (cardEl) {
+                        cardEl.className = "p-2.5 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 flex items-center gap-2 font-bold shadow-sm";
+                    }
+                } else {
+                    if (badgeEl) badgeEl.innerText = "⚪";
+                }
+            }
+            document.getElementById('stat-completed-verses').innerText = `${userProgress.completedWeeks.length} / 4`;
+            document.getElementById('stat-puzzles-cleared').innerText = userProgress.puzzleClearedCount;
+        }
+
+        function openProgressModal() {
+            updateBadgesUI();
+            document.getElementById('progress-modal').classList.remove('hidden');
+        }
+
+        function closeProgressModal() {
+            document.getElementById('progress-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
