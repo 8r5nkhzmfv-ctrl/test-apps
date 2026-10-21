@@ -267,24 +267,71 @@
             border-left: 4px solid var(--accent);
         }
 
-        /* 豪華な単語カード（タップ時） */
+        /* 単語カード：ボトムシート */
         .word-card {
+            position: fixed;
+            left: 50%;
+            bottom: 0;
+            width: 100%;
+            max-width: 850px;
+            height: 42vh;
             background: #fff;
             border: 2px solid var(--primary);
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 20px;
-            display: none;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
-            animation: fadeIn 0.3s ease;
+            border-bottom: none;
+            border-radius: 20px 20px 0 0;
+            padding: 0 20px 20px;
+            z-index: 500;
+            overflow-y: auto;
+            box-shadow: 0 -6px 20px rgba(0,0,0,0.15);
+            transform: translate(-50%, 100%);
+            transition: transform 0.3s ease, height 0.3s ease;
+            visibility: hidden;
+            overscroll-behavior: contain;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .word-card.active {
+            transform: translate(-50%, 0);
+            visibility: visible;
         }
 
-        .word-card.active { display: block; }
+        .word-card.expanded { height: 92vh; }
+        .word-card.dragging { transition: none; }
+
+        .sheet-head {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            padding: 8px 0 6px;
+            z-index: 2;
+            touch-action: none;
+            cursor: grab;
+        }
+
+        .sheet-handle {
+            width: 44px;
+            height: 5px;
+            border-radius: 3px;
+            background: #ccc;
+            margin: 0 auto 8px;
+        }
+
+        .sheet-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .sheet-btn {
+            border: 1px solid var(--border);
+            background: #f8f6f0;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        /* シート表示中は本文が隠れないよう下余白を確保 */
+        body.sheet-open { padding-bottom: 45vh; }
 
         .card-top {
             display: flex;
@@ -476,6 +523,47 @@
             transform: scale(0.95);
         }
 
+        /* 並び替え：ドラッグ操作 */
+        .chip { touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+        .chip.dragging-chip { opacity: 0.25; }
+        .chip-ghost {
+            position: fixed;
+            z-index: 2200;
+            pointer-events: none;
+            opacity: 0.92;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+            transform: scale(1.05);
+        }
+        .drop-marker {
+            position: fixed;
+            z-index: 2100;
+            width: 4px;
+            border-radius: 2px;
+            background: var(--accent);
+            pointer-events: none;
+        }
+        .puzzle-dropzone:empty::before {
+            content: "ここに並べる";
+            color: #b5aa98;
+            font-size: 0.9rem;
+            align-self: center;
+        }
+
+        /* 節の塊（clause）枠 */
+        /* 塊は一文の流れを保ったまま、語の背景色だけで区別する（段落化しない） */
+        .clause-group { display: contents; }
+        .greek-display:not(.kana-on) .kana-sub { display: none; }
+        .greek-display.clause-on { column-gap: 0; row-gap: 10px; }
+        .greek-display.clause-on .clause-group > .word-box {
+            background: #f3efe8;
+            background: color-mix(in srgb, var(--cl) 18%, #fff);
+            border-radius: 0;
+        }
+        .greek-display.clause-on .clause-group > .word-box:first-child { border-radius: 10px 0 0 10px; }
+        .greek-display.clause-on .clause-group > .word-box:last-child { border-radius: 0 10px 10px 0; margin-right: 10px; }
+        .greek-display.clause-on .clause-group > .word-box:first-child:last-child { border-radius: 10px; }
+        .greek-display.clause-on .clause-group > .word-box:hover { filter: brightness(0.95); }
+
         .btn {
             background: var(--primary);
             color: #fff;
@@ -529,6 +617,79 @@
         .modal-overlay.active .modal-body { transform: translateY(0); }
         .clear-icon { font-size: 3.5rem; margin-bottom: 10px; }
 
+        .hdr-btn {
+            background: #f0eae1;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+        .hdr-btn:hover { background: #e6ddcf; }
+
+        .dialog {
+            background: #fff;
+            border-radius: 16px;
+            width: 92%;
+            max-width: 560px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .dialog-small { max-width: 360px; }
+        .dialog-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            background: #fff;
+            gap: 10px;
+        }
+        .ch-tabs { display: flex; gap: 8px; }
+        .ch-tab {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 7px 16px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .stage-scroll {
+            position: relative;
+            overflow-y: auto;
+            padding: 12px 14px 40vh;
+        }
+        .stage-ch-title {
+            font-weight: bold;
+            color: var(--accent);
+            margin: 6px 0 8px;
+        }
+        .stage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .test-start-btn {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 16px;
+            padding: 14px;
+            font-size: 1.05rem;
+            border-radius: 12px;
+        }
+        .dialog-test { max-width: 640px; max-height: 90vh; }
+        .test-body { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 16px 24px; }
+        .test-msg { color: #c0392b; font-size: 0.88rem; margin-top: 10px; min-height: 1.2em; }
+        .btn-danger { background: #c0392b; }
+
         @media (max-width: 600px) {
             .greek-display { font-size: 1.25rem; line-height: 2.2; }
             .card-grid { grid-template-columns: 1fr; }
@@ -539,44 +700,45 @@
 <body>
 
 <header>
-    <h1>📖 JohanneAnaginosko Complete</h1>
+    <button class="hdr-btn" id="speed-open-btn" aria-label="速度設定">🔈 <span id="speed-btn-val">0.7x</span></button>
     <div class="stats-bar">
         <div class="stat-item">⭐ <span id="user-xp">0</span> XP</div>
-        <div class="stat-item">🚩 <span id="cleared-count">0</span>/114 節</div>
+        <button class="hdr-btn" id="stage-open-btn" aria-label="ステージ選択">🚩 <span id="cleared-count">0</span>/114 節</button>
     </div>
 </header>
 
 <div class="container">
 
-    <!-- 音声速度バー -->
-    <div class="audio-controls">
-        <span>🔊 日本語（カタカナ）音声朗読</span>
-        <div class="speed-slider-container">
-            <label for="speed-range">速度:</label>
-            <input type="range" id="speed-range" min="0.1" max="1.0" step="0.1" value="0.4">
-            <span id="speed-val" style="font-weight: bold; width: 45px;">0.4x</span>
-        </div>
-    </div>
 
-    <!-- ステージマップ -->
-    <div class="stage-map" id="stage-map"></div>
+    <button class="btn btn-accent test-start-btn" id="test-start-btn">テスト開始👉</button>
 
     <!-- 本文解読カード -->
     <div class="main-card">
         <div class="card-header">
             <div class="verse-title" id="current-verse-title">ヨハネ 1:1</div>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                <button class="btn btn-sm" id="toggle-kana-btn">🔤 発音: ON</button>
+                <button class="btn btn-sm" id="toggle-clause-btn">▦ 塊枠: ON</button>
                 <button class="btn btn-sm" id="toggle-color-btn">🎨 役割ラベル: ON</button>
                 <button class="btn btn-sm btn-accent" id="read-verse-btn">🔊 節全体を朗読</button>
             </div>
         </div>
 
-        <div class="greek-display color-on" id="greek-text-container"></div>
+        <div class="greek-display color-on clause-on kana-on" id="greek-text-container"></div>
 
         <div class="jp-translation" id="jp-translation-text"></div>
 
-        <!-- タップ時の単語カード（詳細） -->
-        <div class="word-card" id="word-card">
+    </div>
+
+    <!-- 単語カード（ボトムシート） -->
+    <div class="word-card" id="word-card">
+            <div class="sheet-head" id="sheet-head">
+                <div class="sheet-handle"></div>
+                <div class="sheet-actions">
+                    <button class="sheet-btn" id="sheet-expand-btn">⤢ 拡大</button>
+                    <button class="sheet-btn" id="sheet-close-btn">✕</button>
+                </div>
+            </div>
             <div class="card-top">
                 <div>
                     <div class="card-greek-title" id="wc-greek">Ἐν</div>
@@ -609,27 +771,75 @@
                 <div id="wc-example-greek" style="font-size: 1rem; color: var(--primary);">ἐν ἀρχῇ (エン・アルケー)</div>
                 <div id="wc-example-jp" style="color: var(--text-sub);">「初めに」</div>
             </div>
-        </div>
     </div>
 
-    <!-- 3段階クリアテストエリア -->
-    <div class="mission-container">
-        <div class="step-progress">
-            <div class="step-item active" id="step-icon-1">1</div>
-            <div class="step-item" id="step-icon-2">2</div>
-            <div class="step-item" id="step-icon-3">3</div>
+
+</div>
+
+<!-- ステージ選択ウィンドウ -->
+<div class="modal-overlay" id="stage-modal">
+    <div class="dialog">
+        <div class="dialog-head">
+            <div class="ch-tabs">
+                <button class="ch-tab" data-ch="1">1章</button>
+                <button class="ch-tab" data-ch="2">2章</button>
+                <button class="ch-tab" data-ch="3">3章</button>
+            </div>
+            <button class="sheet-btn" id="stage-close-btn" aria-label="閉じる">✕</button>
         </div>
-
-        <div id="mission-body"></div>
+        <div class="stage-scroll" id="stage-map"></div>
     </div>
+</div>
 
+<!-- 速度設定ウィンドウ -->
+<div class="modal-overlay" id="speed-modal">
+    <div class="dialog dialog-small">
+        <div class="dialog-head">
+            <strong>🔈 読み上げ速度</strong>
+            <button class="sheet-btn" id="speed-close-btn" aria-label="閉じる">✕</button>
+        </div>
+        <div style="padding: 20px 16px 24px;">
+            <div id="speed-val" style="font-size: 2rem; font-weight: bold; text-align: center; margin-bottom: 14px;">0.7x</div>
+            <input type="range" id="speed-range" min="0.5" max="1.5" step="0.1" value="0.7" style="width: 100%;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-sub); margin-top: 4px;">
+                <span>0.5x</span><span>1.0x</span><span>1.5x</span>
+            </div>
+            <div style="text-align: center; margin-top: 16px;">
+                <button class="btn btn-sm btn-accent" id="speed-test-btn">🔊 試し聞き</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- テストウィンドウ -->
+<div class="modal-overlay" id="test-modal">
+    <div class="dialog dialog-test">
+        <div class="dialog-head">
+            <strong id="test-title">テスト</strong>
+            <span id="test-progress" style="font-size:0.85rem; color: var(--text-sub); font-weight: bold;"></span>
+            <button class="sheet-btn" id="test-abort-btn">中止</button>
+        </div>
+        <div class="test-body" id="test-body"></div>
+    </div>
+</div>
+
+<!-- 中止確認 -->
+<div class="modal-overlay" id="abort-modal" style="z-index: 1100;">
+    <div class="modal-body">
+        <h3 style="margin-bottom: 10px;">テストを中止しますか？</h3>
+        <p style="margin-bottom: 20px; color: var(--text-sub); line-height: 1.6;">ここまでの回答が破棄されますが、よろしいですか？</p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="btn btn-danger" id="abort-yes-btn">はい</button>
+            <button class="btn" id="abort-no-btn">いいえ</button>
+        </div>
+    </div>
 </div>
 
 <!-- 節クリア時モーダル -->
 <div class="modal-overlay" id="clear-modal">
     <div class="modal-body">
         <div class="clear-icon">🎉</div>
-        <h2>3段階テスト完全クリア！</h2>
+        <h2>テスト完全クリア！</h2>
         <p style="margin: 10px 0 20px; color: var(--text-sub);" id="modal-msg">+50 XP 獲得！次の節が解放されました。</p>
         <button class="btn btn-success" id="next-stage-btn">次の節を解読する ➔</button>
     </div>
@@ -646,23 +856,23 @@ const verseDatabase = [
         verse: 1,
         jp: "初めに言（ロゴス）があった。言は神と共にあった。言は神であった。",
         words: [
-            { text: "Ἐν", kana: "エン", ipa: "/en/", lemma: "ἐν", pos: "前置詞", meaning: "〜の中に、〜に", parse: "与格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "「時間的な起点（初めに）」を示す前置詞句。", exGreek: "ἐν ἀρχῇ", exJp: "初めに" },
-            { text: "ἀρχῇ", kana: "アルケー", ipa: "/ar.kʰɛ̂ː/", lemma: "ἀρχή", pos: "名詞", meaning: "初め、起源", parse: "女性・単数・与格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "前置詞 ἐν の目的語として与格形。", exGreek: "ἡ ἀρχή", exJp: "始まり、起源" },
-            { text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・能動態・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "過去における継続的な存在（ずっとあった）を表す。", exGreek: "ἦν ὁ λόγος", exJp: "言があった" },
-            { text: "ὁ", kana: "ホー", ipa: "/ho/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "特定の名詞 λόγος に付く定冠詞。", exGreek: "ὁ θεός", exJp: "その神" },
-            { text: "λόγος,", kana: "ロゴス", ipa: "/ló.ɡos/", lemma: "λόγος", pos: "名詞", meaning: "言、言葉、論理", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "文の主語。「キリスト」を指す重要語彙。", exGreek: "ὁ λόγος", exJp: "言（ロゴス）は" },
-            { text: "καὶ", kana: "カイ", ipa: "/kaí/", lemma: "καί", pos: "接続詞", meaning: "〜と、そして", parse: "等位接続詞", role: "P", roleName: "接続詞", roleColor: "var(--color-prep)", usage: "文と文を等しく繋ぐ。", exGreek: "καὶ θεὸς ἦν", exJp: "そして神であった" },
-            { text: "ὁ", kana: "ホー", ipa: "/ho/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "主語 λόγος を修飾。", exGreek: "ὁ λόγος", exJp: "その言は" },
-            { text: "λόγος", kana: "ロゴス", ipa: "/ló.ɡos/", lemma: "λόγος", pos: "名詞", meaning: "言、言葉", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "第2節の主語。", exGreek: "ὁ λόγος", exJp: "言は" },
-            { text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在を表す動詞。", exGreek: "ἦν πρὸς τὸν θεόν", exJp: "神と共にあった" },
-            { text: "πρὸς", kana: "プロス", lemma: "πρός", pos: "前置詞", meaning: "〜と共に、〜に向かって", parse: "対格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "親密な面対・交わりを表す前置詞。", exGreek: "πρὸς τὸν θεόν", exJp: "神と共に向き合って" },
-            { text: "τὸν", kana: "トン", ipa: "/ton/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "対格名詞 θεόν に付く冠詞。", exGreek: "τὸν θεόν", exJp: "神を" },
-            { text: "θεόν,", kana: "テオン", ipa: "/tʰe.ón/", lemma: "θεός", pos: "名詞", meaning: "神", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "前置詞 πρὸς の目的語。", exGreek: "ὁ θεός", exJp: "神" },
-            { text: "καὶ", kana: "カイ", ipa: "/kaí/", lemma: "καί", pos: "接続詞", meaning: "そして", parse: "等位接続詞", role: "P", roleName: "接続詞", roleColor: "var(--color-prep)", usage: "展開を繋ぐ。", exGreek: "καὶ", exJp: "そして" },
-            { text: "θεὸς", kana: "テオス", ipa: "/tʰe.ós/", lemma: "θεός", pos: "名詞", meaning: "神（本質・性質）", parse: "男性・単数・主格", role: "C", roleName: "補語 (C)", roleColor: "var(--color-comp)", usage: "冠詞がないため「神としての本質」を表す補語。", exGreek: "θεὸς ἦν", exJp: "神（の性質）であった" },
-            { text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "主語と補語を結ぶ系動詞。", exGreek: "ἦν", exJp: "〜であった" },
-            { text: "ὁ", kana: "ホー", ipa: "/ho/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "文の本当の主語を示す定冠詞。", exGreek: "ὁ λόγος", exJp: "その言は" },
-            { text: "λόγος.", kana: "ロゴス", ipa: "/ló.ɡos/", lemma: "λόγος", pos: "名詞", meaning: "言", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "文の主語。", exGreek: "ὁ λόγος", exJp: "言は" }
+            { clause: 1, text: "Ἐν", kana: "エン", ipa: "/en/", lemma: "ἐν", pos: "前置詞", meaning: "〜の中に、〜に", parse: "与格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "「時間的な起点（初めに）」を示す前置詞句。", exGreek: "ἐν ἀρχῇ", exJp: "初めに" },
+            { clause: 1, text: "ἀρχῇ", kana: "アルケー", ipa: "/ar.kʰɛ̂ː/", lemma: "ἀρχή", pos: "名詞", meaning: "初め、起源", parse: "女性・単数・与格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "前置詞 ἐν の目的語として与格形。", exGreek: "ἡ ἀρχή", exJp: "始まり、起源" },
+            { clause: 1, text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・能動態・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "過去における継続的な存在（ずっとあった）を表す。", exGreek: "ἦν ὁ λόγος", exJp: "言があった" },
+            { clause: 1, text: "ὁ", kana: "ホー", ipa: "/ho/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "特定の名詞 λόγος に付く定冠詞。", exGreek: "ὁ θεός", exJp: "その神" },
+            { clause: 1, text: "λόγος,", kana: "ロゴス", ipa: "/ló.ɡos/", lemma: "λόγος", pos: "名詞", meaning: "言、言葉、論理", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "文の主語。「キリスト」を指す重要語彙。", exGreek: "ὁ λόγος", exJp: "言（ロゴス）は" },
+            { clause: 2, text: "καὶ", kana: "カイ", ipa: "/kaí/", lemma: "καί", pos: "接続詞", meaning: "〜と、そして", parse: "等位接続詞", role: "P", roleName: "接続詞", roleColor: "var(--color-prep)", usage: "文と文を等しく繋ぐ。", exGreek: "καὶ θεὸς ἦν", exJp: "そして神であった" },
+            { clause: 2, text: "ὁ", kana: "ホー", ipa: "/ho/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "主語 λόγος を修飾。", exGreek: "ὁ λόγος", exJp: "その言は" },
+            { clause: 2, text: "λόγος", kana: "ロゴス", ipa: "/ló.ɡos/", lemma: "λόγος", pos: "名詞", meaning: "言、言葉", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "第2節の主語。", exGreek: "ὁ λόγος", exJp: "言は" },
+            { clause: 2, text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在を表す動詞。", exGreek: "ἦν πρὸς τὸν θεόν", exJp: "神と共にあった" },
+            { clause: 2, text: "πρὸς", kana: "プロス", lemma: "πρός", pos: "前置詞", meaning: "〜と共に、〜に向かって", parse: "対格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "親密な面対・交わりを表す前置詞。", exGreek: "πρὸς τὸν θεόν", exJp: "神と共に向き合って" },
+            { clause: 2, text: "τὸν", kana: "トン", ipa: "/ton/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "対格名詞 θεόν に付く冠詞。", exGreek: "τὸν θεόν", exJp: "神を" },
+            { clause: 2, text: "θεόν,", kana: "テオン", ipa: "/tʰe.ón/", lemma: "θεός", pos: "名詞", meaning: "神", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "前置詞 πρὸς の目的語。", exGreek: "ὁ θεός", exJp: "神" },
+            { clause: 3, text: "καὶ", kana: "カイ", ipa: "/kaí/", lemma: "καί", pos: "接続詞", meaning: "そして", parse: "等位接続詞", role: "P", roleName: "接続詞", roleColor: "var(--color-prep)", usage: "展開を繋ぐ。", exGreek: "καὶ", exJp: "そして" },
+            { clause: 3, text: "θεὸς", kana: "テオス", ipa: "/tʰe.ós/", lemma: "θεός", pos: "名詞", meaning: "神（本質・性質）", parse: "男性・単数・主格", role: "C", roleName: "補語 (C)", roleColor: "var(--color-comp)", usage: "冠詞がないため「神としての本質」を表す補語。", exGreek: "θεὸς ἦν", exJp: "神（の性質）であった" },
+            { clause: 3, text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "主語と補語を結ぶ系動詞。", exGreek: "ἦν", exJp: "〜であった" },
+            { clause: 3, text: "ὁ", kana: "ホー", ipa: "/ho/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "文の本当の主語を示す定冠詞。", exGreek: "ὁ λόγος", exJp: "その言は" },
+            { clause: 3, text: "λόγος.", kana: "ロゴス", ipa: "/ló.ɡos/", lemma: "λόγος", pos: "名詞", meaning: "言", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "文の主語。", exGreek: "ὁ λόγος", exJp: "言は" }
         ],
         quizSteps: {
             step1: {
@@ -692,13 +902,13 @@ const verseDatabase = [
         verse: 2,
         jp: "この言は、初めに神と共にあった。",
         words: [
-            { text: "οὗτος", kana: "ウートス", ipa: "/hûː.tos/", lemma: "οὗτος", pos: "指示代名詞", meaning: "この者、この言", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "前節の「言（ロゴス）」を指す指示代名詞。", exGreek: "οὗτος ἦν", exJp: "この者は〜であった" },
-            { text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "過去の継続的存在状態。", exGreek: "ἦν", exJp: "〜であった" },
-            { text: "ἐν", kana: "エン", ipa: "/en/", lemma: "ἐν", pos: "前置詞", meaning: "〜において", parse: "与格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "時を示す前置詞。", exGreek: "ἐν ἀρχῇ", exJp: "初めに" },
-            { text: "ἀρχῇ", kana: "アルケー", ipa: "/ar.kʰɛ̂ː/", lemma: "ἀρχή", pos: "名詞", meaning: "初め", parse: "女性・単数・与格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "ἐν の与格目的語。", exGreek: "ἐν ἀρχῇ", exJp: "初めに" },
-            { text: "πρὸς", kana: "プロス", ipa: "/prós/", lemma: "πρός", pos: "前置詞", meaning: "〜と共に", parse: "対格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "交わり・親密さを表す。", exGreek: "πρὸς τὸν θεόν", exJp: "神と共に" },
-            { text: "τὸν", kana: "トン", ipa: "/ton/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "対格冠詞。", exGreek: "τὸν θεόν", exJp: "神を" },
-            { text: "θεόν.", kana: "テオン", ipa: "/tʰe.ón/", lemma: "θεός", pos: "名詞", meaning: "神", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "πρὸς の対格目的語。", exGreek: "ὁ θεός", exJp: "神" }
+            { clause: 1, text: "οὗτος", kana: "ウートス", ipa: "/hûː.tos/", lemma: "οὗτος", pos: "指示代名詞", meaning: "この者、この言", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "前節の「言（ロゴス）」を指す指示代名詞。", exGreek: "οὗτος ἦν", exJp: "この者は〜であった" },
+            { clause: 1, text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "過去の継続的存在状態。", exGreek: "ἦν", exJp: "〜であった" },
+            { clause: 1, text: "ἐν", kana: "エン", ipa: "/en/", lemma: "ἐν", pos: "前置詞", meaning: "〜において", parse: "与格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "時を示す前置詞。", exGreek: "ἐν ἀρχῇ", exJp: "初めに" },
+            { clause: 1, text: "ἀρχῇ", kana: "アルケー", ipa: "/ar.kʰɛ̂ː/", lemma: "ἀρχή", pos: "名詞", meaning: "初め", parse: "女性・単数・与格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "ἐν の与格目的語。", exGreek: "ἐν ἀρχῇ", exJp: "初めに" },
+            { clause: 1, text: "πρὸς", kana: "プロス", ipa: "/prós/", lemma: "πρός", pos: "前置詞", meaning: "〜と共に", parse: "対格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "交わり・親密さを表す。", exGreek: "πρὸς τὸν θεόν", exJp: "神と共に" },
+            { clause: 1, text: "τὸν", kana: "トン", ipa: "/ton/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "対格冠詞。", exGreek: "τὸν θεόν", exJp: "神を" },
+            { clause: 1, text: "θεόν.", kana: "テオン", ipa: "/tʰe.ón/", lemma: "θεός", pos: "名詞", meaning: "神", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "πρὸς の対格目的語。", exGreek: "ὁ θεός", exJp: "神" }
         ],
         quizSteps: {
             step1: {
@@ -728,16 +938,16 @@ const verseDatabase = [
         verse: 3,
         jp: "万物は言によって成った。成ったもので、言によらずに成ったものは何一つない。",
         words: [
-            { text: "πάντα", kana: "パンタ", ipa: "/pán.ta/", lemma: "πᾶς", pos: "形容詞/代名詞", meaning: "すべてのもの、万物", parse: "中性・複数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "万物・あらゆる存在するものを指す主語。", exGreek: "πάντα", exJp: "すべてのものは" },
-            { text: "δι’", kana: "ディ", ipa: "/di/", lemma: "διά", pos: "前置詞", meaning: "〜を通して、〜によって", parse: "属格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "媒介・手段（〜を経て）を表す。", exGreek: "δι’ αὐτοῦ", exJp: "彼を通して" },
-            { text: "αὐτοῦ", kana: "アウトゥー", ipa: "/au̯.tûː/", lemma: "αὐτός", pos: "代名詞", meaning: "彼（言）", parse: "男性・単数・属格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "διά の属格目的語。", exGreek: "αὐτοῦ", exJp: "彼の" },
-            { text: "ἐγένετο,", kana: "エゲネト", ipa: "/e.ɡé.ne.to/", lemma: "γίνομαι", pos: "動詞", meaning: "成った、存在するようになった", parse: "アオリスト・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在の開始（無から有へ）を示す重要動詞。", exGreek: "ἐγένετο", exJp: "成った" },
-            { text: "καὶ", kana: "カイ", ipa: "/kaí/", lemma: "καί", pos: "接続詞", meaning: "そして", parse: "接続詞", role: "P", roleName: "接続詞", roleColor: "var(--color-prep)", usage: "文を繋ぐ。", exGreek: "καὶ", exJp: "そして" },
-            { text: "χωρὶς", kana: "コーリス", ipa: "/kʰɔː.rís/", lemma: "χωρίς", pos: "前置詞", meaning: "〜なしに", parse: "属格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "除外・分離を表す前置詞。", exGreek: "χωρὶς ἐμοῦ", exJp: "わたしを離れては" },
-            { text: "αὐτοῦ", kana: "アウトゥー", ipa: "/au̯.tûː/", lemma: "αὐτός", pos: "代名詞", meaning: "彼", parse: "男性・単数・属格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "χωρὶς の目的語。", exGreek: "αὐτοῦ", exJp: "彼" },
-            { text: "ἐγένετο", kana: "エゲネト", ipa: "/e.ɡé.ne.to/", lemma: "γίνομαι", pos: "動詞", meaning: "成った", parse: "アオリスト・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在の生起。", exGreek: "ἐγένετο", exJp: "生じた" },
-            { text: "οὐδὲ", kana: "ウーデ", ipa: "/oː.dé/", lemma: "οὐδέ", pos: "否定詞", meaning: "〜も〜ない", parse: "否定接続詞", role: "P", roleName: "修飾/否定", roleColor: "var(--color-prep)", usage: "強い否定。", exGreek: "οὐδὲ ἕν", exJp: "一つとして〜ない" },
-            { text: "ἕν.", kana: "ヘン", ipa: "/hen/", lemma: "εἷς", pos: "数詞", meaning: "一つも", parse: "中性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "否定詞と共に「何一つとして〜ない」となる。", exGreek: "ἕν", exJp: "一つ" }
+            { clause: 1, text: "πάντα", kana: "パンタ", ipa: "/pán.ta/", lemma: "πᾶς", pos: "形容詞/代名詞", meaning: "すべてのもの、万物", parse: "中性・複数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "万物・あらゆる存在するものを指す主語。", exGreek: "πάντα", exJp: "すべてのものは" },
+            { clause: 1, text: "δι’", kana: "ディ", ipa: "/di/", lemma: "διά", pos: "前置詞", meaning: "〜を通して、〜によって", parse: "属格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "媒介・手段（〜を経て）を表す。", exGreek: "δι’ αὐτοῦ", exJp: "彼を通して" },
+            { clause: 1, text: "αὐτοῦ", kana: "アウトゥー", ipa: "/au̯.tûː/", lemma: "αὐτός", pos: "代名詞", meaning: "彼（言）", parse: "男性・単数・属格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "διά の属格目的語。", exGreek: "αὐτοῦ", exJp: "彼の" },
+            { clause: 1, text: "ἐγένετο,", kana: "エゲネト", ipa: "/e.ɡé.ne.to/", lemma: "γίνομαι", pos: "動詞", meaning: "成った、存在するようになった", parse: "アオリスト・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在の開始（無から有へ）を示す重要動詞。", exGreek: "ἐγένετο", exJp: "成った" },
+            { clause: 2, text: "καὶ", kana: "カイ", ipa: "/kaí/", lemma: "καί", pos: "接続詞", meaning: "そして", parse: "接続詞", role: "P", roleName: "接続詞", roleColor: "var(--color-prep)", usage: "文を繋ぐ。", exGreek: "καὶ", exJp: "そして" },
+            { clause: 2, text: "χωρὶς", kana: "コーリス", ipa: "/kʰɔː.rís/", lemma: "χωρίς", pos: "前置詞", meaning: "〜なしに", parse: "属格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "除外・分離を表す前置詞。", exGreek: "χωρὶς ἐμοῦ", exJp: "わたしを離れては" },
+            { clause: 2, text: "αὐτοῦ", kana: "アウトゥー", ipa: "/au̯.tûː/", lemma: "αὐτός", pos: "代名詞", meaning: "彼", parse: "男性・単数・属格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "χωρὶς の目的語。", exGreek: "αὐτοῦ", exJp: "彼" },
+            { clause: 2, text: "ἐγένετο", kana: "エゲネト", ipa: "/e.ɡé.ne.to/", lemma: "γίνομαι", pos: "動詞", meaning: "成った", parse: "アオリスト・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在の生起。", exGreek: "ἐγένετο", exJp: "生じた" },
+            { clause: 2, text: "οὐδὲ", kana: "ウーデ", ipa: "/oː.dé/", lemma: "οὐδέ", pos: "否定詞", meaning: "〜も〜ない", parse: "否定接続詞", role: "P", roleName: "修飾/否定", roleColor: "var(--color-prep)", usage: "強い否定。", exGreek: "οὐδὲ ἕν", exJp: "一つとして〜ない" },
+            { clause: 2, text: "ἕν.", kana: "ヘン", ipa: "/hen/", lemma: "εἷς", pos: "数詞", meaning: "一つも", parse: "中性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "否定詞と共に「何一つとして〜ない」となる。", exGreek: "ἕν", exJp: "一つ" }
         ],
         quizSteps: {
             step1: {
@@ -808,33 +1018,76 @@ let userProgress = JSON.parse(localStorage.getItem("johanne_complete_progress"))
     currentVerseId: "1:1"
 };
 
-// 判定State
-let currentStep = 1; // 1:新単語, 2:語順, 3:翻訳
-
 // UI エレメント参照
 const stageMapEl = document.getElementById("stage-map");
 const currentVerseTitleEl = document.getElementById("current-verse-title");
 const greekTextContainer = document.getElementById("greek-text-container");
 const jpTranslationText = document.getElementById("jp-translation-text");
 const wordCardEl = document.getElementById("word-card");
-const missionBodyEl = document.getElementById("mission-body");
 const userXpEl = document.getElementById("user-xp");
 const clearedCountEl = document.getElementById("cleared-count");
 const speedRange = document.getElementById("speed-range");
 const speedVal = document.getElementById("speed-val");
+
+// 表示・音声の設定（次回起動時に引き継ぐ）
+const SETTINGS_KEY = "johanne_settings";
+const settings = Object.assign(
+    { speed: 0.7, color: true, clause: true, kana: true },
+    (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (_) { return {}; } })()
+);
+function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
+}
+const TOGGLES = [
+    { key: "color",  btn: "toggle-color-btn",  cls: "color-on",  label: "🎨 役割ラベル" },
+    { key: "clause", btn: "toggle-clause-btn", cls: "clause-on", label: "▦ 塊枠" },
+    { key: "kana",   btn: "toggle-kana-btn",   cls: "kana-on",   label: "🔤 発音" }
+];
+function applyToggle(t) {
+    const on = Boolean(settings[t.key]);
+    greekTextContainer.classList.toggle(t.cls, on);
+    document.getElementById(t.btn).textContent = `${t.label}: ${on ? "ON" : "OFF"}`;
+}
 
 function initApp() {
     updateHeaderStats();
     renderStageMap();
     loadVerse(userProgress.currentVerseId);
 
-    speedRange.addEventListener("input", (e) => {
-        speedVal.textContent = parseFloat(e.target.value).toFixed(1) + "x";
+    speedRange.value = Math.min(1.5, Math.max(0.5, parseFloat(settings.speed) || 0.7));
+    speedRange.addEventListener("input", () => {
+        settings.speed = parseFloat(speedRange.value);
+        saveSettings();
+        updateSpeedUI();
+    });
+    updateSpeedUI();
+
+    TOGGLES.forEach(t => {
+        applyToggle(t);
+        document.getElementById(t.btn).addEventListener("click", () => {
+            settings[t.key] = !settings[t.key];
+            saveSettings();
+            applyToggle(t);
+        });
     });
 
-    document.getElementById("toggle-color-btn").addEventListener("click", () => {
-        greekTextContainer.classList.toggle("color-on");
+    document.getElementById("speed-open-btn").addEventListener("click", () => speedModal.classList.add("active"));
+    document.getElementById("speed-close-btn").addEventListener("click", () => speedModal.classList.remove("active"));
+    document.getElementById("speed-test-btn").addEventListener("click", () => playKatakanaJapaneseSpeech("ロゴス、アルケー、テオス"));
+    document.getElementById("stage-open-btn").addEventListener("click", openStageModal);
+    document.getElementById("stage-close-btn").addEventListener("click", closeStageModal);
+    document.querySelectorAll(".ch-tab").forEach(btn => {
+        btn.addEventListener("click", () => scrollToChapter(btn.dataset.ch, true));
     });
+    // 背景タップで閉じる
+    stageModal.addEventListener("click", (e) => { if (e.target === stageModal) closeStageModal(); });
+    speedModal.addEventListener("click", (e) => { if (e.target === speedModal) speedModal.classList.remove("active"); });
+
+    document.getElementById("test-start-btn").addEventListener("click", startTest);
+    document.getElementById("test-abort-btn").addEventListener("click", () => abortModal.classList.add("active"));
+    document.getElementById("abort-no-btn").addEventListener("click", () => abortModal.classList.remove("active"));
+    document.getElementById("abort-yes-btn").addEventListener("click", endTest);
+
 
     document.getElementById("read-verse-btn").addEventListener("click", () => {
         const verseData = verseDatabase.find(v => v.id === userProgress.currentVerseId);
@@ -869,30 +1122,69 @@ function saveProgress() {
 
 function renderStageMap() {
     stageMapEl.innerHTML = "";
-    verseDatabase.forEach((v, index) => {
-        const isCleared = userProgress.clearedVerses.includes(v.id);
-        const isUnlocked = index === 0 || userProgress.clearedVerses.includes(verseDatabase[index - 1].id);
-        const isCurrent = v.id === userProgress.currentVerseId;
+    [1, 2, 3].forEach(ch => {
+        const sec = document.createElement("div");
+        sec.id = `stage-ch-${ch}`;
+        const total = verseDatabase.filter(v => v.chapter === ch).length;
+        const done = verseDatabase.filter(v => v.chapter === ch && userProgress.clearedVerses.includes(v.id)).length;
+        sec.innerHTML = `<div class="stage-ch-title">ヨハネ ${ch}章（${done}/${total}）</div>`;
+        const grid = document.createElement("div");
+        grid.className = "stage-grid";
 
-        const node = document.createElement("div");
-        node.className = `verse-node ${isCleared ? 'cleared' : ''} ${!isUnlocked ? 'locked' : ''} ${isCurrent ? 'current' : ''}`;
-        node.innerHTML = `
-            <span>${v.id}</span>
-            <span class="badge">${isCleared ? '✓' : isUnlocked ? '解' : '🔒'}</span>
-        `;
+        verseDatabase.forEach((v, index) => {
+            if (v.chapter !== ch) return;
+            const isCleared = userProgress.clearedVerses.includes(v.id);
+            const isUnlocked = index === 0 || userProgress.clearedVerses.includes(verseDatabase[index - 1].id);
+            const isCurrent = v.id === userProgress.currentVerseId;
 
-        if (isUnlocked) {
-            node.addEventListener("click", () => {
-                userProgress.currentVerseId = v.id;
-                saveProgress();
-                renderStageMap();
-                loadVerse(v.id);
-            });
-        }
+            const node = document.createElement("div");
+            node.className = `verse-node ${isCleared ? 'cleared' : ''} ${!isUnlocked ? 'locked' : ''} ${isCurrent ? 'current' : ''}`;
+            node.innerHTML = `
+                <span>${v.id}</span>
+                <span class="badge">${isCleared ? '✓' : isUnlocked ? '解' : '🔒'}</span>
+            `;
 
-        stageMapEl.appendChild(node);
+            if (isUnlocked) {
+                node.addEventListener("click", () => {
+                    userProgress.currentVerseId = v.id;
+                    saveProgress();
+                    renderStageMap();
+                    loadVerse(v.id);
+                    closeStageModal();
+                });
+            }
+            grid.appendChild(node);
+        });
+
+        sec.appendChild(grid);
+        stageMapEl.appendChild(sec);
     });
 }
+
+const stageModal = document.getElementById("stage-modal");
+const speedModal = document.getElementById("speed-modal");
+
+function scrollToChapter(ch, smooth) {
+    const sec = document.getElementById(`stage-ch-${ch}`);
+    if (sec) stageMapEl.scrollTo({ top: sec.offsetTop - 6, behavior: smooth ? "smooth" : "auto" });
+}
+
+function openStageModal() {
+    renderStageMap();
+    stageModal.classList.add("active");
+    const cur = verseDatabase.find(v => v.id === userProgress.currentVerseId);
+    scrollToChapter(cur ? cur.chapter : 1, false);
+}
+
+function closeStageModal() { stageModal.classList.remove("active"); }
+
+function updateSpeedUI() {
+    const txt = parseFloat(speedRange.value).toFixed(1) + "x";
+    speedVal.textContent = txt;
+    document.getElementById("speed-btn-val").textContent = txt;
+}
+
+const CLAUSE_COLORS = ["#16a085", "#b9770e", "#34495e", "#b03a6b", "#5d6d7e", "#7d6608"];
 
 function loadVerse(verseId) {
     const verseData = verseDatabase.find(v => v.id === verseId);
@@ -900,11 +1192,12 @@ function loadVerse(verseId) {
 
     currentVerseTitleEl.textContent = `ヨハネによる福音書 ${verseData.id}`;
     jpTranslationText.textContent = verseData.jp;
-    wordCardEl.classList.remove("active");
-    currentStep = 1;
+    closeSheet();
 
     // ギリシャ語テキスト構築
     greekTextContainer.innerHTML = "";
+    const hasClause = verseData.words.every(w => w.clause !== undefined);
+    let curGroup = null, curNo = null;
     verseData.words.forEach((w) => {
         const box = document.createElement("div");
         box.className = `word-box role-${w.role}`;
@@ -915,10 +1208,20 @@ function loadVerse(verseId) {
             <span class="kana-sub">${w.kana}</span>
         `;
         box.addEventListener("click", () => showWordCard(w, box));
-        greekTextContainer.appendChild(box);
-    });
 
-    renderStepMission(verseData);
+        if (hasClause) {
+            if (w.clause !== curNo) {
+                curNo = w.clause;
+                curGroup = document.createElement("div");
+                curGroup.className = "clause-group";
+                curGroup.style.setProperty("--cl", CLAUSE_COLORS[(curNo - 1) % CLAUSE_COLORS.length]);
+                greekTextContainer.appendChild(curGroup);
+            }
+            curGroup.appendChild(box);
+        } else {
+            greekTextContainer.appendChild(box);
+        }
+    });
 }
 
 // 豪華な単語カード（発音・文法・例文）を表示
@@ -941,129 +1244,363 @@ function showWordCard(word, element) {
     document.getElementById("wc-example-greek").textContent = word.exGreek;
     document.getElementById("wc-example-jp").textContent = word.exJp;
 
-    wordCardEl.classList.add("active");
+    openSheet();
 
     // 単語の音声再生
     playKatakanaJapaneseSpeech(word.kana);
 }
 
-// 3段階テストレンダリング
-function renderStepMission(verseData) {
-    updateStepIcons();
-    missionBodyEl.innerHTML = "";
+/* ===== ボトムシート制御 ===== */
+const sheetHead = document.getElementById("sheet-head");
+const expandBtn = document.getElementById("sheet-expand-btn");
 
-    const steps = verseData.quizSteps;
+function openSheet() {
+    wordCardEl.style.transform = "";
+    wordCardEl.classList.add("active");
+    document.body.classList.add("sheet-open");
+}
 
-    if (currentStep === 1) {
-        // ステップ1: 新単語クイズ
-        const quiz = steps.step1;
-        const qTitle = document.createElement("div");
-        qTitle.className = "step-title";
-        qTitle.innerHTML = `<span>1️⃣</span> ${quiz.question}`;
-        missionBodyEl.appendChild(qTitle);
+function closeSheet() {
+    wordCardEl.classList.remove("active", "expanded");
+    wordCardEl.style.transform = "";
+    expandBtn.textContent = "⤢ 拡大";
+    document.body.classList.remove("sheet-open");
+    document.querySelectorAll(".word-box").forEach(el => el.classList.remove("selected"));
+}
 
-        quiz.options.forEach((opt, idx) => {
-            const optDiv = document.createElement("div");
-            optDiv.className = "quiz-opt";
-            optDiv.textContent = `${idx + 1}. ${opt}`;
-            optDiv.addEventListener("click", () => {
-                if (idx === quiz.answer) {
-                    optDiv.classList.add("correct");
-                    setTimeout(() => {
-                        currentStep = 2;
-                        renderStepMission(verseData);
-                    }, 600);
-                } else {
-                    optDiv.classList.add("wrong");
-                }
-            });
-            missionBodyEl.appendChild(optDiv);
-        });
+function setExpanded(expanded) {
+    wordCardEl.classList.toggle("expanded", expanded);
+    expandBtn.textContent = expanded ? "⤡ 元に戻す" : "⤢ 拡大";
+    document.body.classList.toggle("sheet-open", !expanded);
+}
 
-    } else if (currentStep === 2) {
-        // ステップ2: 語順整列パズル
-        const puzzle = steps.step2;
-        const pTitle = document.createElement("div");
-        pTitle.className = "step-title";
-        pTitle.innerHTML = `<span>2️⃣</span> ${puzzle.question}`;
-        missionBodyEl.appendChild(pTitle);
+function toggleExpand() {
+    setExpanded(!wordCardEl.classList.contains("expanded"));
+}
 
-        const dropzone = document.createElement("div");
-        dropzone.className = "puzzle-dropzone";
+document.getElementById("sheet-close-btn").addEventListener("click", closeSheet);
+expandBtn.addEventListener("click", toggleExpand);
 
-        const bank = document.createElement("div");
-        bank.className = "puzzle-bank";
+// スワイプ操作（ヘッダー部のドラッグ）
+// 上: 通常→拡大 / 下: 拡大→通常、通常→閉じる
+(function () {
+    let startY = null, dy = 0;
+    const onStart = (e) => {
+        startY = (e.touches ? e.touches[0] : e).clientY;
+        dy = 0;
+        wordCardEl.classList.add("dragging");
+    };
+    const onMove = (e) => {
+        if (startY === null) return;
+        dy = (e.touches ? e.touches[0] : e).clientY - startY;
+        // 通常状態で下に引く時だけ、シートが指に追従する
+        if (!wordCardEl.classList.contains("expanded") && dy > 0) {
+            wordCardEl.style.transform = `translate(-50%, ${dy}px)`;
+        }
+    };
+    const onEnd = () => {
+        if (startY === null) return;
+        startY = null;
+        wordCardEl.classList.remove("dragging");
+        const expanded = wordCardEl.classList.contains("expanded");
+        wordCardEl.style.transform = "";
+        if (dy < -50 && !expanded) setExpanded(true);
+        else if (dy > 70 && expanded) setExpanded(false);
+        else if (dy > 90 && !expanded) closeSheet();
+        dy = 0;
+    };
+    sheetHead.addEventListener("touchstart", onStart, { passive: true });
+    sheetHead.addEventListener("touchmove", onMove, { passive: true });
+    sheetHead.addEventListener("touchend", onEnd);
+    sheetHead.addEventListener("mousedown", (e) => {
+        onStart(e);
+        const mm = (ev) => onMove(ev);
+        const mu = () => { onEnd(); window.removeEventListener("mousemove", mm); window.removeEventListener("mouseup", mu); };
+        window.addEventListener("mousemove", mm);
+        window.addEventListener("mouseup", mu);
+    });
+})();
 
-        const shuffled = [...puzzle.correctOrder].sort(() => Math.random() - 0.5);
-        shuffled.forEach(wText => {
-            const chip = document.createElement("div");
-            chip.className = "chip";
-            chip.textContent = wText;
-            chip.addEventListener("click", () => {
-                if (chip.parentElement === bank) {
-                    dropzone.appendChild(chip);
-                } else {
-                    bank.appendChild(chip);
-                }
-            });
-            bank.appendChild(chip);
-        });
+/* ===== テスト（別ウィンドウ）：単語の意味3問 + 本文と同じ並び替え ===== */
+const testModal = document.getElementById("test-modal");
+const abortModal = document.getElementById("abort-modal");
+const testBodyEl = document.getElementById("test-body");
+const testProgressEl = document.getElementById("test-progress");
+const testTitleEl = document.getElementById("test-title");
+let testState = null; // { verse, questions, index }
 
-        const checkBtn = document.createElement("button");
-        checkBtn.className = "btn btn-success";
-        checkBtn.textContent = "語順をチェック ➔";
-        checkBtn.addEventListener("click", () => {
-            const currentOrder = Array.from(dropzone.children).map(c => c.textContent);
-            if (JSON.stringify(currentOrder) === JSON.stringify(puzzle.correctOrder)) {
-                currentStep = 3;
-                renderStepMission(verseData);
-            } else {
-                alert("語順が正しくありません。もう一度並べ替えてみましょう！");
-            }
-        });
+function shuffleArr(arr) {
+    const b = [...arr];
+    for (let i = b.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [b[i], b[j]] = [b[j], b[i]];
+    }
+    return b;
+}
 
-        missionBodyEl.appendChild(dropzone);
-        missionBodyEl.appendChild(bank);
-        missionBodyEl.appendChild(checkBtn);
+// 約物を除いた表示用テキスト
+function stripPunct(t) { return t.replace(/[,.·;]/g, ""); }
 
-    } else if (currentStep === 3) {
-        // ステップ3: フレーズ・文翻訳問題
-        const quiz = steps.step3;
-        const qTitle = document.createElement("div");
-        qTitle.className = "step-title";
-        qTitle.innerHTML = `<span>3️⃣</span> ${quiz.question}`;
-        missionBodyEl.appendChild(qTitle);
+// 意味の重複判定（「神」と「神（本質・性質）」のような紛らわしい選択肢を避ける）
+function meaningTokens(m) { return m.split(/[、（）()〜・\s]+/).filter(Boolean); }
+function meaningsOverlap(a, b) {
+    const ca = a.replace(/〜/g, ""), cb = b.replace(/〜/g, "");
+    if (ca.includes(cb) || cb.includes(ca)) return true;
+    const tb = meaningTokens(b);
+    return meaningTokens(a).some(t => tb.includes(t));
+}
 
-        quiz.options.forEach((opt, idx) => {
-            const optDiv = document.createElement("div");
-            optDiv.className = "quiz-opt";
-            optDiv.textContent = `${idx + 1}. ${opt}`;
-            optDiv.addEventListener("click", () => {
-                if (idx === quiz.answer) {
-                    optDiv.classList.add("correct");
-                    setTimeout(completeVerse, 600);
-                } else {
-                    optDiv.classList.add("wrong");
-                }
-            });
-            missionBodyEl.appendChild(optDiv);
-        });
+function buildWordQuestions(verse) {
+    const skipPos = new Set(["冠詞", "接続詞"]);
+    const seen = new Set();
+    const uniq = verse.words.filter(w => {
+        if (seen.has(w.lemma)) return false;
+        seen.add(w.lemma);
+        return true;
+    });
+    let picked = shuffleArr(uniq.filter(w => !skipPos.has(w.pos))).slice(0, 3);
+    if (picked.length < 3) {
+        picked = picked.concat(shuffleArr(uniq.filter(w => !picked.includes(w))).slice(0, 3 - picked.length));
+    }
+    const pool = shuffleArr([...new Set(verseDatabase.flatMap(v => v.words.map(w => w.meaning)))]);
+
+    return picked.map(w => {
+        const wrongs = [];
+        for (const m of pool) {
+            if (wrongs.length >= 3) break;
+            if (meaningsOverlap(m, w.meaning)) continue;
+            if (wrongs.some(x => meaningsOverlap(m, x))) continue;
+            wrongs.push(m);
+        }
+        const options = shuffleArr([w.meaning, ...wrongs]);
+        return { type: "word", word: w, options, answer: options.indexOf(w.meaning) };
+    });
+}
+
+/**
+ * 駒のドラッグ＆ドロップ。
+ * - 並べる欄・待機欄のどちらにも、好きな位置へ入れられる（欄内の並べ替えも可）
+ * - ほぼ動かさずに離した場合（タップ）は、もう一方の欄の末尾へ移動
+ * - ドラッグ中は駒本体を動かさず、ゴーストと挿入マーカーだけ動かす（位置ずれ防止）
+ */
+function attachChipDrag(chip, dropzone, bank) {
+    const zones = [dropzone, bank];
+    let st = null;
+
+    function zoneAt(x, y) {
+        return zones.find(z => {
+            const r = z.getBoundingClientRect();
+            return x >= r.left - 10 && x <= r.right + 10 && y >= r.top - 10 && y <= r.bottom + 10;
+        }) || null;
+    }
+
+    function updateTarget(x, y) {
+        const zone = zoneAt(x, y);
+        if (!zone) {
+            st.target = null;
+            st.marker.style.display = "none";
+            return;
+        }
+        const chips = Array.from(zone.querySelectorAll(".chip")).filter(c => c !== chip);
+        const before = chips.find(c => {
+            const r = c.getBoundingClientRect();
+            return y < r.top || (y <= r.bottom && x < r.left + r.width / 2);
+        }) || null;
+        st.target = { zone, before };
+
+        let left, top, height;
+        if (before) {
+            const r = before.getBoundingClientRect();
+            left = r.left - 5; top = r.top; height = r.height;
+        } else if (chips.length) {
+            const r = chips[chips.length - 1].getBoundingClientRect();
+            left = r.right + 3; top = r.top; height = r.height;
+        } else {
+            const r = zone.getBoundingClientRect();
+            left = r.left + 12; top = r.top + 8; height = Math.max(24, r.height - 16);
+        }
+        st.marker.style.display = "block";
+        st.marker.style.left = left + "px";
+        st.marker.style.top = top + "px";
+        st.marker.style.height = height + "px";
+    }
+
+    function cleanup() {
+        if (!st) return;
+        if (st.ghost) st.ghost.remove();
+        if (st.marker) st.marker.remove();
+        chip.classList.remove("dragging-chip");
+        st = null;
+    }
+
+    chip.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        const r = chip.getBoundingClientRect();
+        st = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: e.clientX - r.left, oy: e.clientY - r.top,
+               moved: false, ghost: null, marker: null, target: null };
+        try { chip.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    chip.addEventListener("pointermove", (e) => {
+        if (!st || e.pointerId !== st.id) return;
+        if (!st.moved) {
+            if (Math.hypot(e.clientX - st.sx, e.clientY - st.sy) < 8) return;
+            st.moved = true;
+            const r = chip.getBoundingClientRect();
+            st.ghost = chip.cloneNode(true);
+            st.ghost.classList.add("chip-ghost");
+            st.ghost.style.width = r.width + "px";
+            document.body.appendChild(st.ghost);
+            st.marker = document.createElement("div");
+            st.marker.className = "drop-marker";
+            document.body.appendChild(st.marker);
+            chip.classList.add("dragging-chip");
+        }
+        st.ghost.style.left = (e.clientX - st.ox) + "px";
+        st.ghost.style.top = (e.clientY - st.oy) + "px";
+        updateTarget(e.clientX, e.clientY);
+    });
+
+    chip.addEventListener("pointerup", (e) => {
+        if (!st || e.pointerId !== st.id) return;
+        if (!st.moved) {
+            // タップ：もう一方の欄の末尾へ
+            (chip.parentElement === bank ? dropzone : bank).appendChild(chip);
+        } else if (st.target) {
+            st.target.zone.insertBefore(chip, st.target.before);
+        }
+        cleanup();
+    });
+
+    chip.addEventListener("pointercancel", cleanup);
+}
+
+function startTest() {
+    const verse = verseDatabase.find(v => v.id === userProgress.currentVerseId);
+    if (!verse) return;
+    closeSheet();
+    testState = {
+        verse,
+        questions: [...buildWordQuestions(verse), { type: "puzzle" }],
+        index: 0
+    };
+    testTitleEl.textContent = `テスト ヨハネ ${verse.id}`;
+    testModal.classList.add("active");
+    renderTestQuestion();
+}
+
+// ウィンドウを閉じ、回答状態を破棄（次回は初めから）
+function endTest() {
+    testModal.classList.remove("active");
+    abortModal.classList.remove("active");
+    testState = null;
+    testBodyEl.innerHTML = "";
+}
+
+function nextTestQuestion() {
+    testState.index++;
+    if (testState.index >= testState.questions.length) {
+        endTest();
+        completeVerse();
+    } else {
+        renderTestQuestion();
     }
 }
 
-function updateStepIcons() {
-    for (let i = 1; i <= 3; i++) {
-        const icon = document.getElementById(`step-icon-${i}`);
-        icon.className = "step-item";
-        if (i < currentStep) {
-            icon.classList.add("done");
-            icon.textContent = "✓";
-        } else if (i === currentStep) {
-            icon.classList.add("active");
-            icon.textContent = i;
-        } else {
-            icon.textContent = i;
+function renderTestQuestion() {
+    const { verse, questions, index } = testState;
+    const q = questions[index];
+    testProgressEl.textContent = `${index + 1} / ${questions.length}`;
+    testBodyEl.innerHTML = "";
+    testBodyEl.scrollTop = 0;
+
+    if (q.type === "word") {
+        const title = document.createElement("div");
+        title.className = "step-title";
+        title.textContent = `「${stripPunct(q.word.text)}（${q.word.kana}）」の意味は？`;
+        testBodyEl.appendChild(title);
+
+        let answered = false;
+        q.options.forEach((opt, idx) => {
+            const div = document.createElement("div");
+            div.className = "quiz-opt";
+            div.textContent = `${idx + 1}. ${opt}`;
+            div.addEventListener("click", () => {
+                if (answered) return;
+                if (idx === q.answer) {
+                    answered = true;
+                    div.classList.add("correct");
+                    setTimeout(nextTestQuestion, 600);
+                } else {
+                    div.classList.add("wrong");
+                }
+            });
+            testBodyEl.appendChild(div);
+        });
+    } else {
+        // 並び替えパズル：本文のギリシャ語を、本文と全く同じ順に並べる
+        const correct = verse.words.map(w => w.text);
+
+        const title = document.createElement("div");
+        title.className = "step-title";
+        title.textContent = "本文と同じ順になるよう、ギリシャ語を並べてください";
+        testBodyEl.appendChild(title);
+
+        const hint = document.createElement("div");
+        hint.className = "jp-translation";
+        hint.style.marginBottom = "14px";
+        hint.textContent = verse.jp;
+        testBodyEl.appendChild(hint);
+
+        const dropzone = document.createElement("div");
+        dropzone.className = "puzzle-dropzone";
+        const bank = document.createElement("div");
+        bank.className = "puzzle-bank";
+
+        let order = shuffleArr(correct);
+        for (let t = 0; t < 10 && correct.length > 1 && order.join("|") === correct.join("|"); t++) {
+            order = shuffleArr(correct);
         }
+        order.forEach(txt => {
+            const chip = document.createElement("div");
+            chip.className = "chip";
+            chip.textContent = txt;
+            attachChipDrag(chip, dropzone, bank);
+            bank.appendChild(chip);
+        });
+
+        const msg = document.createElement("div");
+        msg.className = "test-msg";
+
+        const btnRow = document.createElement("div");
+        btnRow.style.cssText = "display:flex; gap:10px; flex-wrap:wrap;";
+
+        const checkBtn = document.createElement("button");
+        checkBtn.className = "btn btn-success";
+        checkBtn.textContent = "チェック ➔";
+        checkBtn.addEventListener("click", () => {
+            const cur = Array.from(dropzone.children).map(c => c.textContent);
+            if (cur.length === correct.length && cur.every((t, i) => t === correct[i])) {
+                nextTestQuestion();
+            } else {
+                msg.textContent = "並びが本文と違います。もう一度。";
+            }
+        });
+
+        const resetBtn = document.createElement("button");
+        resetBtn.className = "btn";
+        resetBtn.textContent = "並べ直す";
+        resetBtn.addEventListener("click", () => {
+            Array.from(dropzone.children).forEach(c => bank.appendChild(c));
+            msg.textContent = "";
+        });
+
+        btnRow.appendChild(checkBtn);
+        btnRow.appendChild(resetBtn);
+        testBodyEl.appendChild(dropzone);
+        testBodyEl.appendChild(bank);
+        testBodyEl.appendChild(btnRow);
+        testBodyEl.appendChild(msg);
     }
 }
 
@@ -1076,22 +1613,60 @@ function completeVerse() {
         renderStageMap();
     }
 
-    document.getElementById("modal-msg").textContent = `ヨハネ ${currentId} の3段階課題を制覇！ +50 XP を獲得しました。`;
+    document.getElementById("modal-msg").textContent = `ヨハネ ${currentId} のテストをクリア！ +50 XP を獲得しました。`;
     document.getElementById("clear-modal").classList.add("active");
 }
 
 /**
  * カタカナテキストを日本語音声エンジン（ja-JP）で超スロー朗読
  */
-function playKatakanaJapaneseSpeech(kanaText) {
+let jaVoice = null;
+function pickJaVoice() {
     if (!('speechSynthesis' in window)) return;
+    const voices = window.speechSynthesis.getVoices();
+    jaVoice = voices.find(v => /^ja[-_]JP$/i.test(v.lang)) ||
+              voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ja')) || null;
+}
+if ('speechSynthesis' in window) {
+    pickJaVoice();
+    window.speechSynthesis.onvoiceschanged = pickJaVoice; // 音声一覧は非同期で読み込まれる
+}
 
-    window.speechSynthesis.cancel();
+function showToast(msg) {
+    let t = document.getElementById("toast");
+    if (!t) {
+        t = document.createElement("div");
+        t.id = "toast";
+        t.style.cssText = "position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 14px;border-radius:8px;font-size:0.85rem;z-index:2000;";
+        document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(t._h);
+    t._h = setTimeout(() => t.style.display = "none", 3000);
+}
 
-    const utterance = new SpeechSynthesisUtterance(kanaText);
-    utterance.lang = 'ja-JP';
-    utterance.rate = parseFloat(speedRange.value); // 0.1x - 1.0x
-    window.speechSynthesis.speak(utterance);
+function playKatakanaJapaneseSpeech(kanaText) {
+    if (!('speechSynthesis' in window)) {
+        showToast("このブラウザは音声読み上げに非対応です");
+        return;
+    }
+    const synth = window.speechSynthesis;
+    if (!jaVoice) pickJaVoice();
+    if (!jaVoice) showToast("日本語音声が見つかりません（端末の音声設定を確認）");
+
+    synth.cancel();
+    // cancel直後のspeakは無視される環境があるため少し遅らせる
+    setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(kanaText);
+        utterance.lang = 'ja-JP';
+        if (jaVoice) utterance.voice = jaVoice;
+        // 0.5未満は多くのエンジンで無音/不安定になるため下限を設ける
+        utterance.rate = Math.max(0.5, parseFloat(speedRange.value));
+        utterance.onerror = (e) => { if (e.error !== 'canceled' && e.error !== 'interrupted') showToast("音声エラー: " + e.error); };
+        synth.resume();
+        synth.speak(utterance);
+    }, 60);
 }
 
 window.addEventListener("DOMContentLoaded", initApp);
