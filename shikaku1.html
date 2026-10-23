@@ -27,9 +27,6 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(226, 232, 240, 0.8);
         }
-        .journal-dropzone {
-            transition: all 0.2s ease-in-out;
-        }
     </style>
 </head>
 <body class="h-full text-slate-800 flex flex-col min-h-screen">
@@ -219,9 +216,14 @@
                         <h2 class="text-xl font-bold text-slate-900">解答履歴 & パフォーマンス分析</h2>
                         <p class="text-sm text-slate-500">あなたのこれまでの全クイズ解答データと正確なデータログです。</p>
                     </div>
-                    <button onclick="clearHistoryLogs()" class="text-xs text-slate-400 hover:text-rose-600 transition-colors">
-                        <i class="fa-solid fa-trash mr-1"></i> 解答履歴ログを消去
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button onclick="exportAllWeaknessesToAIPrompt()" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow hover:opacity-90 transition-opacity flex items-center gap-1.5">
+                            <i class="fa-solid fa-robot text-sm"></i> 弱点全体をAI分析用プロンプト出力
+                        </button>
+                        <button onclick="clearHistoryLogs()" class="text-xs text-slate-400 hover:text-rose-600 transition-colors">
+                            <i class="fa-solid fa-trash mr-1"></i> ログ消去
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Stats Overview Bar -->
@@ -256,6 +258,7 @@
                                     <th class="p-3">カテゴリ</th>
                                     <th class="p-3">問題概要</th>
                                     <th class="p-3">判定</th>
+                                    <th class="p-3 text-right">AI用プロンプト</th>
                                 </tr>
                             </thead>
                             <tbody id="history-log-tbody" class="divide-y divide-slate-100">
@@ -288,11 +291,16 @@
                         <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
                             <i class="fa-solid fa-rotate-left text-rose-500"></i> 弱点・要復習ノート
                         </h2>
-                        <p class="text-sm text-slate-500">過去に間違えた問題が自動蓄積されます。何度も復習して完璧にしましょう。</p>
+                        <p class="text-sm text-slate-500">過去に間違えた問題が自動蓄積されます。AI出力機能で深掘り解説を入手できます。</p>
                     </div>
-                    <button onclick="clearAllWeaknesses()" class="text-xs text-slate-400 hover:text-rose-600 transition-colors">
-                        <i class="fa-solid fa-trash mr-1"></i> 弱点リストを全消去
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportAllWeaknessesToAIPrompt()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-robot"></i> 全弱点プロンプト生成
+                        </button>
+                        <button onclick="clearAllWeaknesses()" class="text-xs text-slate-400 hover:text-rose-600 transition-colors">
+                            <i class="fa-solid fa-trash mr-1"></i> 全消去
+                        </button>
+                    </div>
                 </div>
 
                 <div id="review-content-area">
@@ -302,6 +310,29 @@
         </section>
 
     </main>
+
+    <!-- AI PROMPT MODAL -->
+    <div id="ai-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-5 bg-gradient-to-r from-purple-700 to-indigo-700 text-white flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-robot text-xl text-purple-300"></i>
+                    <h3 class="font-bold text-base">AI解析用 プロンプト自動生成器</h3>
+                </div>
+                <button onclick="closeAIModal()" class="text-white/80 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-5 space-y-3 overflow-y-auto flex-grow text-xs text-slate-600">
+                <p class="text-slate-500">以下のテキストボックス内のプロンプトをコピーして、ChatGPTやGemini等に送信してください。誤答原因と弱点に特化した解説が得られます。</p>
+                <textarea id="ai-prompt-textarea" class="w-full h-64 p-3 font-mono bg-slate-50 border border-slate-300 rounded-xl text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-purple-500" readonly></textarea>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+                <button onclick="closeAIModal()" class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800">閉じる</button>
+                <button onclick="copyAIPrompt()" id="copy-prompt-btn" class="px-5 py-2 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow flex items-center gap-1.5 transition-colors">
+                    <i class="fa-regular fa-copy"></i> クリップボードにコピー
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-slate-900 text-slate-400 text-xs py-6 mt-auto border-t border-slate-800">
@@ -324,7 +355,7 @@
                 priority: '最優先 (合格目標)',
                 weight: '丸暗記:中 / 問題演習:高',
                 desc: 'アルゴリズム・計算・セキュリティ知識と科目Bの処理追尾能力。',
-                scheduleDays: [1, 3, 5, 7], // Mon, Wed, Fri, Sun
+                scheduleDays: [1, 3, 5, 7],
             },
             toeic: {
                 id: 'toeic',
@@ -335,7 +366,7 @@
                 priority: '最優先 (600〜730点)',
                 weight: '丸暗記:中 / スピード演習:最高',
                 desc: '単語・文法・定型コロケーションの即答力とタイムマネジメント。',
-                scheduleDays: [1, 2, 4, 5, 7], // Mon, Tue, Thu, Fri, Sun
+                scheduleDays: [1, 2, 4, 5, 7],
             },
             boki: {
                 id: 'boki',
@@ -346,7 +377,7 @@
                 priority: '補助 (実務・お金の流れ)',
                 weight: '丸暗記:低〜中 / 繰り返し仕訳:最高',
                 desc: '取引発生から借方・貸方への正確な自動仕訳と試算表の作成。',
-                scheduleDays: [2, 4, 6], // Tue, Thu, Sat
+                scheduleDays: [2, 4, 6],
             },
             hisho: {
                 id: 'hisho',
@@ -357,7 +388,7 @@
                 priority: '補助 (常識・信用)',
                 weight: '丸暗記:高 / 場面判断',
                 desc: '敬語変換・ビジネスマナー・適切な対応理由の理解。',
-                scheduleDays: [3, 6], // Wed, Sat
+                scheduleDays: [3, 6],
             }
         };
 
@@ -373,7 +404,7 @@
 
         // --- 2. EXTENSIVE HIGH-YIELD QUESTION BANK ---
         const QUESTION_BANK = [
-            // ==================== 基本情報技術者 (FE) ====================
+            // 基本情報技術者 (FE)
             {
                 id: 'fe-1',
                 examId: 'fe',
@@ -402,7 +433,7 @@
                 question: '公開鍵暗号方式で、送信者がメッセージ自体を暗号化する際に使用する鍵はどれか？',
                 options: ['受信者の公開鍵', '送信者の秘密鍵', '送信者の公開鍵', '受信者の秘密鍵'],
                 answer: 0,
-                explanation: '暗号化通信では「受信者の公開鍵」で暗号化し、受信者だけが持つ「受信者の秘密鍵」で復号します。（電子署名の場合は送信者の秘密鍵を使用）'
+                explanation: '暗号化通信では「受信者の公開鍵」で暗号化し、受信者だけが持つ「受信者の秘密鍵」で復号します。'
             },
             {
                 id: 'fe-4',
@@ -422,20 +453,10 @@
                 question: 'プライベートIPアドレスをグローバルIPアドレスに1対1で変換する技術はどれか？',
                 options: ['NAT', 'NAPT (IPマスカレード)', 'DHCP', 'DNS'],
                 answer: 0,
-                explanation: 'NAT (Network Address Translation) はIPアドレスを1対1で変換します。複数のプライベートIPをポート番号で識別し1つのグローバルIPに変換するのはNAPTです。'
-            },
-            {
-                id: 'fe-6',
-                examId: 'fe',
-                type: 'choice',
-                category: '科目A: データベース',
-                question: 'RDBにおいて、関係の分解を行うことでデータの重複や矛盾（更新異常）を防ぐ操作を何と呼ぶか？',
-                options: ['正規化', 'インデックス作成', 'トランザクション処理', '排他制御'],
-                answer: 0,
-                explanation: '正規化（第1〜第3正規化）を行うことで、データの重複を排除し、保守性やデータ整合性を高めます。'
+                explanation: 'NAT (Network Address Translation) はIPアドレスを1対1で変換します。'
             },
 
-            // ==================== TOEIC L&R (TOEIC) ====================
+            // TOEIC L&R
             {
                 id: 'toeic-1',
                 examId: 'toeic',
@@ -456,43 +477,10 @@
                 options: ['comply', 'agree', 'observe', 'confirm'],
                 answer: 0,
                 translation: 'すべての従業員は、来週の月曜日から新しい安全規制に【従う】ことが求められている。',
-                explanation: '前置詞 with とセットで「（規制・ルールに）従う・準拠する」を意味するのは comply (comply with) です。'
-            },
-            {
-                id: 'toeic-3',
-                examId: 'toeic',
-                type: 'toeic-fill',
-                category: 'Part 5: 接続詞',
-                sentence: 'Ms. Tanaka will lead the seminar ------- Mr. Harrison is attending the international conference.',
-                options: ['while', 'during', 'despite', 'unless'],
-                answer: 0,
-                translation: 'ハリソン氏が国際会議に出席している【間】、田中氏がセミナーを進行します。',
-                explanation: '直後に節（主語 + 動詞）が続いているため、接続詞の「while」が正解です。（duringは前置詞なので名詞が続く）'
-            },
-            {
-                id: 'toeic-4',
-                examId: 'toeic',
-                type: 'toeic-fill',
-                category: 'Part 5: 品詞(副詞)',
-                sentence: 'The new automated system operates much more ------- than the old manual process.',
-                options: ['efficiently', 'efficient', 'efficiency', 'efficiencies'],
-                answer: 0,
-                translation: '新しい自動システムは、古い手作業によるプロセスの時よりもはるかに【効率的に】動作する。',
-                explanation: '動詞 operates を修飾するため、副詞の「efficiently（効率的に）」が入ります。'
-            },
-            {
-                id: 'toeic-5',
-                examId: 'toeic',
-                type: 'toeic-fill',
-                category: 'Part 5: 語彙(形容詞)',
-                sentence: 'The director gave a ------- presentation that impressed all the potential investors.',
-                options: ['persuasive', 'persuade', 'persuasion', 'persuasively'],
-                answer: 0,
-                translation: '取締役は、すべての潜在的投資家を感銘させる【説得力のある】プレゼンテーションを行った。',
-                explanation: '名詞 presentation を修飾する形容詞「persuasive（説得力のある）」が正解です。'
+                explanation: '前置詞 with とセットで「（規制・ルールに）従う」を意味するのは comply (comply with) です。'
             },
 
-            // ==================== 日商簿記3級 (BOKI) ====================
+            // 日商簿記3級
             {
                 id: 'boki-1',
                 examId: 'boki',
@@ -513,32 +501,10 @@
                 accounts: ['備品', '未払金', '買掛金', '消耗品費', '現金'],
                 correctDebit: { account: '備品', amount: 200000 },
                 correctCredit: { account: '未払金', amount: 200000 },
-                explanation: '商品以外の備品等を購入して代金を後払いにした場合、債務の勘定科目は「買掛金」ではなく「未払金」を使います。'
-            },
-            {
-                id: 'boki-3',
-                examId: 'boki',
-                type: 'journal',
-                category: '仕訳: 手数料・費用支払い',
-                question: '店舗の家賃80,000円を当座預金口座から振り込んで支払った。',
-                accounts: ['支払家賃', '当座預金', '受取家賃', '現金', '買掛金'],
-                correctDebit: { account: '支払家賃', amount: 80000 },
-                correctCredit: { account: '当座預金', amount: 80000 },
-                explanation: '【借方】支払家賃 80,000（費用の発生） / 【貸方】当座預金 80,000（資産の減少）です。'
-            },
-            {
-                id: 'boki-4',
-                examId: 'boki',
-                type: 'journal',
-                category: '仕訳: 買掛金の支払い',
-                question: '買掛金50,000円を約束手形を振りだして支払った。',
-                accounts: ['買掛金', '支払手形', '受取手形', '売掛金', '当座預金'],
-                correctDebit: { account: '買掛金', amount: 50000 },
-                correctCredit: { account: '支払手形', amount: 50000 },
-                explanation: '買掛金という負債が減少（借方）し、支払手形という負債が増加（貸方）します。'
+                explanation: '商品以外の備品等を購入して代金を後払いにした場合、債務の勘定科目は「未払金」を使います。'
             },
 
-            // ==================== 秘書検定2級 (HISHO) ====================
+            // 秘書検定2級
             {
                 id: 'hisho-1',
                 examId: 'hisho',
@@ -549,7 +515,7 @@
                     '入口から最も遠い奥の席（長椅子・ソファ）',
                     '入口に最も近い手前の席',
                     'ドアの正面前の立ち位置',
-                    '外の景色が見える窓際の席（入口の位置に関わらず）'
+                    '外の景色が見える窓際の席'
                 ],
                 answer: 0,
                 explanation: '応接室では、出入りによる落ち着かなさを避けるため「入口から最も遠い奥の席」が上座となります。'
@@ -567,27 +533,7 @@
                     '「部長の山田様はただいま席を外しております。」'
                 ],
                 answer: 0,
-                explanation: '社外の人に対して身内（上司）の話をする際は、役職名や敬称（様・さん）をつけず、呼び捨て（山田）にしてへりくだるのがビジネスマナーの基本です。'
-            },
-            {
-                id: 'hisho-3',
-                examId: 'hisho',
-                type: 'choice',
-                category: '敬語: 表現変換',
-                question: '「相手の考え・意向」を敬語で表す言葉として最も適しているものはどれか？',
-                options: ['お考え（ご意向）', 'ご意見様', 'ご所望', 'おつもり'],
-                answer: 0,
-                explanation: '相手の考えや希望を敬う表現は「お考え」や「ご意向（ごいこう）」を用います。'
-            },
-            {
-                id: 'hisho-4',
-                examId: 'hisho',
-                type: 'choice',
-                category: '文書・実務知識',
-                question: '社内文書において、本文の右下に記載する「記」に対する締めくくりの言葉はどれか？',
-                options: ['以上', '敬具', '草々', 'かしこ'],
-                answer: 0,
-                explanation: '「記書き」形式の社内文書では、箇条書きの最後の行の右下に「以上」と記載して締めくくります。（「敬具」は社外文書の手紙文用）'
+                explanation: '社外の人に対して身内（上司）の話をする際は、役職名や敬称をつけず呼び捨てにしてへりくだります。'
             }
         ];
 
@@ -597,32 +543,32 @@
                 examId: 'fe',
                 modules: [
                     { title: '1. テクノロジ系（基礎理論・IT基盤）', desc: '2進数計算、CPU/メモリ構造、OS、データベース、ネットワーク' },
-                    { title: '2. マネジメント・ストラテジ系', desc: 'プロジェクト管理（アジャイル・ウォーターフォール）、企業会計、法務' },
-                    { title: '3. 科目B（アルゴリズム & プログラミング）', desc: '擬似言語を使ったトレース能力、基本データ構造（配列、スタック、キュー、木構造）' }
+                    { title: '2. マネジメント・ストラテジ系', desc: 'プロジェクト管理、企業会計、法務' },
+                    { title: '3. 科目B（アルゴリズム & プログラミング）', desc: '擬似言語を使ったトレース能力、基本データ構造' }
                 ]
             },
             {
                 examId: 'toeic',
                 modules: [
                     { title: '1. 語彙・単語スピードインプット', desc: 'TOEIC頻出単語600点〜730点レベルの即答化' },
-                    { title: '2. Part 5/6 短文穴埋め文法演習', desc: '品詞識別、動詞の形、前置詞/接続詞の選別を1問20秒で処理' },
+                    { title: '2. Part 5/6 短文穴埋め文法演習', desc: '品詞識別、動詞の形、前置詞/接続詞の選別' },
                     { title: '3. リスニング Part 1〜4 & 長文読解 Part 7', desc: '音の聞き取りと長文のタイムマネジメント' }
                 ]
             },
             {
                 examId: 'boki',
                 modules: [
-                    { title: '1. 勘定科目と仕訳のルール（最重要）', desc: '資産・負債・純資産・費用・収益の5要素と借方・貸方の左右バランス' },
-                    { title: '2. 日常取引の仕訳問題', desc: '現金・預金・商品売買・手形・固定資産・未払金/未収金' },
-                    { title: '3. 試算表と決算整理手続き', desc: '売上原価の計算、減価償却、貸倒引当金の設定と貸借対照表/損益計算書作成' }
+                    { title: '1. 勘定科目と仕訳のルール（最重要）', desc: '資産・負債・純資産・費用・収益の5要素と借方・貸方のバランス' },
+                    { title: '2. 日常取引の仕訳問題', desc: '現金・預金・商品売買・手形・固定資産' },
+                    { title: '3. 試算表と決算整理手続き', desc: '売上原価計算、減価償却、貸倒引当金の設定' }
                 ]
             },
             {
                 examId: 'hisho',
                 modules: [
-                    { title: '1. 必要とされる資質・職務知識', desc: '秘書の心得、機密保持、優先順位の付け方' },
+                    { title: '1. 必要とされる資質・職務知識', desc: '秘書の心得、機密保持、優先順位' },
                     { title: '2. 一般知識 & 行動論理', desc: '企業用語、慶弔マナー、贈答の常識' },
-                    { title: '3. マナー・敬語・実務表現', desc: '正しい尊敬語・謙譲語・丁寧語の使い分け、電話・来客応対の型' }
+                    { title: '3. マナー・敬語・実務表現', desc: '正しい尊敬語・謙譲語・丁寧語の使い分け' }
                 ]
             }
         ];
@@ -630,8 +576,8 @@
         // --- 3. STATE & STORAGE MANAGEMENT ---
         let state = {
             activeTab: 'dashboard',
-            weaknesses: [], // Array of question IDs
-            historyLogs: [], // Array of attempt logs: { timestamp, examId, questionId, isCorrect, category, questionSummary }
+            weaknesses: [],
+            historyLogs: [], // Array of attempt logs with extra detailed fields for AI export
             currentQuizExam: 'fe',
             currentQuizIndex: 0,
             filteredQuestions: [],
@@ -686,13 +632,11 @@
             document.getElementById('streak-counter').innerText = `${state.streakDays}日目`;
         }
 
-        // Calculate progress stats dynamically from history logs
         function getExamProgress(examId) {
             const examLogs = state.historyLogs.filter(l => l.examId === examId);
             const totalAttempts = examLogs.length;
             const correctAttempts = examLogs.filter(l => l.isCorrect).length;
             
-            // Unique correct solved questions
             const uniqueSolved = new Set(examLogs.filter(l => l.isCorrect).map(l => l.questionId)).size;
             const totalExamQuestions = QUESTION_BANK.filter(q => q.examId === examId).length;
 
@@ -705,7 +649,7 @@
             };
         }
 
-        // --- 4. TAB SWITCHING & RENDERERS ---
+        // --- 4. INITIALIZATION & RENDERERS ---
         window.onload = function() {
             loadState();
             renderTodayDashboard();
@@ -737,7 +681,6 @@
             }
         }
 
-        // Render Dashboard
         function renderTodayDashboard() {
             const date = new Date();
             let dayNum = date.getDay();
@@ -771,7 +714,6 @@
             });
         }
 
-        // Render Progress Cards
         function renderProgressCards() {
             const container = document.getElementById('exam-progress-cards');
             container.innerHTML = '';
@@ -937,7 +879,6 @@
             state.currentQuizExam = examId;
             let questions = QUESTION_BANK.filter(q => q.examId === examId);
 
-            // Apply Filters
             if (state.quizFilterMode === 'unanswered') {
                 const answeredIds = new Set(state.historyLogs.map(l => l.questionId));
                 questions = questions.filter(q => !answeredIds.has(q.id));
@@ -948,7 +889,6 @@
             state.filteredQuestions = questions;
             state.currentQuizIndex = 0;
 
-            // Render Selector UI
             const selector = document.getElementById('quiz-exam-selector');
             selector.innerHTML = '';
 
@@ -1019,7 +959,6 @@
                     </div>
                 `;
             } else if (q.type === 'journal') {
-                // Interactive Journalizing Engine
                 const accountOptions = q.accounts.map(acc => `<option value="${acc}">${acc}</option>`).join('');
 
                 quizBody = `
@@ -1030,7 +969,7 @@
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                            <!-- Debit (借方) -->
+                            <!-- Debit -->
                             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                                 <span class="font-bold text-xs text-blue-600 block border-b border-slate-200 pb-1">【借方 (左側)】</span>
                                 <div>
@@ -1046,7 +985,7 @@
                                 </div>
                             </div>
 
-                            <!-- Credit (貸方) -->
+                            <!-- Credit -->
                             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                                 <span class="font-bold text-xs text-rose-600 block border-b border-slate-200 pb-1">【貸方 (右側)】</span>
                                 <div>
@@ -1085,7 +1024,10 @@
         function handleAnswer(selectedIndex) {
             const q = state.filteredQuestions[state.currentQuizIndex];
             const isCorrect = selectedIndex === q.answer;
-            processResult(isCorrect, q);
+            const userAnsText = q.options[selectedIndex];
+            const correctAnsText = q.options[q.answer];
+            
+            processResult(isCorrect, q, userAnsText, correctAnsText);
         }
 
         function handleJournalSubmit() {
@@ -1098,24 +1040,32 @@
             const isCorrect = (q.correctDebit.account.includes(debAcc) && debAmt === q.correctDebit.amount &&
                                q.correctCredit.account.includes(credAcc) && credAmt === q.correctCredit.amount);
 
-            processResult(isCorrect, q);
+            const userAnsText = `借方: ${debAcc || '未選択'} (${debAmt}円) / 貸方: ${credAcc || '未選択'} (${credAmt}円)`;
+            const correctAnsText = `借方: ${q.correctDebit.account} (${q.correctDebit.amount}円) / 貸方: ${q.correctCredit.account} (${q.correctCredit.amount}円)`;
+
+            processResult(isCorrect, q, userAnsText, correctAnsText);
         }
 
-        function processResult(isCorrect, q) {
-            // Record Attempt Log
+        function processResult(isCorrect, q, userAnsText, correctAnsText) {
+            // Detailed record entry for AI Prompt exporter
             const logEntry = {
+                id: 'log-' + Date.now(),
                 timestamp: new Date().toLocaleString('ja-JP'),
                 examId: q.examId,
                 questionId: q.id,
                 category: q.category,
+                questionFull: q.question || q.sentence || '仕訳問題',
                 questionSummary: (q.question || q.sentence || '仕訳問題').substring(0, 30) + '...',
+                userAnswer: userAnsText,
+                correctAnswer: correctAnsText,
+                explanation: q.explanation,
                 isCorrect: isCorrect
             };
+
             state.historyLogs.unshift(logEntry);
 
             if (isCorrect) {
                 confetti({ particleCount: 30, spread: 60, origin: { y: 0.7 } });
-                // If solved correctly, remove from weakness
                 state.weaknesses = state.weaknesses.filter(id => id !== q.id);
             } else {
                 if (!state.weaknesses.includes(q.id)) {
@@ -1126,17 +1076,21 @@
             saveState();
             renderProgressCards();
 
-            // Display Feedback Panel
             const expContainer = document.getElementById('quiz-explanation');
             expContainer.classList.remove('hidden');
 
             expContainer.innerHTML = `
-                <div class="p-4 rounded-xl ${isCorrect ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'} flex items-start gap-3">
-                    <i class="fa-solid ${isCorrect ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-rose-600'} text-xl mt-0.5"></i>
-                    <div class="space-y-1">
-                        <div class="font-bold text-sm">${isCorrect ? '正解です！' : '不正解（弱点ノートに追加されました）'}</div>
-                        <div class="text-xs text-slate-700 leading-relaxed whitespace-pre-line">${q.explanation}</div>
+                <div class="p-4 rounded-xl ${isCorrect ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'} flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid ${isCorrect ? 'fa-circle-check text-emerald-600' : 'fa-circle-xmark text-rose-600'} text-xl mt-0.5"></i>
+                        <div class="space-y-1">
+                            <div class="font-bold text-sm">${isCorrect ? '正解です！' : '不正解（弱点ノートに追加されました）'}</div>
+                            <div class="text-xs text-slate-700 leading-relaxed whitespace-pre-line">${q.explanation}</div>
+                        </div>
                     </div>
+                    <button onclick="generateAIPromptForLog('${logEntry.id}')" class="shrink-0 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg shadow transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-robot"></i> AI深掘り解説
+                    </button>
                 </div>
                 <button onclick="nextQuestion()" class="w-full bg-slate-900 text-white font-bold text-xs py-3 rounded-xl shadow hover:bg-slate-800 transition-colors">
                     次の問題へ進む <i class="fa-solid fa-arrow-right ml-1"></i>
@@ -1149,7 +1103,96 @@
             renderQuizQuestion();
         }
 
-        // --- 6. HISTORY ANALYTICS & LOGS VIEW ---
+        // --- 6. AI PROMPT EXPORTER SYSTEM ---
+        function generateAIPromptForLog(logId) {
+            const log = state.historyLogs.find(l => l.id === logId);
+            if (!log) return;
+
+            const examSpec = EXAM_SPECS[log.examId];
+
+            const promptText = `あなたはプロの資格試験学習コーチおよびチューターです。
+以下の学習者の誤答・演習ログを分析し、「なぜ間違えたのか」「どこが理解の弱点・根本原因か」「次回正解するための解法ステップ・暗記のコツ」を分かりやすく指導してください。
+
+【対象資格】${examSpec.title}
+【分野・カテゴリ】${log.category}
+【問題文】
+${log.questionFull}
+
+【学習者の回答】
+${log.userAnswer}
+
+【正しい解答】
+${log.correctAnswer}
+
+【公式の簡易解説】
+${log.explanation}
+
+【依頼事項】
+1. **間違えたポイントの診断**: 学習者の誤答内容から推測される勘違いや知識の抜けを指摘してください。
+2. **根本的な概念解説**: 初学者でも理解できるよう、視覚的・段階的に概念を解説してください。
+3. **次回一発で解くための対策ルール・暗記のゴロ合わせ**: 今後同様の問題が出た際に絶対間違えない解法手順を提示してください。
+`;
+
+            openAIModal(promptText);
+        }
+
+        function exportAllWeaknessesToAIPrompt() {
+            if (state.weaknesses.length === 0) {
+                alert('現在、登録されている弱点・誤答問題はありません。');
+                return;
+            }
+
+            const weakQuestions = QUESTION_BANK.filter(q => state.weaknesses.includes(q.id));
+            let itemsText = weakQuestions.map((q, idx) => {
+                const spec = EXAM_SPECS[q.examId];
+                return `--- [問題 ${idx + 1}] (${spec.title} / ${q.category}) ---
+問題: ${q.question || q.sentence}
+正解: ${q.type === 'choice' ? q.options[q.answer] : (q.type === 'toeic-fill' ? q.options[q.answer] : '仕訳参照')}
+解説概要: ${q.explanation}
+`;
+            }).join('\n');
+
+            const promptText = `あなたは最高峰の資格試験対策コーチです。
+現在、私が複数資格の勉強中で苦手としている問題リスト（計${weakQuestions.length}問）を送ります。
+
+【弱点問題リスト】
+${itemsText}
+
+【依頼事項】
+1. **全体の弱点傾向分析**: どの分野・概念に共通した苦手原因があるかまとめてください。
+2. **効率的な攻略アドバイス**: この問題群を攻略するために最も優先度の高い学習アプローチを提案してください。
+3. **直前暗記シート**: 各問題のキーポイントを一瞬で思い出すための暗記メモを作成してください。
+`;
+
+            openAIModal(promptText);
+        }
+
+        function openAIModal(promptText) {
+            document.getElementById('ai-prompt-textarea').value = promptText;
+            document.getElementById('ai-modal').classList.remove('hidden');
+        }
+
+        function closeAIModal() {
+            document.getElementById('ai-modal').classList.add('hidden');
+        }
+
+        function copyAIPrompt() {
+            const textarea = document.getElementById('ai-prompt-textarea');
+            textarea.select();
+            document.execCommand('copy');
+
+            const btn = document.getElementById('copy-prompt-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> コピー完了！`;
+            btn.classList.replace('bg-purple-600', 'bg-emerald-600');
+
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.replace('bg-emerald-600', 'bg-purple-600');
+            }, 2000);
+        }
+
+        // --- 7. HISTORY ANALYTICS & LOGS VIEW ---
         function renderAnalyticsView() {
             const totalAttempts = state.historyLogs.length;
             const totalCorrect = state.historyLogs.filter(l => l.isCorrect).length;
@@ -1165,11 +1208,10 @@
             tbody.innerHTML = '';
 
             if (totalAttempts === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">解答履歴データがまだありません。</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">解答履歴データがまだありません。</td></tr>`;
                 return;
             }
 
-            // Show latest 20 logs
             state.historyLogs.slice(0, 20).forEach(log => {
                 const spec = EXAM_SPECS[log.examId];
                 const tr = document.createElement('tr');
@@ -1184,6 +1226,11 @@
                             <i class="fa-solid ${log.isCorrect ? 'fa-circle-check' : 'fa-circle-xmark'} mr-1"></i>${log.isCorrect ? '正解' : '誤答'}
                         </span>
                     </td>
+                    <td class="p-3 text-right">
+                        <button onclick="generateAIPromptForLog('${log.id}')" class="text-purple-600 hover:text-purple-800 font-bold hover:underline text-xs flex items-center gap-1 ml-auto">
+                            <i class="fa-solid fa-robot"></i> AI用出力
+                        </button>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1197,7 +1244,7 @@
             }
         }
 
-        // --- 7. WEAKNESS REVIEW MODE ---
+        // --- 8. WEAKNESS REVIEW MODE ---
         function renderReviewMode() {
             const container = document.getElementById('review-content-area');
 
