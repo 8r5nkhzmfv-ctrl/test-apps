@@ -334,7 +334,7 @@ function setupRandomStage() {
   currentStageConfig = selectedFive.map((item, idx) => ({
     char: item.char,
     name: item.name,
-    count: Math.floor(Math.random() * 5) + 3, // 3 ~ 7個
+    count: Math.floor(Math.random() * 7) + 6, // 6 ~ 12個（大幅に増量）
     completedColor: DISTINCT_COLORS[idx]
   }));
 }
@@ -343,22 +343,34 @@ function initTsums() {
   setupRandomStage();
   P = [];
   let idCounter = 0;
+
+  // 各種類のツムの残数を管理して、順番に分散しながら生成
+  const remainingCounts = currentStageConfig.map(cfg => cfg.count);
+  let totalTsums = remainingCounts.reduce((a, b) => a + b, 0);
   let idx = 0;
-  currentStageConfig.forEach((cfg, kIdx) => {
-    for (let i = 0; i < cfg.count; i++) {
-      const px = R + Math.random() * (W - 2 * R);
-      const py = -R - (idx++) * (R * 1.3);
-      P.push({
-        id: idCounter++,
-        x: px, y: py, px: px, py: py,
-        k: kIdx,
-        char: cfg.char,
-        name: cfg.name,
-        completedColor: cfg.completedColor,
-        isCompleted: false // 完成フラグ
-      });
+
+  while (totalTsums > 0) {
+    for (let kIdx = 0; kIdx < currentStageConfig.length; kIdx++) {
+      if (remainingCounts[kIdx] > 0) {
+        const cfg = currentStageConfig[kIdx];
+        const px = R + Math.random() * (W - 2 * R);
+        const py = -R * 2 - (idx++) * (R * 0.9);
+
+        P.push({
+          id: idCounter++,
+          x: px, y: py, px: px, py: py,
+          k: kIdx,
+          char: cfg.char,
+          name: cfg.name,
+          completedColor: cfg.completedColor,
+          isCompleted: false
+        });
+
+        remainingCounts[kIdx]--;
+        totalTsums--;
+      }
     }
-  });
+  }
 }
 
 function start() {
