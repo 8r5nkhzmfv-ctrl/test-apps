@@ -256,54 +256,71 @@ canvas {
 <!-- HUD Header -->
 <div id="hud">
   <div class="hud-item">
-    <span>残り時間</span>
+    <span>時間</span>
     <b id="tm" class="hud-val">60.0</b>s
   </div>
   <div class="hud-item">
-    <span>残りツム</span>
-    <b id="rem-cnt" class="hud-val">26</b>
+    <span>残り</span>
+    <b id="rem-cnt" class="hud-val">0</b>
   </div>
-  <button id="cancel-btn" class="btn-s btn-cancel">キャンセル</button>
+  <div id="target-badge" class="target-badge">
+    <span id="target-char" class="target-char"></span>
+    <span id="target-count"></span>
+  </div>
+  <button id="cancel-btn" class="btn-s btn-cancel">解除</button>
   <div class="btn-group">
     <button id="sk" class="btn-s">かき回す</button>
     <button id="mu" class="btn-s">音ON</button>
   </div>
 </div>
 
-<!-- Info Banner -->
-<div id="info-bar"><span id="info-text">文字をタップしてゲームスタート！</span></div>
-
 <!-- Start / Game Over Modal -->
 <div id="ov">
   <div class="card">
-    <h1 id="ov-title">ヘブル文字タップ破壊</h1>
-    <p id="ov-msg">同じヘブル文字のツムをすべてタップして壊そう！<br>1つ目をタップするとその文字にロックされます。</p>
-    
-    <div class="legend">
-      <div class="legend-item"><span class="legend-char">א</span> アレフ: 5</div>
-      <div class="legend-item"><span class="legend-char">ב</span> ベート: 6</div>
-      <div class="legend-item"><span class="legend-char">ג</span> ギメル: 3</div>
-      <div class="legend-item"><span class="legend-char">ד</span> ダレット: 7</div>
-      <div class="legend-item"><span class="legend-char">ח</span> ヘット: 5</div>
-    </div>
+    <h1 id="ov-title">ヘブル文字タップ破砕</h1>
+    <p id="ov-msg">全27文字からランダムに5文字が選ばれます。<br>最初にタップした文字のツムをすべて見つけてタップ破砕しよう！</p>
 
     <button id="g0" class="btn-main">スタート</button>
   </div>
 </div>
 
 <script>
-// ヘブル文字の構成データ（色はすべて同一にして文字形状のみで判別させる）
-const COMMON_COLOR = "#313e6c"; // 全ツム統一の背景色
-const STAGE_CONFIG = [
-  { char: "א", name: "アレフ", count: 5, color: COMMON_COLOR },
-  { char: "ב", name: "ベート", count: 6, color: COMMON_COLOR },
-  { char: "ג", name: "ギメル", count: 3, color: COMMON_COLOR },
-  { char: "ד", name: "ダレット", count: 7, color: COMMON_COLOR },
-  { char: "ח", name: "ヘット", count: 5, color: COMMON_COLOR }
+// 全27文字（基本22文字 + ソフィート5文字）のマスターデータ
+const HEBREW_ALL = [
+  { char: "א", name: "アレフ" },
+  { char: "ב", name: "ベート" },
+  { char: "ג", name: "ギメル" },
+  { char: "ד", name: "ダレット" },
+  { char: "ה", name: "ヘー" },
+  { char: "ו", name: "ヴァヴ" },
+  { char: "ז", name: "ザイン" },
+  { char: "ח", name: "ヘット" },
+  { char: "ט", name: "テット" },
+  { char: "י", name: "ヨッド" },
+  { char: "כ", name: "カフ" },
+  { char: "ל", name: "ラメド" },
+  { char: "מ", name: "メム" },
+  { char: "נ", name: "ヌン" },
+  { char: "ס", name: "サメフ" },
+  { char: "ע", name: "アイン" },
+  { char: "פ", name: "ペー" },
+  { char: "צ", name: "ツァディ" },
+  { char: "ק", name: "コフ" },
+  { char: "ר", name: "レーシュ" },
+  { char: "ש", name: "シン" },
+  { char: "ת", name: "タヴ" },
+  // ソフィート 5文字
+  { char: "ך", name: "カフ・ソフィート" },
+  { char: "ם", name: "メム・ソフィート" },
+  { char: "ן", name: "ヌン・ソフィート" },
+  { char: "ף", name: "ペー・ソフィート" },
+  { char: "ץ", name: "ツァディ・ソフィート" }
 ];
 
+const COMMON_COLOR = "#2d3861"; // 全ツム統一の背景色
 const TIME_LIMIT = 60.0; // 制限時間
 
+let currentStageConfig = [];
 let W = 360, H = 560, R = 28, dpr = 1;
 const cv = document.getElementById("cv");
 const x = cv.getContext("2d");
@@ -313,7 +330,6 @@ let P = [];
 let targetKind = null; // 現在ロック中の文字のインデックス
 let activeTappedSet = new Set(); // タップ済みのツムID
 let run = false;
-let startTime = 0;
 let elapsedTime = 0;
 let remainingTime = TIME_LIMIT;
 let lastFrameTime = 0;
@@ -339,12 +355,26 @@ fit();
 size();
 addEventListener("resize", () => { fit(); size(); });
 
+// 全27文字からランダムに5文字を選出し、個数（3〜7個）を割り当てる
+function setupRandomStage() {
+  const shuffled = [...HEBREW_ALL].sort(() => Math.random() - 0.5);
+  const selectedFive = shuffled.slice(0, 5);
+
+  currentStageConfig = selectedFive.map(item => ({
+    char: item.char,
+    name: item.name,
+    count: Math.floor(Math.random() * 5) + 3, // 3 ~ 7個
+    color: COMMON_COLOR
+  }));
+}
+
 // ツムの初期配置作成
 function initTsums() {
+  setupRandomStage();
   P = [];
   let idCounter = 0;
   let idx = 0;
-  STAGE_CONFIG.forEach((cfg, kIdx) => {
+  currentStageConfig.forEach((cfg, kIdx) => {
     for (let i = 0; i < cfg.count; i++) {
       const px = R + Math.random() * (W - 2 * R);
       const py = -R - (idx++) * (R * 1.3);
@@ -371,11 +401,10 @@ function start() {
   elapsedTime = 0;
   run = true;
   updateHUD();
+  updateTargetBadge();
   $("cancel-btn").style.display = "none";
-  $("info-text").textContent = "好きなツムをタップしてスタート！";
   $("ov").style.display = "none";
   lastFrameTime = performance.now();
-  startTime = lastFrameTime;
 
   // 開始音
   tone(440, 0.1, "sine", 0.15, 0, 0);
@@ -388,9 +417,22 @@ function cancelTarget() {
   if (!run || targetKind === null) return;
   targetKind = null;
   activeTappedSet.clear();
+  updateTargetBadge();
   $("cancel-btn").style.display = "none";
-  $("info-text").textContent = "選択を解除しました。別の文字をタップしてください";
   tone(300, 0.15, "sine", 0.1, 150);
+}
+
+function updateTargetBadge() {
+  const badge = $("target-badge");
+  if (targetKind === null) {
+    badge.style.display = "none";
+  } else {
+    badge.style.display = "inline-flex";
+    const cfg = currentStageConfig[targetKind];
+    const totalTarget = P.filter(item => item.k === targetKind).length;
+    $("target-char").textContent = cfg.char;
+    $("target-count").textContent = `${activeTappedSet.size}/${totalTarget}`;
+  }
 }
 
 $("cancel-btn").onclick = cancelTarget;
@@ -401,13 +443,12 @@ function gameClear() {
   run = false;
   const clearTime = elapsedTime.toFixed(2);
   
-  // ファンファーレ
   [523, 659, 783, 1046].forEach((f, i) => {
     tone(f, 0.3, "triangle", 0.2, 0, i * 0.1);
   });
   
   $("ov-title").textContent = "🎉 クリア！";
-  $("ov-msg").innerHTML = `すべてのツムを破壊しました！<br><div class="time-res">${clearTime} 秒</div>`;
+  $("ov-msg").innerHTML = `すべてのツムを破砕しました！<br><div class="time-res">${clearTime} 秒</div>`;
   $("g0").textContent = "もう一度遊ぶ";
   $("ov").style.display = "flex";
 }
@@ -418,7 +459,7 @@ function gameOver() {
   tone(200, 0.4, "sawtooth", 0.2, 80);
   
   $("ov-title").textContent = "タイムアップ！";
-  $("ov-msg").innerHTML = `時間内にすべてのツムを破砕できませんでした。<br>残り: <b>${P.length}</b> 個`;
+  $("ov-msg").innerHTML = `制限時間内に破砕できませんでした。<br>残り: <b>${P.length}</b> 個`;
   $("g0").textContent = "リトライ";
   $("ov").style.display = "flex";
 }
@@ -467,7 +508,7 @@ $("sk").onclick = () => {
   tone(150, 0.4, "sawtooth", 0.05, 600);
 };
 
-// 物理演算エンジン (Verlet Integration)
+// 物理演算エンジン
 function phys() {
   const g = R * 0.022;
 
@@ -488,7 +529,6 @@ function phys() {
     p.x += vx; p.y += vy + g;
   }
 
-  // 境界判定と衝突解決
   for (let it = 0; it < 4; it++) {
     for (let i = 0; i < P.length; i++) {
       const a = P[i];
@@ -533,18 +573,15 @@ function draw() {
     x.beginPath();
     x.arc(p.x, p.y, isTapped ? R + 4 : R - 1, 0, Math.PI * 2);
 
-    // 全ツム同じ背景色
     x.fillStyle = p.color;
 
     if (isTapped) {
-      // タップされた個別のツムだけが強く光る
       x.shadowColor = "#ffffff";
       x.shadowBlur = 18;
     }
     x.fill();
     x.shadowBlur = 0;
 
-    // タップされた個別のツムだけ太い白枠に変化
     x.lineWidth = isTapped ? 4 : 2;
     x.strokeStyle = isTapped ? "#ffffff" : "rgba(255, 255, 255, 0.25)";
     x.stroke();
@@ -553,7 +590,6 @@ function draw() {
     x.fillText(p.char, p.x, p.y + 2);
   }
 
-  // 破壊エフェクト
   for (const b of burst) {
     x.globalAlpha = b.t / 20;
     x.beginPath();
@@ -565,7 +601,6 @@ function draw() {
   }
   burst = burst.filter(b => b.t > 0);
 
-  // パーティクル
   for (const q of parts) {
     q.x += q.vx; q.y += q.vy; q.vy += 0.25; q.l--;
     x.globalAlpha = Math.max(0, q.l / 30);
@@ -576,7 +611,6 @@ function draw() {
   }
   parts = parts.filter(q => q.l > 0);
 
-  // テキストエフェクト
   for (const f of floats) {
     f.y -= 1.0; f.l--;
     x.globalAlpha = Math.min(1, f.l / 20);
@@ -631,7 +665,6 @@ function hit(mx, my) {
   return best;
 }
 
-// タップハンドラ
 function handleTap(e) {
   if (!run) return;
   ac();
@@ -639,47 +672,37 @@ function handleTap(e) {
   const p = hit(mx, my);
   if (!p) return;
 
-  // 未選択状態からのファーストタップ（ロックオン）
   if (targetKind === null) {
     targetKind = p.k;
     activeTappedSet.add(p.id);
     $("cancel-btn").style.display = "inline-block";
-    
-    const totalTarget = P.filter(item => item.k === targetKind).length;
-    $("info-text").textContent = `「${p.name} (${p.char})」にロックオン！ (1 / ${totalTarget})`;
+    updateTargetBadge();
     tone(440, 0.1, "sine", 0.2);
     checkComplete();
     return;
   }
 
-  // ロック外の文字タップ時は拒否（効果音 & 画面シェイク）
   if (p.k !== targetKind) {
     tone(120, 0.18, "sawtooth", 0.2);
     shake = 6;
     return;
   }
 
-  // 正しい文字をタップ
   if (!activeTappedSet.has(p.id)) {
     activeTappedSet.add(p.id);
-    const totalTarget = P.filter(item => item.k === targetKind).length;
-    const currentTapped = activeTappedSet.size;
-    $("info-text").textContent = `「${p.name} (${p.char})」 (${currentTapped} / ${totalTarget})`;
+    updateTargetBadge();
 
-    // 音高が上がっていくタップ音
-    tone(440 + currentTapped * 70, 0.12, "sine", 0.22);
+    tone(440 + activeTappedSet.size * 70, 0.12, "sine", 0.22);
     checkComplete();
   }
 }
 
-// 対象文字の完遂判定＆全破壊
 function checkComplete() {
   const totalTargetNodes = P.filter(item => item.k === targetKind);
   if (activeTappedSet.size === totalTargetNodes.length) {
     const k = targetKind;
-    const charName = STAGE_CONFIG[k].name;
+    const charName = currentStageConfig[k].name;
 
-    // 一斉破壊パーティクル生成
     totalTargetNodes.forEach(c => {
       burst.push({ x: c.x, y: c.y, color: "#f2b84b", t: 20 });
       for (let i = 0; i < 8; i++) {
@@ -694,22 +717,20 @@ function checkComplete() {
 
     floats.push({
       x: W / 2, y: H / 2, l: 45,
-      t: `${charName} 全破壊！`,
+      t: `${charName} 全破砕！`,
       c: "#f2b84b", z: 28
     });
 
     tone(880, 0.25, "triangle", 0.25);
 
-    // 配列から消去
     P = P.filter(item => item.k !== targetKind);
     targetKind = null;
     activeTappedSet.clear();
+    updateTargetBadge();
     $("cancel-btn").style.display = "none";
 
     if (P.length === 0) {
       gameClear();
-    } else {
-      $("info-text").textContent = `「${charName}」破壊完了！次の文字を選択してください`;
     }
   }
 }
