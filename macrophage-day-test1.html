@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>マクロファージの一日 - 絵本風 免疫アクション</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+        
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: #2b1f31;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height fix for mobile browsers */
+        }
+
+        .font-magic {
+            font-family: 'Yusei Magic', sans-serif;
+        }
+
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(8px);
+            border: 2px solid #6b4d3b;
+            box-shadow: 0 4px 0 #4a3324;
+        }
+
+        .glass-panel-dark {
+            background: rgba(43, 31, 49, 0.95);
+            backdrop-filter: blur(10px);
+            border: 3px solid #e2bc80;
+            box-shadow: 0 6px 0 #8c6a38;
+        }
+
+        .btn-retro {
+            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.25);
+        }
+        .btn-retro:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.25);
+        }
+
+        /* Red damage vignette flash */
+        @keyframes damage-flash {
+            0% { box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0); }
+            50% { box-shadow: inset 0 0 60px 20px rgba(239, 68, 68, 0.7); }
+            100% { box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .damage-active {
+            animation: damage-flash 0.35s ease-out;
+        }
+
+        /* Custom scrollbar for encyclopedia */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1e4d3;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8c6a38;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between items-center relative select-none p-1 sm:p-3">
+
+    <!-- Top Navigation & HUD Bar -->
+    <header class="w-full max-w-4xl px-1 py-1 z-20 flex justify-between items-center gap-1.5 flex-shrink-0">
+        <!-- Day & Objective Info (Fixed layout collapse with flex-shrink & min-w-0) -->
+        <div class="glass-panel px-2 py-1 rounded-xl flex items-center gap-1.5 text-amber-900 min-w-0 flex-1 sm:flex-initial">
+            <span id="day-badge" class="bg-amber-600 text-white font-black text-[10px] sm:text-xs px-2 py-0.5 rounded-lg whitespace-nowrap font-magic flex-shrink-0">Day 1</span>
+            <div class="min-w-0 flex-1">
+                <div id="day-title" class="font-bold text-[11px] sm:text-xs leading-tight text-amber-950 truncate">平穏な血管の巡回</div>
+                <div id="day-sub" class="text-[9px] sm:text-[10px] text-amber-800 font-semibold truncate">黄色ブドウ球菌をたべてATPを集めよう</div>
+            </div>
+        </div>
+
+        <!-- Vital Stats (HP / ATP) -->
+        <div class="glass-panel px-2 py-1 rounded-xl flex items-center gap-2 flex-shrink-0">
+            <!-- Health Bar -->
+            <div class="flex items-center gap-1">
+                <i class="fa-solid fa-heart text-red-500 text-xs sm:text-sm animate-pulse"></i>
+                <div class="w-14 sm:w-24 bg-red-100 rounded-full h-3 border border-red-800 overflow-hidden relative">
+                    <div id="hp-bar" class="bg-gradient-to-r from-red-500 to-pink-500 h-full w-full transition-all duration-300"></div>
+                </div>
+            </div>
+            <!-- ATP Counter -->
+            <div class="flex items-center gap-0.5 font-black text-xs sm:text-sm text-amber-900">
+                <i class="fa-solid fa-bolt text-yellow-500 text-xs sm:text-sm"></i>
+                <span id="atp-count" class="font-mono text-xs sm:text-sm">0</span>
+            </div>
+        </div>
+
+        <!-- Encyclopedia / Audio Controls -->
+        <div class="flex items-center gap-1 flex-shrink-0">
+            <button id="btn-encyclopedia" class="glass-panel text-amber-900 font-bold p-1.5 sm:px-2.5 rounded-xl btn-retro flex items-center gap-1 text-[11px] sm:text-xs">
+                <i class="fa-solid fa-book-bookmark text-amber-700"></i>
+                <span class="hidden md:inline">日記</span>
+            </button>
+            <button id="btn-sound" class="glass-panel text-amber-900 p-1.5 rounded-xl btn-retro text-[11px] sm:text-xs">
+                <i id="sound-icon" class="fa-solid fa-volume-high text-amber-700"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main id="game-container" class="relative w-full max-w-4xl flex-1 my-1 rounded-2xl overflow-hidden border-2 sm:border-4 border-amber-900 shadow-xl bg-amber-50">
+        <canvas id="gameCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+        <!-- Damage Vignette Overlay -->
+        <div id="damage-overlay" class="pointer-events-none absolute inset-0 z-10 rounded-2xl"></div>
+
+        <!-- Speech / Narrative Bubble Overlay -->
+        <div id="story-modal" class="absolute inset-x-2 bottom-2 z-30 transition-all duration-300 transform translate-y-0">
+            <div class="glass-panel p-2.5 sm:p-3 rounded-xl flex gap-2 sm:gap-3 items-center relative">
+                <div id="narrator-avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-200 border-2 border-amber-800 flex items-center justify-center text-xl sm:text-2xl flex-shrink-0">
+                    🦠
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div id="narrator-name" class="font-magic font-bold text-[10px] sm:text-xs text-amber-700">マクロファージ</div>
+                    <p id="narrator-text" class="text-[11px] sm:text-xs font-bold text-amber-950 leading-tight sm:leading-snug">今日もパトロール開始！あやしい細菌を見つけたら、偽足をのばしてパクッと食べちゃおう！</p>
+                </div>
+                <button id="btn-close-story" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded-lg text-xs btn-retro flex-shrink-0">
+                    進む <i class="fa-solid fa-play ml-0.5 text-[10px]"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Just Devour / Combo Popup Notification -->
+        <div id="combo-popup" class="pointer-events-none absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 opacity-0 transition-all duration-300 scale-50">
+            <div class="bg-yellow-400 text-amber-950 font-magic font-black text-sm sm:text-2xl px-4 py-1.5 rounded-full border-2 sm:border-4 border-amber-900 shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+                <i class="fa-solid fa-bolt text-red-600 animate-bounce"></i>
+                <span id="combo-text">ジャスト貪食！ ATP x2</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Controls & Skill Action Dock -->
+    <footer class="w-full max-w-4xl px-1 py-1 z-20 flex justify-between items-center gap-1.5 flex-shrink-0">
+        <!-- Phenotype Switch Button (Normal / M1 Inflammatory / M2 Repair) -->
+        <div class="flex items-center gap-1.5">
+            <button id="btn-mode-m1" class="glass-panel px-2 py-1.5 rounded-xl btn-retro flex flex-col items-center bg-red-50 border-red-800 min-w-[65px] sm:min-w-[80px]">
+                <span class="text-[9px] sm:text-[10px] font-black text-red-800">M1 攻撃</span>
+                <div class="flex items-center gap-0.5 text-[10px] sm:text-xs font-bold text-red-900">
+                    <i class="fa-solid fa-fire text-red-600 text-[10px]"></i> <span id="m1-cost">15 ATP</span>
+                </div>
+            </button>
+            <button id="btn-mode-m2" class="glass-panel px-2 py-1.5 rounded-xl btn-retro flex flex-col items-center bg-emerald-50 border-emerald-800 min-w-[65px] sm:min-w-[80px]">
+                <span class="text-[9px] sm:text-[10px] font-black text-emerald-800">M2 修復</span>
+                <div class="flex items-center gap-0.5 text-[10px] sm:text-xs font-bold text-emerald-900">
+                    <i class="fa-solid fa-leaf text-emerald-600 text-[10px]"></i> <span id="m2-cost">10 ATP</span>
+                </div>
+            </button>
+        </div>
+
+        <!-- Cytokine Signal & Wire Indicator Info -->
+        <div class="hidden md:flex items-center gap-2 text-xs font-bold text-amber-200">
+            <div class="flex items-center gap-1 bg-amber-950/60 px-2.5 py-1 rounded-lg border border-amber-700/50">
+                <i class="fa-solid fa-bullhorn text-amber-400"></i>
+                <span>タップ: 偽足伸縮 / 端タップ: ワイヤー移動</span>
+            </div>
+        </div>
+
+        <!-- Call Cytokines / Helper Cell Signal Bugle -->
+        <button id="btn-cytokine" class="glass-panel px-3 py-1.5 rounded-xl btn-retro bg-amber-300 border-amber-800 flex items-center gap-2">
+            <div class="relative">
+                <i class="fa-solid fa-bullhorn text-amber-900 text-base sm:text-lg"></i>
+                <span id="cytokine-badge" class="absolute -top-1.5 -right-2 bg-red-500 text-white text-[8px] font-black rounded-full w-3.5 h-3.5 flex items-center justify-center">0</span>
+            </div>
+            <div class="text-left">
+                <div class="text-[9px] sm:text-[10px] font-black text-amber-950 leading-tight">サイトカイン</div>
+                <div class="text-[10px] sm:text-xs font-bold text-amber-800">ヘルパーT呼出</div>
+            </div>
+        </button>
+    </footer>
+
+    <!-- Modal: Encyclopedia (パトロール日記) -->
+    <div id="modal-encyclopedia" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 hidden">
+        <div class="glass-panel-dark w-full max-w-lg rounded-2xl p-4 text-amber-100 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center border-b border-amber-600/40 pb-2">
+                <h2 class="font-magic text-lg sm:text-xl font-bold text-amber-300 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i> パトロール日記
+                </h2>
+                <button id="btn-close-encyclopedia" class="text-amber-400 hover:text-white text-lg p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto my-3 space-y-2 pr-1">
+                <!-- Entry: Macrophage -->
+                <div class="bg-amber-950/80 p-2.5 rounded-xl border border-amber-700/60 flex gap-2.5 items-center">
+                    <div class="w-10 h-10 bg-pink-200/20 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">🧫</div>
+                    <div>
+                        <h3 class="font-bold text-amber-200 text-xs sm:text-sm">マクロファージ (Macrophage)</h3>
+                        <p class="text-[11px] text-amber-300/80 mt-0.5">体内の大食細胞。異物を貪食(パクパク食べる)し、M1(炎症・攻撃)やM2(組織修復)に変化して活躍する万能細胞！</p>
+                    </div>
+                </div>
+                <!-- Entry: Staphylococcus aureus -->
+                <div class="bg-amber-950/80 p-2.5 rounded-xl border border-amber-700/60 flex gap-2.5 items-center">
+                    <div class="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">🟡</div>
+                    <div>
+                        <h3 class="font-bold text-amber-200 text-xs sm:text-sm">黄色ブドウ球菌 (Staphylococcus)</h3>
+                        <p class="text-[11px] text-amber-300/80 mt-0.5">皮膚などに常在する一般的な細菌。増殖すると炎症を引き起こす。貪食してエネルギー(ATP)を獲得しよう。</p>
+                    </div>
+                </div>
+                <!-- Entry: Bifidobacterium (Good Bacteria) -->
+                <div class="bg-amber-950/80 p-2.5 rounded-xl border border-amber-700/60 flex gap-2.5 items-center">
+                    <div class="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">🟢</div>
+                    <div>
+                        <h3 class="font-bold text-emerald-300 text-xs sm:text-sm">ビフィズス菌 (善玉菌)</h3>
+                        <p class="text-[11px] text-amber-300/80 mt-0.5">お腹の調子を整える味方の細菌！間違えて食べちゃうとお腹が痛くなってスピードダウン＆ATP減少！</p>
+                    </div>
+                </div>
+                <!-- Entry: Influenza Virus -->
+                <div class="bg-amber-950/80 p-2.5 rounded-xl border border-amber-700/60 flex gap-2.5 items-center">
+                    <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">👾</div>
+                    <div>
+                        <h3 class="font-bold text-amber-200 text-xs sm:text-sm">インフルエンザウイルス</h3>
+                        <p class="text-[11px] text-amber-300/80 mt-0.5">素早く動き回り細胞を傷つける強敵。M1姿の攻撃や、ヘルパーT細胞を呼んで抗体攻撃で退治！</p>
+                    </div>
+                </div>
+                <!-- Entry: Vaccine Drops -->
+                <div class="bg-amber-950/80 p-2.5 rounded-xl border border-amber-700/60 flex gap-2.5 items-center">
+                    <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">💊</div>
+                    <div>
+                        <h3 class="font-bold text-cyan-300 text-xs sm:text-sm">ワクチンカプセル (Vaccine)</h3>
+                        <p class="text-[11px] text-amber-300/80 mt-0.5">事前にウイルスの情報を学習させるカプセル。拾うと一気にサイトカインゲージが最大チャージ！</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center text-[10px] sm:text-xs text-amber-400 font-bold border-t border-amber-600/40 pt-2">
+                全7日間のストーリーをクリアして、完璧な免疫マスターを目指そう！
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Logic Script -->
+    <script>
+        // --- Web Audio Adaptive Sound Engine ---
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.isMuted = false;
+                this.currentStyle = 'calm';
+                this.timer = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioCtx();
+                this.startBGM();
+            }
+
+            playTone(freq, type = 'sine', duration = 0.15, vol = 0.1) {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            }
+
+            playEatsound() {
+                this.playTone(320, 'triangle', 0.1, 0.15);
+                setTimeout(() => this.playTone(540, 'sine', 0.15, 0.2), 50);
+            }
+
+            playJustDevourSound() {
+                this.playTone(400, 'square', 0.1, 0.2);
+                setTimeout(() => this.playTone(800, 'triangle', 0.2, 0.25), 80);
+                setTimeout(() => this.playTone(1200, 'sine', 0.3, 0.3), 160);
+            }
+
+            playHurtSound() {
+                this.playTone(150, 'sawtooth', 0.2, 0.25);
+            }
+
+            playWireSound() {
+                this.playTone(600, 'sine', 0.08, 0.12);
+                setTimeout(() => this.playTone(900, 'sine', 0.12, 0.15), 40);
+            }
+
+            playHealSound() {
+                this.playTone(440, 'sine', 0.15, 0.15);
+                setTimeout(() => this.playTone(660, 'sine', 0.2, 0.15), 100);
+            }
+
+            setTheme(style) {
+                this.currentStyle = style;
+            }
+
+            startBGM() {
+                if (this.timer) clearInterval(this.timer);
+                let step = 0;
+                this.timer = setInterval(() => {
+                    if (this.isMuted || !this.ctx) return;
+                    
+                    if (this.currentStyle === 'calm') {
+                        // Gentle picture book melody
+                        const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; // C-E-G-C-G-E
+                        if (step % 2 === 0) {
+                            const freq = notes[(step / 2) % notes.length];
+                            this.playTone(freq, 'sine', 0.3, 0.04);
+                        }
+                    } else if (this.currentStyle === 'battle') {
+                        // Fast upbeat energetic battle beat
+                        const notes = [174.61, 220.00, 261.63, 349.23]; // F-A-C-F
+                        const freq = notes[step % notes.length];
+                        this.playTone(freq, 'triangle', 0.1, 0.06);
+                        if (step % 4 === 0) {
+                            this.playTone(110, 'sawtooth', 0.15, 0.08); // Bass drum feel
+                        }
+                    } else if (this.currentStyle === 'healing') {
+                        // Soft M2 music box tune
+                        const notes = [349.23, 440.00, 523.25, 659.25]; // F-A-C-E
+                        if (step % 3 === 0) {
+                            const freq = notes[(step / 3) % notes.length];
+                            this.playTone(freq, 'sine', 0.4, 0.03);
+                        }
+                    }
+                    step++;
+                }, 250);
+            }
+        }
+
+        const audio = new AudioEngine();
+
+        // --- Game Setup & Story Definitions ---
+        let CANVAS_WIDTH = 800;
+        let CANVAS_HEIGHT = 500;
+
+        const STORY_DAYS = [
+            {
+                day: 1,
+                title: "平穏な血管の巡回",
+                sub: "黄色ブドウ球菌をたべてATPを集めよう",
+                dialog: "今日もパトロール開始！あやしい細菌を見つけたら、タップで偽足を伸ばしてパクッと食べちゃおう！画面端をタップすると「ワイヤー移動」で素早く移動できるよ！",
+                targetATP: 30,
+                bgmStyle: 'calm',
+                bacterialTypes: ['staph'],
+                goodBacteria: false
+            },
+            {
+                day: 2,
+                title: "腸内フローラの冒険",
+                sub: "善玉菌(ビフィズス菌🟢)を守り悪玉菌を食べよう",
+                dialog: "腸内にやってきたよ！ここにはお腹に良い『ビフィズス菌🟢』もいるんだ。間違えて食べちゃダメだよ！お腹をこわしてスピードダウンしちゃうよ！",
+                targetATP: 40,
+                bgmStyle: 'calm',
+                bacterialTypes: ['staph'],
+                goodBacteria: true
+            },
+            {
+                day: 3,
+                title: "すり傷と緊急召喚",
+                sub: "ワクチンドロップ💊を拾ってヘルパーT細胞を呼ぼう",
+                dialog: "たいへん！皮膚にすり傷ができて細菌が増えてきた！『ワクチンカプセル💊』を拾うと、一気に『サイトカインラッパ』がチャージされて仲間のB細胞が来てくれるよ！",
+                targetATP: 50,
+                bgmStyle: 'calm',
+                bacterialTypes: ['staph'],
+                goodBacteria: true
+            },
+            {
+                day: 4,
+                title: "インフルエンザウイルスの襲来",
+                sub: "M1攻撃形態(🔥)になってウイルスを撃退せよ",
+                dialog: "すばやい『インフルエンザウイルス👾』が現れた！敵の攻撃寸前に食べる『ジャスト貪食』でATP2倍！M1ボタンを押して攻撃形態に変身しよう！",
+                targetATP: 65,
+                bgmStyle: 'battle',
+                bacterialTypes: ['staph', 'flu'],
+                goodBacteria: true
+            },
+            {
+                day: 5,
+                title: "炎症の鎮静と組織修復",
+                sub: "M2修復形態(🌿)に変身して傷ついた細胞を治そう",
+                dialog: "たたかいが終わったあとの血管はボロボロ…。M2ボタンを押して『修復形態🌿』になろう！傷ついた組織(治癒ポイント)に触れてやさしく手当てしてね！",
+                targetATP: 50,
+                bgmStyle: 'healing',
+                bacterialTypes: [],
+                repairNodesNeeded: 5,
+                goodBacteria: false
+            },
+            {
+                day: 6,
+                title: "がん細胞の芽と変異",
+                sub: "変異細胞を早めに貪食して進行を防ごう",
+                dialog: "変異した細胞(がん細胞の芽)が誕生しちゃった！増殖する前に素早く貪食しよう！",
+                targetATP: 80,
+                bgmStyle: 'battle',
+                bacterialTypes: ['staph', 'mutant'],
+                goodBacteria: true
+            },
+            {
+                day: 7,
+                title: "決戦！巨大病原体ボス",
+                sub: "全免疫システムを結集して巨大ボスを倒せ！",
+                dialog: "巨大な病原体ボスが出現！！M1変身・サイトカインラッパ・ワイヤー移動をフル活用して体を守りぬこう！",
+                targetATP: 100,
+                bgmStyle: 'battle',
+                isBossLevel: true,
+                goodBacteria: true
+            },
+            {
+                day: 8,
+                title: "平和な体とマクロファージ",
+                sub: "クリアおめでとう！体は今日も元気に守られました",
+                dialog: "ありがとう！君のおかげで体はすっかり元気になったよ！これからも免疫細胞たちは毎日休みなく体を見守っているよ！クリアおめでとう！🎉",
+                targetATP: 999,
+                bgmStyle: 'healing',
+                gameCompleted: true
+            }
+        ];
+
+        // --- Game State Object ---
+        const state = {
+            currentDayIdx: 0,
+            hp: 100,
+            maxHp: 100,
+            atp: 0,
+            mode: 'normal', // 'normal', 'm1', 'm2'
+            cytokineCharge: 0,
+            maxCytokineCharge: 3,
+            isStoryActive: true,
+            isWireActive: false,
+            wireTarget: null,
+            slowMoTimer: 0,
+            bellyAcheTimer: 0,
+            
+            // Entities
+            player: {
+                x: 400,
+                y: 250,
+                vx: 0,
+                vy: 0,
+                radius: 26,
+                baseRadius: 26,
+                squishX: 1,
+                squishY: 1,
+                pseudopodTarget: null,
+                pseudopodLen: 0,
+                maxPseudopodLen: 140
+            },
+            enemies: [],
+            goodBacteriaList: [],
+            vaccines: [],
+            repairNodes: [],
+            particles: [],
+            helpers: [], // B-Cells / Neutrophils
+            boss: null
+        };
+
+        // DOM Element Cache
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('game-container');
+
+        const elHpBar = document.getElementById('hp-bar');
+        const elAtpCount = document.getElementById('atp-count');
+        const elDayBadge = document.getElementById('day-badge');
+        const elDayTitle = document.getElementById('day-title');
+        const elDaySub = document.getElementById('day-sub');
+        const elStoryModal = document.getElementById('story-modal');
+        const elNarratorText = document.getElementById('narrator-text');
+        const elBtnCloseStory = document.getElementById('btn-close-story');
+        const elDamageOverlay = document.getElementById('damage-overlay');
+        const elComboPopup = document.getElementById('combo-popup');
+        const elComboText = document.getElementById('combo-text');
+        const elCytokineBadge = document.getElementById('cytokine-badge');
+
+        const elBtnM1 = document.getElementById('btn-mode-m1');
+        const elBtnM2 = document.getElementById('btn-mode-m2');
+        const elBtnCytokine = document.getElementById('btn-cytokine');
+        const elBtnEncyclopedia = document.getElementById('btn-encyclopedia');
+        const elBtnCloseEncyclopedia = document.getElementById('btn-close-encyclopedia');
+        const elModalEncyclopedia = document.getElementById('modal-encyclopedia');
+        const elBtnSound = document.getElementById('btn-sound');
+
+        // Resize Canvas dynamically to fit container
+        function resizeCanvas() {
+            const rect = gameContainer.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            CANVAS_WIDTH = rect.width;
+            CANVAS_HEIGHT = rect.height;
+        }
+
+        // --- Event Listeners & Controls ---
+        function setupEventListeners() {
+            window.addEventListener('resize', resizeCanvas);
+
+            // Pointer tap for extend pseudopod or wire-action
+            canvas.addEventListener('pointerdown', (e) => {
+                audio.init();
+                if (state.isStoryActive) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const targetX = e.clientX - rect.left;
+                const targetY = e.clientY - rect.top;
+
+                // Check if wire action to screen border (within 35px of edges)
+                if (targetX < 35 || targetX > CANVAS_WIDTH - 35 || targetY < 35 || targetY > CANVAS_HEIGHT - 35) {
+                    state.isWireActive = true;
+                    state.wireTarget = { x: targetX, y: targetY };
+                    audio.playWireSound();
+                }
+
+                // Set pseudopod extension target
+                state.player.pseudopodTarget = { x: targetX, y: targetY };
+                state.player.pseudopodLen = 0;
+            });
+
+            // Phenotype Mode Switch Buttons
+            elBtnM1.addEventListener('click', () => {
+                audio.init();
+                if (state.atp >= 15) {
+                    state.atp -= 15;
+                    state.mode = (state.mode === 'm1') ? 'normal' : 'm1';
+                    audio.playTone(600, 'sawtooth', 0.2);
+                    updateHUD();
+                }
+            });
+
+            elBtnM2.addEventListener('click', () => {
+                audio.init();
+                if (state.atp >= 10) {
+                    state.atp -= 10;
+                    state.mode = (state.mode === 'm2') ? 'normal' : 'm2';
+                    audio.playHealSound();
+                    updateHUD();
+                }
+            });
+
+            // Call Cytokines / B-Cells
+            elBtnCytokine.addEventListener('click', () => {
+                audio.init();
+                if (state.cytokineCharge >= 1) {
+                    state.cytokineCharge--;
+                    spawnHelperCells();
+                    audio.playTone(880, 'sine', 0.3, 0.3);
+                    updateHUD();
+                }
+            });
+
+            // Story dialogue button
+            elBtnCloseStory.addEventListener('click', () => {
+                audio.init();
+                state.isStoryActive = false;
+                elStoryModal.classList.add('translate-y-full', 'opacity-0');
+            });
+
+            // Encyclopedia Modal
+            elBtnEncyclopedia.addEventListener('click', () => {
+                elModalEncyclopedia.classList.remove('hidden');
+            });
+            elBtnCloseEncyclopedia.addEventListener('click', () => {
+                elModalEncyclopedia.classList.add('hidden');
+            });
+
+            // Sound Toggle
+            elBtnSound.addEventListener('click', () => {
+                audio.isMuted = !audio.isMuted;
+                document.getElementById('sound-icon').className = audio.isMuted ? 
+                    "fa-solid fa-volume-xmark text-red-500" : "fa-solid fa-volume-high text-amber-700";
+            });
+        }
+
+        // --- Helper Spawning Logic ---
+        function spawnHelperCells() {
+            for (let i = 0; i < 3; i++) {
+                state.helpers.push({
+                    x: state.player.x + (Math.random() - 0.5) * 40,
+                    y: state.player.y + (Math.random() - 0.5) * 40,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    lifeTimer: 300,
+                    type: 'b-cell'
+                });
+            }
+        }
+
+        // --- Day Initialization ---
+        function initDay(dayIdx) {
+            state.currentDayIdx = dayIdx;
+            const currentStory = STORY_DAYS[dayIdx];
+
+            state.mode = 'normal';
+            state.enemies = [];
+            state.goodBacteriaList = [];
+            state.vaccines = [];
+            state.repairNodes = [];
+            state.particles = [];
+            state.helpers = [];
+            state.boss = null;
+            state.isStoryActive = true;
+
+            // Reset player to center
+            state.player.x = CANVAS_WIDTH / 2;
+            state.player.y = CANVAS_HEIGHT / 2;
+
+            // Update UI Narrative Text
+            elDayBadge.textContent = `Day ${currentStory.day}`;
+            elDayTitle.textContent = currentStory.title;
+            elDaySub.textContent = currentStory.sub;
+            elNarratorText.textContent = currentStory.dialog;
+
+            elStoryModal.classList.remove('translate-y-full', 'opacity-0');
+            audio.setTheme(currentStory.bgmStyle);
+
+            // Populate Repair Nodes for Day 5
+            if (currentStory.repairNodesNeeded) {
+                for (let i = 0; i < currentStory.repairNodesNeeded; i++) {
+                    state.repairNodes.push({
+                        x: 80 + Math.random() * (CANVAS_WIDTH - 160),
+                        y: 80 + Math.random() * (CANVAS_HEIGHT - 160),
+                        hp: 0,
+                        maxHp: 100
+                    });
+                }
+            }
+
+            // Populate Boss for Day 7
+            if (currentStory.isBossLevel) {
+                state.boss = {
+                    x: CANVAS_WIDTH / 2,
+                    y: 100,
+                    hp: 300,
+                    maxHp: 300,
+                    radius: 45,
+                    vx: 2
+                };
+            }
+
+            updateHUD();
+        }
+
+        // --- Trigger Combo Popups ---
+        function triggerCombo(msg) {
+            elComboText.textContent = msg;
+            elComboPopup.classList.remove('opacity-0', 'scale-50');
+            elComboPopup.classList.add('opacity-100', 'scale-100');
+            setTimeout(() => {
+                elComboPopup.classList.add('opacity-0', 'scale-50');
+                elComboPopup.classList.remove('opacity-100', 'scale-100');
+            }, 1200);
+        }
+
+        // --- Screen Damage Flash ---
+        function triggerDamageFlash() {
+            elDamageOverlay.classList.remove('damage-active');
+            void elDamageOverlay.offsetWidth; // trigger reflow
+            elDamageOverlay.classList.add('damage-active');
+            audio.playHurtSound();
+        }
+
+        // --- HUD Update ---
+        function updateHUD() {
+            elHpBar.style.width = `${Math.max(0, (state.hp / state.maxHp) * 100)}%`;
+            elAtpCount.textContent = state.atp;
+            elCytokineBadge.textContent = state.cytokineCharge;
+
+            // Highlight Active Mode Buttons
+            if (state.mode === 'm1') {
+                elBtnM1.classList.add('ring-2', 'sm:ring-4', 'ring-red-500');
+                elBtnM2.classList.remove('ring-2', 'sm:ring-4', 'ring-emerald-500');
+            } else if (state.mode === 'm2') {
+                elBtnM2.classList.add('ring-2', 'sm:ring-4', 'ring-emerald-500');
+                elBtnM1.classList.remove('ring-2', 'sm:ring-4', 'ring-red-500');
+            } else {
+                elBtnM1.classList.remove('ring-2', 'sm:ring-4', 'ring-red-500');
+                elBtnM2.classList.remove('ring-2', 'sm:ring-4', 'ring-emerald-500');
+            }
+        }
+
+        // --- Main Game Update Loop ---
+        function update() {
+            if (state.isStoryActive) return;
+
+            const currentStory = STORY_DAYS[state.currentDayIdx];
+
+            // 1. Player Physics & Wire Movement
+            let speedMult = (state.bellyAcheTimer > 0) ? 0.5 : 1.0;
+            if (state.mode === 'm1') speedMult *= 1.3;
+
+            if (state.isWireActive && state.wireTarget) {
+                const dx = state.wireTarget.x - state.player.x;
+                const dy = state.wireTarget.y - state.player.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 10) {
+                    state.player.vx = (dx / dist) * 12 * speedMult;
+                    state.player.vy = (dy / dist) * 12 * speedMult;
+                } else {
+                    state.isWireActive = false;
+                }
+            } else {
+                // Natural spring friction
+                state.player.vx *= 0.88;
+                state.player.vy *= 0.88;
+            }
+
+            state.player.x += state.player.vx;
+            state.player.y += state.player.vy;
+
+            // Keep within screen bounds
+            state.player.x = Math.max(state.player.radius, Math.min(CANVAS_WIDTH - state.player.radius, state.player.x));
+            state.player.y = Math.max(state.player.radius, Math.min(CANVAS_HEIGHT - state.player.radius, state.player.y));
+
+            // Jelly spring physics squish animation
+            const speed = Math.hypot(state.player.vx, state.player.vy);
+            state.player.squishX = 1 + Math.sin(Date.now() * 0.01) * 0.08 + (speed * 0.015);
+            state.player.squishY = 1 - Math.sin(Date.now() * 0.01) * 0.08 - (speed * 0.015);
+
+            // Timers
+            if (state.bellyAcheTimer > 0) state.bellyAcheTimer--;
+
+            // Pseudopod Extension Logic
+            if (state.player.pseudopodTarget) {
+                state.player.pseudopodLen += 16;
+                if (state.player.pseudopodLen > state.player.maxPseudopodLen) {
+                    state.player.pseudopodTarget = null;
+                    state.player.pseudopodLen = 0;
+                }
+            }
+
+            // 2. Enemy Spawning & Updating
+            if (currentStory.bacterialTypes.length > 0 && state.enemies.length < 8 && Math.random() < 0.03) {
+                const type = currentStory.bacterialTypes[Math.floor(Math.random() * currentStory.bacterialTypes.length)];
+                state.enemies.push({
+                    x: Math.random() < 0.5 ? -20 : CANVAS_WIDTH + 20,
+                    y: Math.random() * CANVAS_HEIGHT,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    type: type, // 'staph', 'flu', 'mutant'
+                    radius: type === 'flu' ? 14 : 18,
+                    attackTimer: 0
+                });
+            }
+
+            // Good Bacteria Spawning
+            if (currentStory.goodBacteria && state.goodBacteriaList.length < 3 && Math.random() < 0.01) {
+                state.goodBacteriaList.push({
+                    x: Math.random() * CANVAS_WIDTH,
+                    y: Math.random() * CANVAS_HEIGHT,
+                    vx: (Math.random() - 0.5) * 1.2,
+                    vy: (Math.random() - 0.5) * 1.2,
+                    radius: 16
+                });
+            }
+
+            // Vaccine Drops Spawning
+            if (state.currentDayIdx >= 2 && state.vaccines.length < 1 && Math.random() < 0.005) {
+                state.vaccines.push({
+                    x: 60 + Math.random() * (CANVAS_WIDTH - 120),
+                    y: 60 + Math.random() * (CANVAS_HEIGHT - 120),
+                    radius: 15
+                });
+            }
+
+            // Update Enemies
+            state.enemies.forEach((enemy, idx) => {
+                enemy.x += enemy.vx;
+                enemy.y += enemy.vy;
+                enemy.attackTimer++;
+
+                // Collision with Macrophage
+                const distToPlayer = Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y);
+                const isJustDevourWindow = (distToPlayer < state.player.radius + enemy.radius + 20 && enemy.attackTimer % 60 < 15);
+
+                if (distToPlayer < state.player.radius + enemy.radius) {
+                    if (isJustDevourWindow || state.mode === 'm1') {
+                        // JUST-DEVOUR TRIGGER!
+                        state.enemies.splice(idx, 1);
+                        state.atp += 10;
+                        audio.playJustDevourSound();
+                        triggerCombo("ジャスト貪食！ ATP +10");
+                        
+                        state.enemies.forEach(other => {
+                            const d = Math.hypot(other.x - enemy.x, other.y - enemy.y);
+                            if (d < 120) {
+                                other.vx += (other.x - enemy.x) * 0.1;
+                                other.vy += (other.y - enemy.y) * 0.1;
+                            }
+                        });
+                    } else {
+                        // Normal hit damage
+                        state.hp -= 12;
+                        triggerDamageFlash();
+                        state.enemies.splice(idx, 1);
+                        updateHUD();
+                    }
+                }
+            });
+
+            // Update Good Bacteria
+            state.goodBacteriaList.forEach((good, idx) => {
+                good.x += good.vx;
+                good.y += good.vy;
+                const dist = Math.hypot(good.x - state.player.x, good.y - state.player.y);
+                if (dist < state.player.radius + good.radius) {
+                    state.goodBacteriaList.splice(idx, 1);
+                    state.atp = Math.max(0, state.atp - 8);
+                    state.bellyAcheTimer = 180;
+                    triggerCombo("腹痛！ 善玉菌を食べちゃった 😭");
+                    audio.playHurtSound();
+                    updateHUD();
+                }
+            });
+
+            // Update Vaccines
+            state.vaccines.forEach((vac, idx) => {
+                const dist = Math.hypot(vac.x - state.player.x, vac.y - state.player.y);
+                if (dist < state.player.radius + vac.radius) {
+                    state.vaccines.splice(idx, 1);
+                    state.cytokineCharge = state.maxCytokineCharge;
+                    triggerCombo("ワクチン獲得！ サイトカインMAX 💊");
+                    audio.playTone(1000, 'sine', 0.2, 0.25);
+                    updateHUD();
+                }
+            });
+
+            // Pseudopod EAT Detection
+            if (state.player.pseudopodTarget) {
+                const pX = state.player.x + (state.player.pseudopodTarget.x - state.player.x) * (state.player.pseudopodLen / state.player.maxPseudopodLen);
+                const pY = state.player.y + (state.player.pseudopodTarget.y - state.player.y) * (state.player.pseudopodLen / state.player.maxPseudopodLen);
+
+                state.enemies.forEach((enemy, idx) => {
+                    if (Math.hypot(enemy.x - pX, enemy.y - pY) < enemy.radius + 15) {
+                        state.enemies.splice(idx, 1);
+                        state.atp += 5;
+                        audio.playEatsound();
+                        updateHUD();
+                    }
+                });
+            }
+
+            // Update Helper B-Cells
+            state.helpers.forEach((helper, hIdx) => {
+                helper.x += helper.vx;
+                helper.y += helper.vy;
+                helper.lifeTimer--;
+
+                state.enemies.forEach((enemy, eIdx) => {
+                    if (Math.hypot(enemy.x - helper.x, enemy.y - helper.y) < 100) {
+                        state.enemies.splice(eIdx, 1);
+                        state.atp += 5;
+                        audio.playTone(700, 'sine', 0.1);
+                        updateHUD();
+                    }
+                });
+
+                if (helper.lifeTimer <= 0) state.helpers.splice(hIdx, 1);
+            });
+
+            // Day 5 Repair Nodes Logic (M2 Mode)
+            if (state.mode === 'm2' && currentStory.repairNodesNeeded) {
+                state.repairNodes.forEach(node => {
+                    if (node.hp < node.maxHp && Math.hypot(node.x - state.player.x, node.y - state.player.y) < 50) {
+                        node.hp += 1.5;
+                        if (node.hp >= node.maxHp) {
+                            state.atp += 10;
+                            audio.playHealSound();
+                            updateHUD();
+                        }
+                    }
+                });
+            }
+
+            // Boss Level Logic (Day 7)
+            if (state.boss) {
+                state.boss.x += state.boss.vx;
+                if (state.boss.x < 80 || state.boss.x > CANVAS_WIDTH - 80) state.boss.vx *= -1;
+
+                if (state.mode === 'm1' && Math.hypot(state.boss.x - state.player.x, state.boss.y - state.player.y) < state.boss.radius + state.player.radius) {
+                    state.boss.hp -= 1.2;
+                    audio.playTone(300, 'sawtooth', 0.05);
+                    if (state.boss.hp <= 0) {
+                        state.boss = null;
+                        state.atp += 50;
+                        updateHUD();
+                    }
+                }
+            }
+
+            // Particle Updates
+            if (state.mode === 'm1') {
+                state.particles.push({
+                    x: state.player.x + (Math.random() - 0.5) * 30,
+                    y: state.player.y + (Math.random() - 0.5) * 30,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: -Math.random() * 3,
+                    life: 20,
+                    color: '#ef4444'
+                });
+            } else if (state.mode === 'm2') {
+                state.particles.push({
+                    x: state.player.x + (Math.random() - 0.5) * 30,
+                    y: state.player.y + (Math.random() - 0.5) * 30,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    life: 25,
+                    color: '#10b981'
+                });
+            }
+
+            state.particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) state.particles.splice(idx, 1);
+            });
+
+            // Objective Completion Check
+            let levelComplete = false;
+            if (currentStory.repairNodesNeeded) {
+                levelComplete = state.repairNodes.every(node => node.hp >= node.maxHp);
+            } else if (currentStory.isBossLevel) {
+                levelComplete = (state.boss === null);
+            } else {
+                levelComplete = (state.atp >= currentStory.targetATP);
+            }
+
+            if (levelComplete && state.currentDayIdx < STORY_DAYS.length - 1) {
+                initDay(state.currentDayIdx + 1);
+            }
+        }
+
+        // --- Render Canvas Graphics ---
+        function render() {
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Draw Background Vessel Texture
+            ctx.fillStyle = '#fbf0e4';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Vessel Decorative Oval Lines
+            ctx.strokeStyle = '#eed2c1';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, CANVAS_WIDTH * 0.4, CANVAS_HEIGHT * 0.38, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Render Particles (Auras)
+            state.particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.life * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Render Repair Nodes (Day 5)
+            state.repairNodes.forEach(node => {
+                ctx.save();
+                ctx.translate(node.x, node.y);
+                ctx.fillStyle = node.hp >= node.maxHp ? '#34d399' : '#fca5a5';
+                ctx.beginPath();
+                ctx.arc(0, 0, 20, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#6b4d3b';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-3, -10, 6, 20);
+                ctx.fillRect(-10, -3, 20, 6);
+                ctx.restore();
+            });
+
+            // Render Good Bacteria (ビフィズス菌 🟢)
+            state.goodBacteriaList.forEach(good => {
+                ctx.save();
+                ctx.translate(good.x, good.y);
+                ctx.fillStyle = '#10b981';
+                ctx.beginPath();
+                ctx.arc(0, 0, good.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#047857';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-4, -3, 2.5, 0, Math.PI * 2);
+                ctx.arc(4, -3, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Render Vaccine Drops 💊
+            state.vaccines.forEach(vac => {
+                ctx.save();
+                ctx.translate(vac.x, vac.y);
+                ctx.fillStyle = '#3b82f6';
+                ctx.beginPath();
+                ctx.roundRect(-10, -7, 20, 14, 7);
+                ctx.fill();
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.roundRect(0, -7, 10, 14, [0, 7, 7, 0]);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Render Enemies
+            state.enemies.forEach(enemy => {
+                ctx.save();
+                ctx.translate(enemy.x, enemy.y);
+                if (enemy.type === 'staph') {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (enemy.type === 'flu') {
+                    ctx.fillStyle = '#a855f7';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.strokeStyle = '#4a3324';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // Render Helper B-Cells
+            state.helpers.forEach(helper => {
+                ctx.save();
+                ctx.translate(helper.x, helper.y);
+                ctx.fillStyle = '#60a5fa';
+                ctx.beginPath();
+                ctx.arc(0, 0, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Render Boss (Day 7)
+            if (state.boss) {
+                ctx.save();
+                ctx.translate(state.boss.x, state.boss.y);
+                ctx.fillStyle = '#dc2626';
+                ctx.beginPath();
+                ctx.arc(0, 0, state.boss.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#450a0a';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                ctx.fillStyle = '#fee2e2';
+                ctx.fillRect(-35, -55, 70, 8);
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(-35, -55, 70 * (state.boss.hp / state.boss.maxHp), 8);
+                ctx.restore();
+            }
+
+            // Render Macrophage (Player)
+            ctx.save();
+            ctx.translate(state.player.x, state.player.y);
+            ctx.scale(state.player.squishX, state.player.squishY);
+
+            // Extend Pseudopod Arm
+            if (state.player.pseudopodTarget) {
+                const angle = Math.atan2(state.player.pseudopodTarget.y - state.player.y, state.player.pseudopodTarget.x - state.player.x);
+                ctx.save();
+                ctx.rotate(angle);
+                ctx.fillStyle = state.mode === 'm1' ? '#f87171' : state.mode === 'm2' ? '#34d399' : '#fbcfe8';
+                ctx.beginPath();
+                ctx.roundRect(0, -8, state.player.pseudopodLen, 16, 8);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Body Main Shape
+            ctx.fillStyle = state.mode === 'm1' ? '#ef4444' : state.mode === 'm2' ? '#10b981' : '#f472b6';
+            ctx.beginPath();
+            ctx.arc(0, 0, state.player.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#831843';
+            ctx.lineWidth = 3.5;
+            ctx.stroke();
+
+            // Face (Big Friendly Eyes)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-7, -5, 6, 0, Math.PI * 2);
+            ctx.arc(7, -5, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils
+            ctx.fillStyle = '#1e1b4b';
+            ctx.beginPath();
+            ctx.arc(-7, -5, 2.5, 0, Math.PI * 2);
+            ctx.arc(7, -5, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (state.bellyAcheTimer > 0) {
+                ctx.fillStyle = '#047857';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText('🤢', -8, 10);
+            }
+
+            ctx.restore();
+        }
+
+        // --- Main Animation Loop ---
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize on Window Load
+        window.onload = function() {
+            resizeCanvas();
+            setupEventListeners();
+            initDay(0);
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
