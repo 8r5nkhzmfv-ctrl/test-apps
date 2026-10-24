@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ヘブル文字物理パズル - Dynamic Font Physics</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Hebrew:wght@700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<style>
+:root {
+  --bg: #121629;
+  --panel: #1b2240;
+  --fg: #eef0fa;
+  --accent: #f2b84b;
+  --danger: #ef7b6c;
+  --success: #4ade80;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+  touch-action: none;
+  user-select: none;
+}
+canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 10px;
+  font-size: 15px;
+  font-weight: 700;
+  pointer-events: none;
+  background: linear-gradient(var(--bg) 70%, rgba(18,22,41,0));
+  z-index: 5;
+}
+#hud > * { pointer-events: auto; }
+.hud-pill {
+  background: rgba(27, 34, 64, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-s {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 999px;
+  background: #2f3a63;
+  color: #fff;
+  cursor: pointer;
+  transition: all .15s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.btn-s:hover { background: #43528a; }
+.btn-s:active { transform: scale(0.95); }
+.btn-cancel {
+  background: var(--danger);
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 16px;
+  box-shadow: 0 0 12px rgba(239,123,108,.4);
+  display: none;
+}
+.btn-cancel:hover { background: #f0604f; }
+
+#ov {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: rgba(18,22,41,.95);
+  backdrop-filter: blur(10px);
+  text-align: center;
+  padding: 24px;
+  z-index: 10;
+}
+#ov h1 { margin: 0; font-size: 28px; color: var(--accent); letter-spacing: 1px; }
+#ov p { margin: 0; color: var(--fg); font-size: 15px; line-height: 1.8; max-width: 480px; }
+.time-res { font-size: 28px; color: var(--accent); font-weight: bold; margin: 8px 0; }
+.btn-main {
+  font: inherit; font-weight: 700;
+  padding: 14px 40px; border: 0; border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), #e29c2b);
+  color: #121629; cursor: pointer;
+  font-size: 17px; transition: all .15s ease;
+  box-shadow: 0 4px 15px rgba(242,184,75,0.4);
+}
+.btn-main:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(242,184,75,0.6); }
+.btn-main:active { transform: translateY(1px); }
+</style>
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+
+<div id="hud">
+  <div class="hud-pill">タイム: <b id="tm" style="color:var(--accent)">60.0</b>s</div>
+  <div class="hud-pill">残り: <b id="rem-cnt">0</b></div>
+  <button id="cancel-btn" class="btn-s btn-cancel">選択解除</button>
+  <div>
+    <button id="sk" class="btn-s">かき回す 🌀</button>
+    <button id="mu" class="btn-s">音OFF 🔇</button>
+  </div>
+</div>
+
+<div id="ov">
+  <h1 id="ov-title">ヘブル文字 リアル物理パズル</h1>
+  <p id="ov-msg">
+    フォント文字からそのまま高精度の物理オブジェクトを動的生成！<br>
+    バラバラに落下してくる同じ文字（指定グループ）を探してタップ。
+  </p>
+  <button id="start-btn" class="btn-main">スタート</button>
+</div>
+
+<script>
+const { Engine, Bodies, Composite, Body, Query } = Matter;
+
+// ヘブル文字 全27文字（基本22文字 + ソフィート5文字）
+const ALL_HEBREW_CHARS = [
+  { char: "א", name: "アレフ" }, { char: "ב", name: "ベート" }, { char: "ג", name: "ギメル" },
+  { char: "ד", name: "ダレット" }, { char: "ה", name: "ヘー" }, { char: "ו", name: "ヴァヴ" },
+  { char: "ז", name: "ザイン" }, { char: "ח", name: "ヘット" }, { char: "ט", name: "テット" },
+  { char: "י", name: "ヨッド" }, { char: "כ", name: "カフ" }, { char: "ל", name: "ラメッド" },
+  { char: "מ", name: "メム" }, { char: "נ", name: "ヌン" }, { char: "ס", name: "サメフ" },
+  { char: "ע", name: "アイン" }, { char: "פ", name: "ペー" }, { char: "צ", name: "ツァディ" },
+  { char: "ק", name: "コフ" }, { char: "ר", name: "レシュ" }, { char: "ש", name: "シン" },
+  { char: "ת", name: "タヴ" },
+  // ソフィート（語末形）5文字
+  { char: "ך", name: "カフ・ソフィート" }, { char: "ם", name: "メム・ソフィート" },
+  { char: "ן", name: "ヌン・ソフィート" }, { char: "ף", name: "ペー・ソフィート" },
+  { char: "ץ", name: "ツァディ・ソフィート" }
+];
+
+const TIME_LIMIT = 60.0;
+const COLOR_NORMAL_FILL = "#f8fafc"; // くっきり見えやすい高白色
+const COLOR_NORMAL_STROKE = "#090d16"; // くっきり見える太枠線
+const COLOR_TAPPED_FILL = "#f2b84b";
+const COLOR_TAPPED_STROKE = "#452400";
+
+let engine;
+let W = window.innerWidth, H = window.innerHeight;
+let cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+
+let items = []; 
+let targetKind = null;
+let run = false;
+let remainingTime = TIME_LIMIT;
+let lastFrameTime = 0;
+let ground, wallLeft, wallRight, funnelLeft, funnelRight;
+let soundEnabled = false;
+
+let currentStageConfig = [];
+
+// キャッシュ用
+const glyphPolygonCache = {};
+
+const $ = id => document.getElementById(id);
+
+// Web Audio API
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+  if (!soundEnabled) return;
+  try {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'tap') {
+      osc.frequency.setValueAtTime(520, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1040, audioCtx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.08);
+    } else if (type === 'clear') {
+      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.12);
+      osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.24);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.45);
+    } else if (type === 'groupComplete') {
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.25);
+    } else if (type === 'stir') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(360, audioCtx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.25);
+    }
+  } catch(e){}
+}
+
+/* ===================================================
+ * 1. フォント描画からの輪郭・パディング（細い文字の補正）生成
+ * =================================================== */
+function generatePolygonFromText(char, fontSize = 110) {
+  if (glyphPolygonCache[char]) return glyphPolygonCache[char];
+
+  const offscreen = document.createElement("canvas");
+  const pad = 35;
+  offscreen.width = fontSize + pad * 2;
+  offscreen.height = fontSize + pad * 2;
+  const octx = offscreen.getContext("2d", { willReadFrequently: true });
+
+  octx.fillStyle = "#ffffff";
+  octx.font = `bold ${fontSize}px 'Noto Serif Hebrew', 'Arial', sans-serif`;
+  octx.textAlign = "center";
+  octx.textBaseline = "middle";
+  octx.fillText(char, offscreen.width / 2, offscreen.height / 2);
+
+  const imgData = octx.getImageData(0, 0, offscreen.width, offscreen.height);
+  const data = imgData.data;
+  const w = offscreen.width;
+  const h = offscreen.height;
+
+  const points = [];
+  const step = 4;
+
+  for (let y = step; y < h - step; y += step) {
+    for (let x = step; x < w - step; x += step) {
+      const idx = (y * w + x) * 4 + 3;
+      if (data[idx] > 128) {
+        let isEdge = false;
+        for (let dy = -step; dy <= step; dy += step) {
+          for (let dx = -step; dx <= step; dx += step) {
+            const nIdx = ((y + dy) * w + (x + dx)) * 4 + 3;
+            if (data[nIdx] <= 128) {
+              isEdge = true;
+              break;
+            }
+          }
+          if (isEdge) break;
+        }
+        if (isEdge) {
+          points.push({ x: x - w / 2, y: y - h / 2 });
+        }
+      }
+    }
+  }
+
+  const hull = calculateConvexHull(points);
+  const simplified = simplifyPolygon(hull, 3.5);
+
+  glyphPolygonCache[char] = simplified;
+  return simplified;
+}
+
+function calculateConvexHull(points) {
+  if (points.length < 3) return points;
+
+  let pivot = points[0];
+  for (let i = 1; i < points.length; i++) {
+    if (points[i].y < pivot.y || (points[i].y === pivot.y && points[i].x < pivot.x)) {
+      pivot = points[i];
+    }
+  }
+
+  const sorted = points.slice().sort((a, b) => {
+    const angleA = Math.atan2(a.y - pivot.y, a.x - pivot.x);
+    const angleB = Math.atan2(b.y - pivot.y, b.x - pivot.x);
+    if (angleA !== angleB) return angleA - angleB;
+    const distA = Math.hypot(a.x - pivot.x, a.y - pivot.y);
+    const distB = Math.hypot(b.x - pivot.x, b.y - pivot.y);
+    return distA - distB;
+  });
+
+  const stack = [sorted[0], sorted[1]];
+  for (let i = 2; i < sorted.length; i++) {
+    while (stack.length > 1) {
+      const top = stack[stack.length - 1];
+      const nextToTop = stack[stack.length - 2];
+      const ccw = (top.x - nextToTop.x) * (sorted[i].y - nextToTop.y) - (top.y - nextToTop.y) * (sorted[i].x - nextToTop.x);
+      if (ccw > 0) break;
+      stack.pop();
+    }
+    stack.push(sorted[i]);
+  }
+  return stack;
+}
+
+function simplifyPolygon(verts, tolerance) {
+  if (verts.length <= 6) return verts;
+  const res = [verts[0]];
+  for (let i = 1; i < verts.length; i++) {
+    const prev = res[res.length - 1];
+    const curr = verts[i];
+    if (Math.hypot(curr.x - prev.x, curr.y - prev.y) > tolerance) {
+      res.push(curr);
+    }
+  }
+  return res;
+}
+
+/* ===================================================
+ * 2. 物理エンジンの初期化とボディ生成 (距離補正)
+ * =================================================== */
+function createCharBodyFromFont(x, y, char, scale) {
+  const verts = generatePolygonFromText(char, 100);
+  const scaledVerts = verts.map(v => ({ x: v.x * scale, y: v.y * scale }));
+
+  const body = Bodies.fromVertices(x, y, [scaledVerts], {
+    restitution: 0.65, // 反発を少し強めて重なりを防ぐ
+    friction: 0.05,
+    frictionAir: 0.015,
+    density: 0.0015,
+    chamfer: { radius: 12 * scale } // 判定の角を丸めて余白を持たせる
+  }, true);
+
+  Body.setAngle(body, (Math.random() - 0.5) * 1.5);
+  Body.setVelocity(body, {
+    x: (Math.random() - 0.5) * 2,
+    y: Math.random() * 2
+  });
+
+  return body;
+}
+
+function initPhysics() {
+  if (engine) Engine.clear(engine);
+
+  engine = Engine.create({
+    gravity: { x: 0, y: 0.8 },
+    positionIterations: 8,
+    velocityIterations: 8
+  });
+
+  const wallThick = 150;
+  ground = Bodies.rectangle(W / 2, H + wallThick/2 - 15, W * 3, wallThick, { isStatic: true, friction: 0.2 });
+  wallLeft = Bodies.rectangle(-wallThick/2 + 5, H / 2, wallThick, H * 3, { isStatic: true });
+  wallRight = Bodies.rectangle(W + wallThick/2 - 5, H / 2, wallThick, H * 3, { isStatic: true });
+
+  funnelLeft = Bodies.rectangle(0, H * 0.85, W * 0.35, 20, { 
+    isStatic: true, angle: 0.15, friction: 0.05 
+  });
+  funnelRight = Bodies.rectangle(W, H * 0.85, W * 0.35, 20, { 
+    isStatic: true, angle: -0.15, friction: 0.05 
+  });
+
+  Composite.add(engine.world, [ground, wallLeft, wallRight, funnelLeft, funnelRight]);
+}
+
+function resize() {
+  W = cv.width = window.innerWidth;
+  H = cv.height = window.innerHeight;
+  if (ground) {
+    Body.setPosition(ground, { x: W / 2, y: H + 60 });
+    Body.setPosition(wallRight, { x: W + 75, y: H / 2 });
+    Body.setPosition(funnelLeft, { x: W * 0.1, y: H * 0.88 });
+    Body.setPosition(funnelRight, { x: W * 0.9, y: H * 0.88 });
+  }
+}
+
+function spawnItems() {
+  items.forEach(it => Composite.remove(engine.world, it.body));
+  items = [];
+
+  const shuffled = [...ALL_HEBREW_CHARS].sort(() => Math.random() - 0.5);
+  const selectedChars = shuffled.slice(0, 5);
+
+  const baseScale = Math.min(W, H) / 700 + 0.35;
+  const areaScale = (W * H) / (375 * 667);
+  // 約90%埋まるボリューム設定
+  const targetTotalCount = Math.min(85, Math.max(45, Math.round(48 * Math.sqrt(areaScale))));
+
+  currentStageConfig = selectedChars.map((item, idx) => ({
+    ...item,
+    kIdx: idx,
+    count: 4
+  }));
+
+  let remainingToDistribute = targetTotalCount - (4 * 5);
+  while (remainingToDistribute > 0) {
+    const rIdx = Math.floor(Math.random() * 5);
+    currentStageConfig[rIdx].count++;
+    remainingToDistribute--;
+  }
+
+  const msgParts = currentStageConfig.map(c => `${c.name} (${c.char}): ${c.count}個`).join('<br>');
+  $("ov-msg").innerHTML = `
+    画面に溢れる文字の中から同じ文字を順番にタップしよう。<br>
+    <div style="margin-top:10px; font-weight:bold; color:var(--accent);">${msgParts}</div>
+  `;
+
+  currentStageConfig.forEach(cfg => {
+    for (let i = 0; i < cfg.count; i++) {
+      const margin = W * 0.08;
+      const rx = margin + Math.random() * (W - margin * 2);
+      const ry = -50 - (Math.random() * (H * 1.2));
+
+      const body = createCharBodyFromFont(rx, ry, cfg.char, baseScale);
+
+      const item = {
+        id: Math.random().toString(36).substring(2, 9),
+        body: body,
+        char: cfg.char,
+        name: cfg.name,
+        kIdx: cfg.kIdx,
+        tapped: false,
+        vertices: generatePolygonFromText(cfg.char, 100),
+        scale: baseScale
+      };
+
+      items.push(item);
+      Composite.add(engine.world, body);
+    }
+  });
+}
+
+function updateHUD() {
+  const totalRemaining = items.filter(it => !it.tapped).length;
+  $("rem-cnt").textContent = totalRemaining;
+  $("tm").textContent = Math.max(0, remainingTime).toFixed(1);
+
+  if (targetKind !== null) {
+    $("cancel-btn").style.display = "inline-block";
+  } else {
+    $("cancel-btn").style.display = "none";
+  }
+}
+
+function startGame() {
+  resize();
+  initPhysics();
+  spawnItems();
+
+  targetKind = null;
+  remainingTime = TIME_LIMIT;
+  run = true;
+  lastFrameTime = performance.now();
+
+  $("ov").style.display = "none";
+  updateHUD();
+
+  requestAnimationFrame(gameLoop);
+}
+
+function endGame(win) {
+  run = false;
+  $("ov").style.display = "flex";
+  if (win) {
+    const scoreTime = (TIME_LIMIT - remainingTime).toFixed(2);
+    $("ov-title").textContent = "クリアおめでとう！ 🎉";
+    $("ov-msg").innerHTML = `すべての文字が見つかりました！<br><div class="time-res">タイム: ${scoreTime} 秒</div>`;
+    playSound('clear');
+  } else {
+    $("ov-title").textContent = "タイムアップ... ⏰";
+    $("ov-msg").innerHTML = `時間がなくなってしまいました。<br>もう一度チャレンジしてみよう！`;
+  }
+  $("start-btn").textContent = "もう一度プレイ";
+}
+
+// ヒット判定：細い文字用に半径（ヒットボックス）を拡張
+function handleTap(clientX, clientY) {
+  if (!run) return;
+
+  const point = { x: clientX, y: clientY };
+  const activeBodies = items.map(it => it.body);
+  
+  // ダイレクトにポイントヒット
+  let foundBodies = Query.point(activeBodies, point);
+
+  // 判定範囲を少し広げて補正（細い文字用）
+  if (foundBodies.length === 0) {
+    const hitRadius = 22;
+    items.forEach(it => {
+      const dist = Math.hypot(it.body.position.x - clientX, it.body.position.y - clientY);
+      if (dist < hitRadius * it.scale * 1.5) {
+        foundBodies.push(it.body);
+      }
+    });
+  }
+
+  if (foundBodies.length > 0) {
+    const hitBody = foundBodies[0];
+    const item = items.find(it => it.body === hitBody);
+
+    if (item && !item.tapped) {
+      if (targetKind === null) {
+        targetKind = item.kIdx;
+      }
+
+      if (item.kIdx === targetKind) {
+        item.tapped = true;
+        playSound('tap');
+
+        const remainingTargets = items.filter(it => !it.tapped);
+        if (remainingTargets.length === 0) {
+          endGame(true);
+          return;
+        }
+
+        const remainingInGroup = items.filter(it => it.kIdx === targetKind && !it.tapped);
+        if (remainingInGroup.length === 0) {
+          const itemsToRemove = items.filter(it => it.kIdx === targetKind);
+          itemsToRemove.forEach(it => {
+            Composite.remove(engine.world, it.body);
+          });
+          items = items.filter(it => it.kIdx !== targetKind);
+          
+          playSound('groupComplete');
+          targetKind = null;
+        }
+      }
+      updateHUD();
+    }
+  }
+}
+
+function stirItems() {
+  if (!run) return;
+  playSound('stir');
+  items.forEach(it => {
+    if (!it.tapped) {
+      const forceX = (Math.random() - 0.5) * 0.28;
+      const forceY = -0.24 - Math.random() * 0.18;
+      Body.applyForce(it.body, it.body.position, { x: forceX, y: forceY });
+      Body.setAngularVelocity(it.body, (Math.random() - 0.5) * 0.5);
+    }
+  });
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // 背景のうっすらとしたグリッド
+  ctx.strokeStyle = "rgba(255,255,255,0.035)";
+  ctx.lineWidth = 1;
+  const gridSize = 48;
+  for (let x = 0; x < W; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  items.forEach(it => {
+    ctx.save();
+    ctx.translate(it.body.position.x, it.body.position.y);
+    ctx.rotate(it.body.angle);
+
+    ctx.beginPath();
+    const vertices = it.body.vertices;
+    ctx.moveTo(vertices[0].x - it.body.position.x, vertices[0].y - it.body.position.y);
+    for (let j = 1; j < vertices.length; j++) {
+      ctx.lineTo(vertices[j].x - it.body.position.x, vertices[j].y - it.body.position.y);
+    }
+    ctx.closePath();
+
+    if (it.tapped) {
+      ctx.fillStyle = COLOR_TAPPED_FILL;
+      ctx.strokeStyle = COLOR_TAPPED_STROKE;
+      ctx.shadowColor = COLOR_TAPPED_FILL;
+      ctx.shadowBlur = 18;
+    } else {
+      ctx.fillStyle = COLOR_NORMAL_FILL;
+      ctx.strokeStyle = COLOR_NORMAL_STROKE;
+      ctx.shadowBlur = 0;
+    }
+
+    // 外枠（黒ふち・立体感）を太く描画
+    ctx.lineWidth = 6 * it.scale;
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    ctx.fill();
+
+    // 中央のヘブル文字（縁取り＋文字描画）
+    ctx.fillStyle = it.tapped ? "#121629" : "#0f172a";
+    ctx.font = `900 ${52 * it.scale}px 'Noto Serif Hebrew', sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    // 文字自体にもストロークを施してくっきり強調
+    ctx.lineWidth = 3 * it.scale;
+    ctx.strokeStyle = it.tapped ? "#ffffff" : "#ffffff";
+    ctx.strokeText(it.char, 0, 2 * it.scale);
+    ctx.fillText(it.char, 0, 2 * it.scale);
+
+    ctx.restore();
+  });
+}
+
+function gameLoop(time) {
+  if (!run) return;
+
+  const dt = (time - lastFrameTime) / 1000;
+  lastFrameTime = time;
+
+  if (dt < 0.1) {
+    Engine.update(engine, dt * 1000);
+    remainingTime -= dt;
+    if (remainingTime <= 0) {
+      remainingTime = 0;
+      updateHUD();
+      endGame(false);
+      return;
+    }
+  }
+
+  updateHUD();
+  draw();
+
+  requestAnimationFrame(gameLoop);
+}
+
+window.addEventListener("resize", resize);
+
+cv.addEventListener("pointerdown", e => {
+  handleTap(e.clientX, e.clientY);
+});
+
+$("start-btn").addEventListener("click", () => {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  startGame();
+});
+
+$("cancel-btn").addEventListener("click", () => {
+  targetKind = null;
+  updateHUD();
+});
+
+$("sk").addEventListener("click", stirItems);
+
+$("mu").addEventListener("click", () => {
+  soundEnabled = !soundEnabled;
+  $("mu").textContent = soundEnabled ? "音ON 🔊" : "音OFF 🔇";
+  if (soundEnabled && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+});
+
+resize();
+</script>
+</body>
+</html>
