@@ -269,7 +269,6 @@ canvas {
   </div>
   <button id="cancel-btn" class="btn-s btn-cancel">解除</button>
   <div class="btn-group">
-    <button id="sk" class="btn-s">かき回す</button>
     <button id="mu" class="btn-s">音ON</button>
   </div>
 </div>
@@ -335,13 +334,13 @@ let remainingTime = TIME_LIMIT;
 let lastFrameTime = 0;
 
 let parts = [], floats = [], burst = [];
-let shake = 0, stirT = 0, stirD = 1;
+let shake = 0;
 
 // 画面サイズ調整
 function fit() {
-  W = innerWidth;
-  H = innerHeight;
-  dpr = Math.min(devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
   cv.width = W * dpr;
   cv.height = H * dpr;
   x.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -499,29 +498,9 @@ $("mu").onclick = () => {
   $("mu").textContent = muted ? "音OFF" : "音ON";
 };
 
-// かき回す処理
-$("sk").onclick = () => {
-  if (!run) return;
-  stirT = 30;
-  stirD = Math.random() < 0.5 ? -1 : 1;
-  shake = Math.max(shake, 4);
-  tone(150, 0.4, "sawtooth", 0.05, 600);
-};
-
 // 物理演算エンジン
 function phys() {
   const g = R * 0.022;
-
-  if (stirT > 0) {
-    const k = stirT / 30, cx = W / 2, cy = H * 0.6, rr = Math.min(W, H) * 0.35;
-    stirT--;
-    for (const p of P) {
-      const dx = p.x - cx, dy = p.y - cy, d = Math.hypot(dx, dy) || 1;
-      const a = stirD * 2.2 * k * (R / 27) * Math.min(1, d / rr);
-      p.x += -dy / d * a;
-      p.y += dx / d * a;
-    }
-  }
 
   for (const p of P) {
     const vx = (p.x - p.px) * 0.985, vy = (p.y - p.py) * 0.985;

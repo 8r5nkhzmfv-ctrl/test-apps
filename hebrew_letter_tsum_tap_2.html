@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ヘブル文字 完成カラー変化ゲーム</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Hebrew:wght@700&display=swap">
+<style>
+:root {
+  --bg: #121829;
+  --panel: #1e2642;
+  --fg: #f0f3ff;
+  --mut: #8b97c6;
+  --accent: #f2b84b;
+  --danger: #ef5350;
+  --card-bg: rgba(30, 38, 66, 0.95);
+  --tsum-bg: #2d3861; /* 未完成ツムの共通背景色 */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Hiragino Sans", "Noto Sans JP", sans-serif;
+  touch-action: none;
+  user-select: none;
+}
+
+canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: radial-gradient(circle at center, #232c4e 0%, #121829 100%);
+  touch-action: none;
+}
+
+/* HUD Header */
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 10px 6px;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+  background: rgba(18, 24, 41, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#hud > * {
+  pointer-events: auto;
+}
+
+.hud-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(30, 38, 66, 0.85);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hud-val {
+  color: var(--accent);
+  font-size: 15px;
+}
+
+.btn-group {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-s {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 999px;
+  background: #323d6b;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.btn-s:hover {
+  background: #414e88;
+}
+
+.btn-s:active {
+  transform: scale(0.95);
+}
+
+.btn-cancel {
+  background: var(--danger);
+  color: #fff;
+  font-size: 12px;
+  padding: 5px 12px;
+  box-shadow: 0 0 8px rgba(239, 83, 80, 0.5);
+  display: none;
+}
+
+.btn-cancel:hover {
+  background: #f44336;
+}
+
+.target-badge {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: rgba(242, 184, 75, 0.15);
+  border: 1.5px solid var(--accent);
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.target-char {
+  font-family: "Noto Serif Hebrew", serif;
+  font-size: 16px;
+  color: var(--accent);
+}
+
+/* Modals & Overlay */
+#ov {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: rgba(18, 24, 41, 0.92);
+  backdrop-filter: blur(10px);
+  text-align: center;
+  padding: 24px;
+  z-index: 20;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 32px 28px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+#ov h1 {
+  margin: 0;
+  font-size: 26px;
+  color: var(--accent);
+  text-shadow: 0 2px 10px rgba(242, 184, 75, 0.3);
+}
+
+#ov p {
+  margin: 0;
+  color: var(--fg);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.time-res {
+  font-size: 32px;
+  color: var(--accent);
+  font-weight: 800;
+  margin: 10px 0;
+  text-shadow: 0 0 15px rgba(242, 184, 75, 0.4);
+}
+
+.btn-main {
+  font: inherit;
+  font-weight: 800;
+  padding: 14px 36px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f2b84b 0%, #e59a22 100%);
+  color: #121829;
+  cursor: pointer;
+  font-size: 17px;
+  box-shadow: 0 4px 15px rgba(242, 184, 75, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+}
+
+.btn-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(242, 184, 75, 0.6);
+}
+
+.btn-main:active {
+  transform: translateY(1px);
+}
+</style>
+</head>
+<body>
+
+<canvas id="cv"></canvas>
+
+<!-- HUD Header -->
+<div id="hud">
+  <div class="hud-item">
+    <span>時間</span>
+    <b id="tm" class="hud-val">60.0</b>s
+  </div>
+  <div id="target-badge" class="target-badge">
+    <span id="target-char" class="target-char"></span>
+    <span id="target-count"></span>
+  </div>
+  <button id="cancel-btn" class="btn-s btn-cancel">キャンセル</button>
+  <div class="btn-group">
+    <button id="mu" class="btn-s">音ON</button>
+  </div>
+</div>
+
+<!-- Start / Game Over Modal -->
+<div id="ov">
+  <div class="card">
+    <h1 id="ov-title">ヘブル文字 完成カラーチェンジ</h1>
+    <p id="ov-msg">全27文字からランダムに5文字が選ばれます。<br>最初にタップした文字のツムをすべて見つけてタップ！<br>完成するとその文字群に固有の色が付きます。</p>
+
+    <button id="g0" class="btn-main">スタート</button>
+  </div>
+</div>
+
+<script>
+// 全27文字（基本22文字 + ソフィート5文字）
+const HEBREW_ALL = [
+  { char: "א", name: "アレフ" },
+  { char: "ב", name: "ベート" },
+  { char: "ג", name: "ギメル" },
+  { char: "ד", name: "ダレット" },
+  { char: "ה", name: "ヘー" },
+  { char: "ו", name: "ヴァヴ" },
+  { char: "ז", name: "ザイン" },
+  { char: "ח", name: "ヘット" },
+  { char: "ט", name: "テット" },
+  { char: "י", name: "ヨッド" },
+  { char: "כ", name: "カフ" },
+  { char: "ל", name: "ラメド" },
+  { char: "מ", name: "メム" },
+  { char: "נ", name: "ヌン" },
+  { char: "ס", name: "サメフ" },
+  { char: "ע", name: "アイン" },
+  { char: "פ", name: "ペー" },
+  { char: "צ", name: "ツァディ" },
+  { char: "ק", name: "コフ" },
+  { char: "ר", name: "レーシュ" },
+  { char: "ש", name: "シン" },
+  { char: "ת", name: "タヴ" },
+  // ソフィート 5文字
+  { char: "ך", name: "カフ・ソフィート" },
+  { char: "ם", name: "メム・ソフィート" },
+  { char: "ן", name: "ヌン・ソフィート" },
+  { char: "ף", name: "ペー・ソフィート" },
+  { char: "ץ", name: "ツァディ・ソフィート" }
+];
+
+// 完成時に各グループへ付与される鮮やかな5つのカラー
+const DISTINCT_COLORS = [
+  "#ef5350", // レッド
+  "#42a5f5", // ブルー
+  "#66bb6a", // グリーン
+  "#ab47bc", // パープル
+  "#ffa726"  // オレンジ
+];
+
+const COMMON_COLOR = "#2d3861"; // 未完成状態の共通背景色
+const TIME_LIMIT = 60.0;
+
+let currentStageConfig = [];
+let W = 360, H = 560, R = 28, dpr = 1;
+const cv = document.getElementById("cv");
+const x = cv.getContext("2d");
+const $ = id => document.getElementById(id);
+
+let P = [];
+let targetKind = null;
+let activeTappedSet = new Set();
+let run = false;
+let elapsedTime = 0;
+let remainingTime = TIME_LIMIT;
+let lastFrameTime = 0;
+
+let parts = [], floats = [], burst = [], confetti = [];
+let shake = 0;
+
+function fit() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = W * dpr;
+  cv.height = H * dpr;
+  x.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function size() {
+  R = Math.max(22, Math.min(34, Math.min(W, H) / 11));
+}
+
+fit();
+size();
+addEventListener("resize", () => { fit(); size(); });
+
+function setupRandomStage() {
+  const shuffled = [...HEBREW_ALL].sort(() => Math.random() - 0.5);
+  const selectedFive = shuffled.slice(0, 5);
+
+  currentStageConfig = selectedFive.map((item, idx) => ({
+    char: item.char,
+    name: item.name,
+    count: Math.floor(Math.random() * 5) + 3, // 3 ~ 7個
+    completedColor: DISTINCT_COLORS[idx]
+  }));
+}
+
+function initTsums() {
+  setupRandomStage();
+  P = [];
+  let idCounter = 0;
+  let idx = 0;
+  currentStageConfig.forEach((cfg, kIdx) => {
+    for (let i = 0; i < cfg.count; i++) {
+      const px = R + Math.random() * (W - 2 * R);
+      const py = -R - (idx++) * (R * 1.3);
+      P.push({
+        id: idCounter++,
+        x: px, y: py, px: px, py: py,
+        k: kIdx,
+        char: cfg.char,
+        name: cfg.name,
+        completedColor: cfg.completedColor,
+        isCompleted: false // 完成フラグ
+      });
+    }
+  });
+}
+
+function start() {
+  ac();
+  initTsums();
+  targetKind = null;
+  activeTappedSet.clear();
+  parts = []; floats = []; burst = []; confetti = [];
+  remainingTime = TIME_LIMIT;
+  elapsedTime = 0;
+  run = true;
+  updateHUD();
+  updateTargetBadge();
+  $("cancel-btn").style.display = "none";
+  $("ov").style.display = "none";
+  lastFrameTime = performance.now();
+
+  tone(440, 0.1, "sine", 0.15, 0, 0);
+  tone(554, 0.1, "sine", 0.15, 0, 0.08);
+  tone(659, 0.2, "sine", 0.2, 0, 0.16);
+}
+
+function cancelTarget() {
+  if (!run || targetKind === null) return;
+  targetKind = null;
+  activeTappedSet.clear();
+  updateTargetBadge();
+  $("cancel-btn").style.display = "none";
+  tone(300, 0.15, "sine", 0.1, 150);
+}
+
+function updateTargetBadge() {
+  const badge = $("target-badge");
+  if (targetKind === null) {
+    badge.style.display = "none";
+  } else {
+    badge.style.display = "inline-flex";
+    const cfg = currentStageConfig[targetKind];
+    const totalTarget = P.filter(item => item.k === targetKind).length;
+    $("target-char").textContent = cfg.char;
+    $("target-count").textContent = `${activeTappedSet.size}/${totalTarget}`;
+  }
+}
+
+$("cancel-btn").onclick = cancelTarget;
+$("g0").onclick = start;
+
+// 全達成時の華やかなフィニッシュエフェクト生成
+function createFinishEffect() {
+  // 画面全体に広がる紙吹雪（クラッカー）パーティクル
+  for (let i = 0; i < 120; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 4 + Math.random() * 12;
+    confetti.push({
+      x: W / 2,
+      y: H / 2,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 3,
+      size: 5 + Math.random() * 6,
+      color: DISTINCT_COLORS[Math.floor(Math.random() * DISTINCT_COLORS.length)],
+      rotation: Math.random() * Math.PI * 2,
+      vRot: (Math.random() - 0.5) * 0.2,
+      life: 120 + Math.random() * 60,
+      maxLife: 180
+    });
+  }
+}
+
+function gameClear() {
+  run = false;
+  const clearTime = elapsedTime.toFixed(2);
+  
+  createFinishEffect();
+
+  // ファンファーレ音
+  [523, 659, 783, 1046, 1318].forEach((f, i) => {
+    tone(f, 0.35, "triangle", 0.22, 0, i * 0.08);
+  });
+  
+  setTimeout(() => {
+    $("ov-title").textContent = "🎉 完成クリア！";
+    $("ov-msg").innerHTML = `すべての文字をカラーに塗り替えました！<br><div class="time-res">${clearTime} 秒</div>`;
+    $("g0").textContent = "もう一度遊ぶ";
+    $("ov").style.display = "flex";
+  }, 1600);
+}
+
+function gameOver() {
+  run = false;
+  tone(200, 0.4, "sawtooth", 0.2, 80);
+  
+  const uncompleted = P.filter(p => !p.isCompleted).length;
+  $("ov-title").textContent = "タイムアップ！";
+  $("ov-msg").innerHTML = `時間内にすべての完成ができませんでした。<br>未完成ツム: <b>${uncompleted}</b> 個`;
+  $("g0").textContent = "リトライ";
+  $("ov").style.display = "flex";
+}
+
+// サウンド合成 (AudioContext)
+let AC = null, MS = null, muted = false;
+function ac() {
+  if (!AC) {
+    try {
+      AC = new (window.AudioContext || window.webkitAudioContext)();
+      MS = AC.createGain();
+      MS.gain.value = 0.3;
+      const cp = AC.createDynamicsCompressor();
+      MS.connect(cp);
+      cp.connect(AC.destination);
+    } catch (e) {}
+  }
+  if (AC && AC.state === "suspended") AC.resume();
+  return AC;
+}
+
+function tone(f, d, ty, v, sl, dl) {
+  if (muted || !AC) return;
+  const t = AC.currentTime + (dl || 0), o = AC.createOscillator(), g = AC.createGain();
+  o.type = ty || "sine";
+  o.frequency.setValueAtTime(f, t);
+  if (sl) o.frequency.exponentialRampToValueAtTime(Math.max(30, sl), t + d);
+  g.gain.setValueAtTime(v || 0.15, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + d);
+  o.connect(g).connect(MS);
+  o.start(t);
+  o.stop(t + d + 0.02);
+}
+
+$("mu").onclick = () => {
+  muted = !muted;
+  $("mu").textContent = muted ? "音OFF" : "音ON";
+};
+
+// 物理演算
+function phys() {
+  const g = R * 0.022;
+
+  for (const p of P) {
+    const vx = (p.x - p.px) * 0.985, vy = (p.y - p.py) * 0.985;
+    p.px = p.x; p.py = p.y;
+    p.x += vx; p.y += vy + g;
+  }
+
+  for (let it = 0; it < 4; it++) {
+    for (let i = 0; i < P.length; i++) {
+      const a = P[i];
+      if (a.x < R) a.x = R;
+      if (a.x > W - R) a.x = W - R;
+      if (a.y > H - R) {
+        a.y = H - R;
+        a.px = a.x - (a.x - a.px) * 0.5;
+      }
+
+      for (let j = i + 1; j < P.length; j++) {
+        const b = P[j], dx = b.x - a.x, dy = b.y - a.y, m = 2 * R;
+        if (Math.abs(dx) > m || Math.abs(dy) > m) continue;
+        const d = Math.hypot(dx, dy);
+        if (d < m && d > 0.001) {
+          const o = (m - d) / 2, nx = dx / d, ny = dy / d;
+          a.x -= nx * o; a.y -= ny * o;
+          b.x += nx * o; b.y += ny * o;
+        }
+      }
+    }
+  }
+}
+
+// 描画ループ
+function draw() {
+  x.clearRect(0, 0, W, H);
+  x.save();
+
+  if (shake > 0.3) {
+    x.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    shake *= 0.88;
+  }
+
+  x.font = '700 ' + Math.round(R * 1.25) + 'px "Noto Serif Hebrew","Frank Ruhl Libre",serif';
+  x.textAlign = "center";
+  x.textBaseline = "middle";
+
+  for (const p of P) {
+    const isTapped = activeTappedSet.has(p.id);
+
+    x.beginPath();
+    x.arc(p.x, p.y, isTapped ? R + 4 : R - 1, 0, Math.PI * 2);
+
+    // 完成した文字は専用カラー、未完成は共通ネイビー
+    x.fillStyle = p.isCompleted ? p.completedColor : COMMON_COLOR;
+
+    if (isTapped) {
+      x.shadowColor = "#ffffff";
+      x.shadowBlur = 18;
+    }
+    x.fill();
+    x.shadowBlur = 0;
+
+    x.lineWidth = isTapped ? 4 : (p.isCompleted ? 3 : 2);
+    x.strokeStyle = isTapped ? "#ffffff" : (p.isCompleted ? "rgba(255, 255, 255, 0.6)" : "rgba(255, 255, 255, 0.25)");
+    x.stroke();
+
+    x.fillStyle = isTapped || p.isCompleted ? "#ffffff" : "#e0e6ff";
+    x.fillText(p.char, p.x, p.y + 2);
+  }
+
+  // リング爆発エフェクト
+  for (const b of burst) {
+    x.globalAlpha = b.t / 20;
+    x.beginPath();
+    x.arc(b.x, b.y, (20 - b.t) * 2.2 + R, 0, Math.PI * 2);
+    x.strokeStyle = b.color;
+    x.lineWidth = 4;
+    x.stroke();
+    b.t--;
+  }
+  burst = burst.filter(b => b.t > 0);
+
+  // パーティクル散開エフェクト
+  for (const q of parts) {
+    q.x += q.vx; q.y += q.vy; q.vy += 0.25; q.l--;
+    x.globalAlpha = Math.max(0, q.l / 30);
+    x.fillStyle = q.c;
+    x.beginPath();
+    x.arc(q.x, q.y, q.r, 0, Math.PI * 2);
+    x.fill();
+  }
+  parts = parts.filter(q => q.l > 0);
+
+  // 浮き上がる完成文字テキスト
+  for (const f of floats) {
+    f.y -= 1.0; f.l--;
+    x.globalAlpha = Math.min(1, f.l / 20);
+    x.font = '700 ' + f.z + 'px "Hiragino Sans",sans-serif';
+    x.fillStyle = f.c;
+    x.fillText(f.t, f.x, f.y);
+  }
+  floats = floats.filter(f => f.l > 0);
+
+  // フィニッシュ紙吹雪エフェクト描画
+  for (const c of confetti) {
+    c.x += c.vx;
+    c.y += c.vy;
+    c.vy += 0.15; // 重力
+    c.rotation += c.vRot;
+    c.life--;
+
+    x.save();
+    x.translate(c.x, c.y);
+    x.rotate(c.rotation);
+    x.globalAlpha = Math.max(0, c.life / c.maxLife);
+    x.fillStyle = c.color;
+    x.fillRect(-c.size / 2, -c.size / 2, c.size, c.size * 0.6);
+    x.restore();
+  }
+  confetti = confetti.filter(c => c.life > 0);
+
+  x.restore();
+}
+
+function updateHUD() {
+  $("tm").textContent = remainingTime.toFixed(1);
+}
+
+function loop(t) {
+  if (run) {
+    const dt = (t - lastFrameTime) / 1000;
+    lastFrameTime = t;
+    elapsedTime += dt;
+    remainingTime -= dt;
+
+    if (remainingTime <= 0) {
+      remainingTime = 0;
+      updateHUD();
+      gameOver();
+      return;
+    }
+    updateHUD();
+  }
+
+  phys();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(t => { lastFrameTime = t; loop(t); });
+
+function pos(e) {
+  const r = cv.getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top];
+}
+
+function hit(mx, my) {
+  let best = null, bd = R * 1.35;
+  for (const p of P) {
+    if (p.isCompleted) continue; // 完成済みのツムはタップ非対象
+    const d = Math.hypot(p.x - mx, p.y - my);
+    if (d < bd) { bd = d; best = p; }
+  }
+  return best;
+}
+
+function handleTap(e) {
+  if (!run) return;
+  ac();
+  const [mx, my] = pos(e);
+  const p = hit(mx, my);
+  if (!p) return;
+
+  if (targetKind === null) {
+    targetKind = p.k;
+    activeTappedSet.add(p.id);
+    $("cancel-btn").style.display = "inline-block";
+    updateTargetBadge();
+    tone(440, 0.1, "sine", 0.2);
+    checkComplete();
+    return;
+  }
+
+  if (p.k !== targetKind) {
+    tone(120, 0.18, "sawtooth", 0.2);
+    shake = 6;
+    return;
+  }
+
+  if (!activeTappedSet.has(p.id)) {
+    activeTappedSet.add(p.id);
+    updateTargetBadge();
+
+    tone(440 + activeTappedSet.size * 70, 0.12, "sine", 0.22);
+    checkComplete();
+  }
+}
+
+function checkComplete() {
+  const totalTargetNodes = P.filter(item => item.k === targetKind);
+  if (activeTappedSet.size === totalTargetNodes.length) {
+    const k = targetKind;
+    const charName = currentStageConfig[k].name;
+    const color = currentStageConfig[k].completedColor;
+
+    // 全てタップ完了したら「完成」として色を付ける
+    totalTargetNodes.forEach(c => {
+      c.isCompleted = true;
+      burst.push({ x: c.x, y: c.y, color: color, t: 20 });
+      for (let i = 0; i < 8; i++) {
+        const a = Math.random() * Math.PI * 2, v = 2 + Math.random() * 5;
+        parts.push({
+          x: c.x, y: c.y,
+          vx: Math.cos(a) * v, vy: Math.sin(a) * v - 2,
+          l: 30, c: color, r: 2 + Math.random() * 3
+        });
+      }
+    });
+
+    floats.push({
+      x: W / 2, y: H / 2, l: 45,
+      t: `${charName} 完成！`,
+      c: color, z: 28
+    });
+
+    tone(880, 0.25, "triangle", 0.25);
+
+    targetKind = null;
+    activeTappedSet.clear();
+    updateTargetBadge();
+    $("cancel-btn").style.display = "none";
+
+    // すべてのツムが完成したか判定
+    if (P.every(item => item.isCompleted)) {
+      gameClear();
+    }
+  }
+}
+
+cv.addEventListener("pointerdown", handleTap);
+</script>
+</body>
+</html>
