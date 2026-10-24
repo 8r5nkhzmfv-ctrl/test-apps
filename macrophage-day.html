@@ -145,7 +145,7 @@
         <!-- Title with Emoji -->
         <div class="text-3xl mb-1">🧫 🩹 🦠</div>
 
-        <!-- Visual Touch Tutorial Cards (MINIMAL TEXT, PURE VISUALS) -->
+        <!-- Visual Touch Tutorial Cards -->
         <div class="grid grid-cols-2 gap-2 my-3 w-full">
           <div class="bg-amber-50 p-2 rounded-xl border-2 border-[#5a4a42] flex flex-col items-center">
             <span class="text-2xl">🕹️</span>
@@ -183,7 +183,6 @@
         
         <!-- VISUAL RESULT STICKERS -->
         <div id="journal-content" class="text-base font-bold my-3 w-full bg-amber-50 p-3 rounded-xl border-2 border-[#5a4a42] space-y-2">
-          <!-- Filled by JS with icons -->
         </div>
 
         <button onclick="restartGame()" class="hand-btn bg-amber-400 w-14 h-14 text-2xl flex items-center justify-center cursor-pointer mt-1">
@@ -193,7 +192,7 @@
     </div>
   </main>
 
-  <!-- TOUCH CONTROLS OVERLAY (PURE ICON CONTROLS) -->
+  <!-- TOUCH CONTROLS OVERLAY -->
   <div id="touch-controls" class="w-full max-w-lg h-36 relative z-30 select-none">
     <!-- Virtual Joystick Left -->
     <div id="joystick-base" class="joystick-base">
@@ -229,7 +228,7 @@
   </div>
 
   <script>
-    /* --- AUDIO SYNTHESIS (Web Audio API for Touch) --- */
+    /* --- AUDIO SYNTHESIS (Web Audio API) --- */
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx = null;
 
@@ -306,7 +305,7 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    /* --- VIRTUAL TOUCH JOYSTICK --- */
+    /* --- VIRTUAL JOYSTICK & TOUCH --- */
     const joystickBase = document.getElementById('joystick-base');
     const joystickStick = document.getElementById('joystick-stick');
 
@@ -314,14 +313,17 @@
     let joystickVector = { x: 0, y: 0 };
     let joystickTouchId = null;
 
-    joystickBase.addEventListener('touchstart', (e) => {
+    function handleJoystickStart(e) {
       initAudio();
       e.preventDefault();
-      const touch = e.changedTouches[0];
-      joystickTouchId = touch.identifier;
+      const touch = e.changedTouches ? e.changedTouches[0] : e;
+      joystickTouchId = touch.identifier ?? 'mouse';
       joystickActive = true;
       updateJoystick(touch);
-    }, { passive: false });
+    }
+
+    joystickBase.addEventListener('touchstart', handleJoystickStart, { passive: false });
+    joystickBase.addEventListener('mousedown', handleJoystickStart);
 
     window.addEventListener('touchmove', (e) => {
       if (!joystickActive) return;
@@ -333,21 +335,35 @@
       }
     }, { passive: false });
 
+    window.addEventListener('mousemove', (e) => {
+      if (joystickActive && joystickTouchId === 'mouse') {
+        updateJoystick(e);
+      }
+    });
+
     const endJoystick = (e) => {
       if (!joystickActive) return;
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === joystickTouchId) {
-          joystickActive = false;
-          joystickTouchId = null;
-          joystickVector = { x: 0, y: 0 };
-          joystickStick.style.transform = 'translate(0px, 0px)';
-          break;
+      if (e.changedTouches) {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === joystickTouchId) {
+            joystickActive = false;
+            joystickTouchId = null;
+            joystickVector = { x: 0, y: 0 };
+            joystickStick.style.transform = 'translate(0px, 0px)';
+            break;
+          }
         }
+      } else {
+        joystickActive = false;
+        joystickTouchId = null;
+        joystickVector = { x: 0, y: 0 };
+        joystickStick.style.transform = 'translate(0px, 0px)';
       }
     };
 
     window.addEventListener('touchend', endJoystick);
     window.addEventListener('touchcancel', endJoystick);
+    window.addEventListener('mouseup', endJoystick);
 
     function updateJoystick(touch) {
       const rect = joystickBase.getBoundingClientRect();
@@ -368,18 +384,38 @@
       joystickVector = { x: dx / maxRadius, y: dy / maxRadius };
     }
 
-    /* --- DIRECT CANVAS TAP TO EXTEND ARM --- */
-    canvas.addEventListener('touchstart', (e) => {
+    /* --- CANVAS TAP / CLICK --- */
+    function handleCanvasInput(e) {
       initAudio();
       if (!gameRunning) return;
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
-      const touch = e.touches[0];
-      const targetX = touch.clientX - rect.left;
-      const targetY = touch.clientY - rect.top;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const targetX = clientX - rect.left;
+      const targetY = clientY - rect.top;
 
       shootPseudopodTowards(targetX, targetY);
-    }, { passive: false });
+    }
+
+    canvas.addEventListener('touchstart', handleCanvasInput, { passive: false });
+    canvas.addEventListener('mousedown', handleCanvasInput);
+
+    /* --- KEYBOARD CONTROLS (PC) --- */
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+      keys[e.key] = true;
+      if (e.key === ' ' || e.key === 'Enter') {
+        shootPseudopodButton();
+      } else if (e.key === 'Shift') {
+        toggleMode();
+      } else if (e.key === 'q' || e.key === 'Q') {
+        triggerCytokine();
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      keys[e.key] = false;
+    });
 
     /* --- GAME STATE & ENTITIES --- */
     let player = {
@@ -390,7 +426,7 @@
       hp: 100, maxHp: 100,
       atp: 0,
       fullness: 0, maxFullness: 100,
-      mode: 'NORMAL', // 'NORMAL', 'M1', 'M2'
+      mode: 'NORMAL',
       antigens: 0,
       maxAntigens: 3,
       wobbleAngle: 0,
@@ -410,7 +446,7 @@
     let bacteriaList = [];
     let inflammationList = [];
     let particleList = [];
-    let visualPopups = []; // Floating emojis/icons instead of text
+    let visualPopups = [];
     let helperTCells = [];
 
     let stats = { eatenStaph: 0, eatenDust: 0, repairedInflammation: 0, cytokinesCalled: 0 };
@@ -596,10 +632,23 @@
       if (player.mode === 'M1') moveSpeed *= 1.35;
       if (player.fullness > 80) moveSpeed *= 0.75;
 
-      if (joystickActive && (joystickVector.x !== 0 || joystickVector.y !== 0)) {
-        player.vx = player.vx * 0.6 + joystickVector.x * moveSpeed * 0.4;
-        player.vy = player.vy * 0.6 + joystickVector.y * moveSpeed * 0.4;
-        player.aimAngle = Math.atan2(joystickVector.y, joystickVector.x);
+      let kx = 0, ky = 0;
+      if (keys['ArrowUp'] || keys['w'] || keys['W']) ky -= 1;
+      if (keys['ArrowDown'] || keys['s'] || keys['S']) ky += 1;
+      if (keys['ArrowLeft'] || keys['a'] || keys['A']) kx -= 1;
+      if (keys['ArrowRight'] || keys['d'] || keys['D']) kx += 1;
+
+      let inputX = joystickVector.x || kx;
+      let inputY = joystickVector.y || ky;
+
+      if (inputX !== 0 || inputY !== 0) {
+        const len = Math.hypot(inputX, inputY);
+        const normX = len > 1 ? inputX / len : inputX;
+        const normY = len > 1 ? inputY / len : inputY;
+
+        player.vx = player.vx * 0.6 + normX * moveSpeed * 0.4;
+        player.vy = player.vy * 0.6 + normY * moveSpeed * 0.4;
+        player.aimAngle = Math.atan2(normY, normX);
       } else {
         player.vx *= 0.7;
         player.vy *= 0.7;
@@ -680,7 +729,7 @@
         }
       }
 
-      // Update Inflammation & M2 Healing
+      // Update Inflammation
       for (let i = inflammationList.length - 1; i >= 0; i--) {
         const inf = inflammationList[i];
         inf.pulse += 0.05;
@@ -772,7 +821,7 @@
       }
       ctx.restore();
 
-      // Inflamed Spots (🔥/🩹)
+      // Inflamed Spots
       inflammationList.forEach(inf => {
         ctx.save();
         ctx.translate(inf.x, inf.y);
@@ -799,7 +848,7 @@
         ctx.restore();
       });
 
-      // Pseudopod Extension Line
+      // Pseudopod Line
       if (pseudopod.active) {
         ctx.save();
         ctx.strokeStyle = player.mode === 'M1' ? '#f87171' : (player.mode === 'M2' ? '#34d399' : '#fbbf24');
@@ -891,7 +940,7 @@
         ctx.restore();
       });
 
-      // Visual Popups (Emojis)
+      // Visual Popups
       visualPopups.forEach(vp => {
         ctx.save();
         ctx.globalAlpha = Math.max(0, vp.alpha);
@@ -945,19 +994,17 @@
       ctx.fill();
       ctx.stroke();
 
-      // Eye & Face Reactions
+      // Eyes & Expression
       const ex = Math.cos(player.aimAngle) * 5;
       const ey = Math.sin(player.aimAngle) * 5;
 
       ctx.fillStyle = '#5a4a42';
       
       if (player.hp < 30) {
-        // Hurt Face (😵)
         ctx.font = '14px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('😵', 0, 5);
       } else if (player.mode === 'M1') {
-        // Angry Attack Face (⚔️)
         ctx.beginPath();
         ctx.arc(-6 + ex, -3 + ey, 3, 0, Math.PI * 2);
         ctx.arc(6 + ex, -3 + ey, 3, 0, Math.PI * 2);
@@ -966,7 +1013,6 @@
         ctx.arc(ex, 5 + ey, 4, Math.PI, 0);
         ctx.stroke();
       } else {
-        // Happy Face (😊)
         ctx.beginPath();
         ctx.arc(-6 + ex, -3 + ey, 3, 0, Math.PI * 2);
         ctx.arc(6 + ex, -3 + ey, 3, 0, Math.PI * 2);
@@ -984,13 +1030,11 @@
       document.getElementById('atp-count').innerText = player.atp;
       document.getElementById('fullness-bar').style.width = player.fullness + '%';
 
-      // Belly Icon reaction
       const bellyIcon = document.getElementById('belly-icon');
       if (player.fullness > 80) bellyIcon.innerText = '🤰';
       else if (player.fullness > 40) bellyIcon.innerText = '🥐';
       else bellyIcon.innerText = '🫙';
 
-      // Antigen Stamps (🧫)
       const stampsContainer = document.getElementById('antigen-stamps');
       stampsContainer.innerHTML = '';
       for (let i = 0; i < player.maxAntigens; i++) {
