@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>マクロファージの一日 - スマホ版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500;700&display=swap');
+
+    * {
+      touch-action: none;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Kiwi Maru', serif;
+      background-color: #f6f0e6;
+      color: #5a4a42;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+    }
+
+    /* Paper texture background */
+    .paper-bg {
+      background-color: #faf5ed;
+      background-image: 
+        radial-gradient(#ebdccb 12%, transparent 13%),
+        radial-gradient(#ebdccb 12%, transparent 13%);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+    }
+
+    .hand-border {
+      border: 3px solid #5a4a42;
+      border-radius: 20px 10px 18px 12px / 12px 18px 10px 20px;
+      box-shadow: 3px 4px 0px rgba(90, 74, 66, 0.15);
+    }
+
+    .hand-btn {
+      border: 3px solid #5a4a42;
+      border-radius: 20px;
+      box-shadow: 2px 3px 0px #5a4a42;
+      transition: transform 0.05s ease, box-shadow 0.05s ease;
+    }
+
+    .hand-btn:active {
+      transform: translateY(2px) scale(0.96);
+      box-shadow: 1px 1px 0px #5a4a42;
+    }
+
+    /* Virtual Joystick Styles */
+    .joystick-base {
+      width: 110px;
+      height: 110px;
+      background: rgba(255, 251, 244, 0.75);
+      border: 3px solid #5a4a42;
+      border-radius: 50%;
+      position: absolute;
+      bottom: 24px;
+      left: 20px;
+      touch-action: none;
+      box-shadow: 2px 3px 0px rgba(90, 74, 66, 0.2);
+    }
+
+    .joystick-stick {
+      width: 48px;
+      height: 48px;
+      background: #fbbf24;
+      border: 3px solid #5a4a42;
+      border-radius: 50%;
+      position: absolute;
+      top: 28px;
+      left: 28px;
+      pointer-events: none;
+      box-shadow: 1px 2px 0px #5a4a42;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="w-full h-full flex flex-col justify-between items-center paper-bg p-2 select-none overflow-hidden">
+
+  <!-- TOP MOBILE HUD BAR -->
+  <header class="w-full max-w-lg flex items-center justify-between bg-[#fffbf4] hand-border px-3 py-1.5 z-20">
+    <!-- HP & ATP -->
+    <div class="flex items-center space-x-2">
+      <div class="flex items-center">
+        <span class="text-xs font-bold mr-1">❤️</span>
+        <div class="w-20 sm:w-24 h-3.5 bg-orange-100 rounded-full border-2 border-[#5a4a42] overflow-hidden">
+          <div id="hp-bar" class="h-full bg-rose-400 transition-all duration-200" style="width: 100%;"></div>
+        </div>
+      </div>
+      <div class="flex items-center bg-amber-100/80 px-2 py-0.5 rounded-full border border-[#5a4a42]">
+        <span class="text-xs font-bold text-amber-900">🟡 <span id="atp-count">0</span></span>
+      </div>
+    </div>
+
+    <!-- Mode Badge & Fullness -->
+    <div class="flex items-center space-x-2">
+      <div class="flex items-center">
+        <span class="text-xs font-bold mr-1">🥐</span>
+        <div class="w-12 h-2.5 bg-amber-100 rounded-full border border-[#5a4a42] overflow-hidden">
+          <div id="fullness-bar" class="h-full bg-amber-400 transition-all duration-200" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div id="hud-mode-tag" class="text-xs font-bold px-2 py-0.5 rounded-full border border-[#5a4a42] bg-amber-200">
+        <span id="hud-mode-text">通常</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CANVAS CONTAINER -->
+  <main class="relative w-full max-w-lg flex-1 my-1 overflow-hidden hand-border bg-[#fcf8f2]">
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- START / OVERLAY SCREEN -->
+    <div id="overlay-screen" class="absolute inset-0 bg-[#faf5ed]/95 flex flex-col justify-center items-center p-4 text-center z-40 transition-opacity duration-300">
+      <div class="bg-[#fffbf4] hand-border p-5 max-w-xs w-full flex flex-col items-center">
+        <h1 class="text-2xl font-bold text-amber-900 mb-1">🧫 マクロファージの一日</h1>
+        <p class="text-xs text-stone-600 mb-3">📱 スマホ専用パトロールアクション 📱</p>
+
+        <div class="text-left text-xs bg-orange-50/90 p-3 rounded-lg border border-orange-200 mb-4 space-y-1.5 w-full">
+          <p>📱 <b>【操作方法】</b></p>
+          <p>・<b>左スティック:</b> なめらか移動</p>
+          <p>・<b>画面タップ / 伸ばすボタン:</b> 偽足発射！</p>
+          <p>・<b>🔴🟢モード切替:</b> 攻撃/修復チェンジ</p>
+          <p>・<b>📣サイトカイン:</b> T細胞を要請</p>
+          <p class="text-amber-800 text-[11px] pt-1 border-t border-orange-200">💡 細菌を食べてATPを集めよう！炎症は🟢M2モードでタッチお掃除！</p>
+        </div>
+
+        <button onclick="startGame()" class="hand-btn bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold px-6 py-2.5 text-base w-full cursor-pointer">
+          パトロールスタート！
+        </button>
+      </div>
+    </div>
+
+    <!-- PATROL JOURNAL (GAME OVER / CLEAR) SCREEN -->
+    <div id="journal-screen" class="hidden absolute inset-0 bg-[#faf5ed]/95 flex flex-col justify-center items-center p-4 z-50">
+      <div class="bg-[#fffbf4] hand-border p-5 max-w-xs w-full text-center flex flex-col items-center">
+        <h2 id="journal-title" class="text-xl font-bold text-amber-900 mb-1">📖 本日のパトロール日記</h2>
+        <div class="w-full h-0.5 bg-[#5a4a42] my-2"></div>
+        
+        <div id="journal-content" class="text-left text-xs space-y-1.5 my-3 w-full bg-amber-50/80 p-3 rounded-lg border border-amber-200">
+          <!-- Filled by JS -->
+        </div>
+
+        <button onclick="restartGame()" class="hand-btn bg-amber-400 font-bold px-6 py-2 text-sm w-full cursor-pointer mt-2">
+          もう一度パトロールする
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- TOUCH CONTROLS OVERLAY (VIRTUAL JOYSTICK & BUTTONS) -->
+  <div id="touch-controls" class="w-full max-w-lg h-36 relative z-30 select-none">
+    <!-- Virtual Joystick Left -->
+    <div id="joystick-base" class="joystick-base">
+      <div id="joystick-stick" class="joystick-stick"></div>
+    </div>
+
+    <!-- Virtual Action Buttons Right -->
+    <div class="absolute bottom-3 right-3 flex flex-col items-end space-y-2">
+      <!-- Top Row: Cytokine & Mode Toggle -->
+      <div class="flex items-center space-x-2">
+        <button id="cytokine-btn" onclick="triggerCytokine()" class="hand-btn w-12 h-12 bg-amber-200 text-base font-bold flex flex-col items-center justify-center disabled:opacity-40" disabled>
+          <span>📣</span>
+          <span class="text-[9px] leading-tight">呼出</span>
+        </button>
+
+        <button id="mode-btn" onclick="toggleMode()" class="hand-btn h-12 px-3 bg-amber-300 text-xs font-bold flex items-center gap-1">
+          <span id="mode-icon">🟡</span>
+          <span id="mode-text">通常</span>
+        </button>
+      </div>
+
+      <!-- Bottom Row: Big Shoot / Devour Button -->
+      <button id="shoot-btn" onclick="shootPseudopodButton()" class="hand-btn w-32 h-14 bg-rose-400 active:bg-rose-500 text-white font-bold text-sm flex items-center justify-center gap-1 shadow-md">
+        <span>👅</span>
+        <span>偽足のびーる</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* --- AUDIO SYNTHESIS (Web Audio API for Touch) --- */
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playSound(type) {
+      if (!audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'eat') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(280, now);
+          osc.frequency.exponentialRampToValueAtTime(580, now + 0.12);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        } else if (type === 'shoot') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(160, now);
+          osc.frequency.linearRampToValueAtTime(70, now + 0.18);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        } else if (type === 'repair') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.08);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+          osc.start(now);
+          osc.stop(now + 0.18);
+        } else if (type === 'shockwave') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.exponentialRampToValueAtTime(45, now + 0.25);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'hit') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(110, now);
+          osc.frequency.linearRampToValueAtTime(35, now + 0.12);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    /* --- GAME ENGINE & CANVAS SETUP --- */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let gameRunning = false;
+    let animationFrameId = null;
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    /* --- VIRTUAL TOUCH JOYSTICK LOGIC --- */
+    const joystickBase = document.getElementById('joystick-base');
+    const joystickStick = document.getElementById('joystick-stick');
+
+    let joystickActive = false;
+    let joystickVector = { x: 0, y: 0 };
+    let joystickTouchId = null;
+
+    joystickBase.addEventListener('touchstart', (e) => {
+      initAudio();
+      e.preventDefault();
+      const touch = e.changedTouches[0];
+      joystickTouchId = touch.identifier;
+      joystickActive = true;
+      updateJoystick(touch);
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!joystickActive) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === joystickTouchId) {
+          updateJoystick(e.changedTouches[i]);
+          break;
+        }
+      }
+    }, { passive: false });
+
+    const endJoystick = (e) => {
+      if (!joystickActive) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === joystickTouchId) {
+          joystickActive = false;
+          joystickTouchId = null;
+          joystickVector = { x: 0, y: 0 };
+          joystickStick.style.transform = 'translate(0px, 0px)';
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('touchend', endJoystick);
+    window.addEventListener('touchcancel', endJoystick);
+
+    function updateJoystick(touch) {
+      const rect = joystickBase.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      let dx = touch.clientX - centerX;
+      let dy = touch.clientY - centerY;
+      const dist = Math.hypot(dx, dy);
+      const maxRadius = 38;
+
+      if (dist > maxRadius) {
+        dx = (dx / dist) * maxRadius;
+        dy = (dy / dist) * maxRadius;
+      }
+
+      joystickStick.style.transform = `translate(${dx}px, ${dy}px)`;
+      joystickVector = { x: dx / maxRadius, y: dy / maxRadius };
+    }
+
+    /* --- DIRECT CANVAS TAP TO SHOOT PSEUDOPOD --- */
+    canvas.addEventListener('touchstart', (e) => {
+      initAudio();
+      if (!gameRunning) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const targetX = touch.clientX - rect.left;
+      const targetY = touch.clientY - rect.top;
+
+      shootPseudopodTowards(targetX, targetY);
+    }, { passive: false });
+
+    /* --- GAME STATE & OBJECTS --- */
+    let player = {
+      x: 180, y: 220,
+      radius: 24,
+      vx: 0, vy: 0,
+      speed: 3.5,
+      hp: 100, maxHp: 100,
+      atp: 0,
+      fullness: 0, maxFullness: 100,
+      mode: 'NORMAL', // 'NORMAL', 'M1', 'M2'
+      antigens: 0,
+      maxAntigens: 5,
+      wobbleAngle: 0,
+      aimAngle: 0
+    };
+
+    let pseudopod = {
+      active: false,
+      x: 0, y: 0,
+      targetX: 0, targetY: 0,
+      length: 0,
+      maxLength: 210,
+      speed: 16,
+      state: 'extending'
+    };
+
+    let bacteriaList = [];
+    let inflammationList = [];
+    let particleList = [];
+    let floatingTexts = [];
+    let helperTCells = [];
+
+    let stats = { eatenStaph: 0, eatenDust: 0, repairedInflammation: 0, cytokinesCalled: 0 };
+
+    /* --- GAME FUNCTIONS --- */
+    function startGame() {
+      initAudio();
+      document.getElementById('overlay-screen').classList.add('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        document.getElementById('overlay-screen').classList.add('hidden');
+      }, 300);
+
+      resetGameState();
+      gameRunning = true;
+      requestAnimationFrame(gameLoop);
+    }
+
+    function resetGameState() {
+      resizeCanvas();
+      player.x = canvas.width / 2;
+      player.y = canvas.height / 2;
+      player.hp = 100;
+      player.atp = 0;
+      player.fullness = 0;
+      player.antigens = 0;
+      player.mode = 'NORMAL';
+
+      stats = { eatenStaph: 0, eatenDust: 0, repairedInflammation: 0, cytokinesCalled: 0 };
+
+      bacteriaList = [];
+      inflammationList = [];
+      particleList = [];
+      floatingTexts = [];
+      helperTCells = [];
+
+      for (let i = 0; i < 6; i++) spawnBacteria();
+      for (let i = 0; i < 3; i++) spawnInflammation();
+
+      updateHUD();
+      setMode('NORMAL');
+    }
+
+    function toggleMode() {
+      if (!gameRunning) return;
+      if (player.mode === 'NORMAL') setMode('M1');
+      else if (player.mode === 'M1') setMode('M2');
+      else setMode('NORMAL');
+    }
+
+    function setMode(mode) {
+      player.mode = mode;
+      const icon = document.getElementById('mode-icon');
+      const text = document.getElementById('mode-text');
+      const btn = document.getElementById('mode-btn');
+      const hudTag = document.getElementById('hud-mode-tag');
+      const hudText = document.getElementById('hud-mode-text');
+
+      if (mode === 'M1') {
+        icon.innerText = '🔴';
+        text.innerText = 'M1 攻撃';
+        hudText.innerText = 'M1 攻撃';
+        btn.className = 'hand-btn h-12 px-3 bg-rose-300 text-xs font-bold flex items-center gap-1';
+        hudTag.className = 'text-xs font-bold px-2 py-0.5 rounded-full border border-[#5a4a42] bg-rose-200 text-rose-900';
+        addFloatingText(player.x, player.y - 25, 'M1モード！⚡', '#e11d48');
+        playSound('shockwave');
+      } else if (mode === 'M2') {
+        icon.innerText = '🟢';
+        text.innerText = 'M2 修復';
+        hudText.innerText = 'M2 修復';
+        btn.className = 'hand-btn h-12 px-3 bg-emerald-300 text-xs font-bold flex items-center gap-1';
+        hudTag.className = 'text-xs font-bold px-2 py-0.5 rounded-full border border-[#5a4a42] bg-emerald-200 text-emerald-900';
+        addFloatingText(player.x, player.y - 25, 'M2モード！✨', '#059669');
+        playSound('repair');
+      } else {
+        icon.innerText = '🟡';
+        text.innerText = '通常';
+        hudText.innerText = '通常';
+        btn.className = 'hand-btn h-12 px-3 bg-amber-300 text-xs font-bold flex items-center gap-1';
+        hudTag.className = 'text-xs font-bold px-2 py-0.5 rounded-full border border-[#5a4a42] bg-amber-200 text-amber-900';
+      }
+    }
+
+    function triggerCytokine() {
+      if (player.antigens >= player.maxAntigens) {
+        player.antigens = 0;
+        stats.cytokinesCalled++;
+        playSound('shockwave');
+
+        helperTCells.push({
+          x: player.x,
+          y: player.y - 80,
+          life: 250
+        });
+
+        addFloatingText(player.x, player.y - 35, 'サイトカイン放出！📣', '#b45309');
+        
+        bacteriaList.forEach(b => {
+          if (Math.hypot(b.x - player.x, b.y - player.y) < 200) {
+            b.hp -= 2;
+            createParticles(b.x, b.y, '#f59e0b', 5);
+          }
+        });
+
+        updateHUD();
+      }
+    }
+
+    function shootPseudopodButton() {
+      if (!gameRunning || pseudopod.active) return;
+      
+      // Shoot in joystick direction or forward
+      let angle = player.aimAngle;
+      if (joystickVector.x !== 0 || joystickVector.y !== 0) {
+        angle = Math.atan2(joystickVector.y, joystickVector.x);
+      }
+      
+      const targetX = player.x + Math.cos(angle) * pseudopod.maxLength;
+      const targetY = player.y + Math.sin(angle) * pseudopod.maxLength;
+      shootPseudopodTowards(targetX, targetY);
+    }
+
+    function shootPseudopodTowards(tx, ty) {
+      if (pseudopod.active) return;
+
+      const angle = Math.atan2(ty - player.y, tx - player.x);
+      player.aimAngle = angle;
+
+      pseudopod.active = true;
+      pseudopod.x = player.x;
+      pseudopod.y = player.y;
+      pseudopod.targetX = player.x + Math.cos(angle) * pseudopod.maxLength;
+      pseudopod.targetY = player.y + Math.sin(angle) * pseudopod.maxLength;
+      pseudopod.length = 0;
+      pseudopod.state = 'extending';
+
+      playSound('shoot');
+    }
+
+    /* --- SPAWNERS --- */
+    function spawnBacteria() {
+      const margin = 30;
+      const type = Math.random() < 0.7 ? 'staph' : 'dust';
+      bacteriaList.push({
+        x: margin + Math.random() * (canvas.width - margin * 2),
+        y: margin + Math.random() * (canvas.height - margin * 2),
+        type: type,
+        radius: type === 'staph' ? 11 : 14,
+        vx: (Math.random() - 0.5) * 1.1,
+        vy: (Math.random() - 0.5) * 1.1,
+        hp: type === 'staph' ? 1 : 2,
+        wobble: Math.random() * Math.PI * 2
+      });
+    }
+
+    function spawnInflammation() {
+      const margin = 50;
+      inflammationList.push({
+        x: margin + Math.random() * (canvas.width - margin * 2),
+        y: margin + Math.random() * (canvas.height - margin * 2),
+        radius: 22 + Math.random() * 12,
+        health: 100,
+        pulse: 0
+      });
+    }
+
+    function addFloatingText(x, y, text, color) {
+      floatingTexts.push({ x, y, text, color, alpha: 1, life: 40 });
+    }
+
+    function createParticles(x, y, color, count = 6) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1 + Math.random() * 2.5;
+        particleList.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color,
+          radius: 2 + Math.random() * 2.5,
+          life: 15 + Math.random() * 12
+        });
+      }
+    }
+
+    /* --- UPDATE LOOP --- */
+    function update() {
+      // Joystick movement
+      let moveSpeed = player.speed;
+      if (player.mode === 'M1') moveSpeed *= 1.35;
+      if (player.fullness > 80) moveSpeed *= 0.75;
+
+      if (joystickActive && (joystickVector.x !== 0 || joystickVector.y !== 0)) {
+        player.vx = player.vx * 0.6 + joystickVector.x * moveSpeed * 0.4;
+        player.vy = player.vy * 0.6 + joystickVector.y * moveSpeed * 0.4;
+        player.aimAngle = Math.atan2(joystickVector.y, joystickVector.x);
+      } else {
+        player.vx *= 0.7;
+        player.vy *= 0.7;
+      }
+
+      player.x += player.vx;
+      player.y += player.vy;
+
+      // Keep within bounds
+      player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+      player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+      player.wobbleAngle += 0.08;
+
+      // Fullness digest
+      if (player.fullness > 0) {
+        player.fullness -= 0.06;
+      }
+
+      // Pseudopod Action
+      if (pseudopod.active) {
+        const angle = Math.atan2(pseudopod.targetY - player.y, pseudopod.targetX - player.x);
+
+        if (pseudopod.state === 'extending') {
+          pseudopod.length += pseudopod.speed;
+          pseudopod.x = player.x + Math.cos(angle) * pseudopod.length;
+          pseudopod.y = player.y + Math.sin(angle) * pseudopod.length;
+
+          // Hit detection with bacteria
+          bacteriaList.forEach(b => {
+            if (Math.hypot(b.x - pseudopod.x, b.y - pseudopod.y) < b.radius + 10) {
+              b.x = pseudopod.x;
+              b.y = pseudopod.y;
+              pseudopod.state = 'retracting';
+            }
+          });
+
+          if (pseudopod.length >= pseudopod.maxLength) {
+            pseudopod.state = 'retracting';
+          }
+        } else {
+          pseudopod.length -= pseudopod.speed * 1.2;
+          pseudopod.x = player.x + Math.cos(angle) * pseudopod.length;
+          pseudopod.y = player.y + Math.sin(angle) * pseudopod.length;
+
+          if (pseudopod.length <= 0) pseudopod.active = false;
+        }
+      }
+
+      // Update Bacteria
+      for (let i = bacteriaList.length - 1; i >= 0; i--) {
+        const b = bacteriaList[i];
+        b.x += b.vx;
+        b.y += b.vy;
+        b.wobble += 0.05;
+
+        if (b.x < b.radius || b.x > canvas.width - b.radius) b.vx *= -1;
+        if (b.y < b.radius || b.y > canvas.height - b.radius) b.vy *= -1;
+
+        // Devour Check
+        const dist = Math.hypot(player.x - b.x, player.y - b.y);
+        const devourRange = player.radius + b.radius + (player.mode === 'M1' ? 8 : 0);
+
+        if (dist < devourRange) {
+          playSound('eat');
+          createParticles(b.x, b.y, b.type === 'staph' ? '#fbbf24' : '#a8a29e', 8);
+
+          if (b.type === 'staph') {
+            player.atp += 15;
+            player.hp = Math.min(player.maxHp, player.hp + 5);
+            stats.eatenStaph++;
+            addFloatingText(b.x, b.y, 'パクッ！ +15ATP', '#d97706');
+          } else {
+            player.atp += 25;
+            player.hp = Math.min(player.maxHp, player.hp + 10);
+            stats.eatenDust++;
+            addFloatingText(b.x, b.y, 'お掃除完了！', '#059669');
+          }
+
+          player.fullness = Math.min(player.maxFullness, player.fullness + 20);
+
+          if (player.antigens < player.maxAntigens) player.antigens++;
+
+          bacteriaList.splice(i, 1);
+          spawnBacteria();
+          updateHUD();
+        }
+      }
+
+      // Update Inflammation & M2 Healing
+      for (let i = inflammationList.length - 1; i >= 0; i--) {
+        const inf = inflammationList[i];
+        inf.pulse += 0.05;
+
+        const dist = Math.hypot(player.x - inf.x, player.y - inf.y);
+
+        if (player.mode === 'M2' && dist < player.radius + inf.radius) {
+          inf.health -= 2.2;
+          createParticles(inf.x, inf.y, '#34d399', 2);
+
+          if (Math.random() < 0.1) playSound('repair');
+
+          if (inf.health <= 0) {
+            playSound('repair');
+            addFloatingText(inf.x, inf.y, '修復完了！ ✨', '#059669');
+            createParticles(inf.x, inf.y, '#10b981', 16);
+            player.atp += 40;
+            stats.repairedInflammation++;
+            inflammationList.splice(i, 1);
+            spawnInflammation();
+            updateHUD();
+            continue;
+          }
+        }
+
+        if (player.mode !== 'M2' && dist < inf.radius) {
+          if (Math.random() < 0.03) {
+            player.hp -= 2;
+            playSound('hit');
+            addFloatingText(player.x, player.y, 'いたた！', '#e11d48');
+            updateHUD();
+
+            if (player.hp <= 0) {
+              endGame(false);
+              return;
+            }
+          }
+        }
+      }
+
+      // Update Helper T
+      for (let i = helperTCells.length - 1; i >= 0; i--) {
+        const ht = helperTCells[i];
+        ht.life--;
+        ht.x += (player.x + 30 - ht.x) * 0.05;
+        ht.y += (player.y - 30 - ht.y) * 0.05;
+        if (ht.life <= 0) helperTCells.splice(i, 1);
+      }
+
+      // Update Particles
+      for (let i = particleList.length - 1; i >= 0; i--) {
+        const p = particleList[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) particleList.splice(i, 1);
+      }
+
+      // Update Floating Text
+      for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y -= 0.8;
+        ft.life--;
+        ft.alpha = ft.life / 40;
+        if (ft.life <= 0) floatingTexts.splice(i, 1);
+      }
+
+      // Victory Condition (150 ATP on mobile)
+      if (player.atp >= 150) {
+        endGame(true);
+      }
+    }
+
+    /* --- RENDERING --- */
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Tissue background pattern
+      ctx.save();
+      ctx.strokeStyle = '#f3e8d8';
+      ctx.lineWidth = 1.5;
+      for (let x = 30; x < canvas.width; x += 90) {
+        for (let y = 30; y < canvas.height; y += 90) {
+          ctx.beginPath();
+          ctx.arc(x, y, 28, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      // Inflamed Spots
+      inflammationList.forEach(inf => {
+        ctx.save();
+        ctx.translate(inf.x, inf.y);
+        const r = inf.radius * (1 + Math.sin(inf.pulse) * 0.06);
+
+        const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, r);
+        grad.addColorStop(0, `rgba(244, 63, 94, ${0.45 * (inf.health / 100)})`);
+        grad.addColorStop(1, 'rgba(244, 63, 94, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(225, 29, 72, ${0.6 * (inf.health / 100)})`;
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#9f1239';
+        ctx.font = 'bold 10px "Kiwi Maru", serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('炎症スポット', 0, 3);
+        ctx.restore();
+      });
+
+      // Pseudopod Line
+      if (pseudopod.active) {
+        ctx.save();
+        ctx.strokeStyle = player.mode === 'M1' ? '#f87171' : (player.mode === 'M2' ? '#34d399' : '#fbbf24');
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(player.x, player.y);
+        ctx.lineTo(pseudopod.x, pseudopod.y);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#fffbf4';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        ctx.fillStyle = player.mode === 'M1' ? '#ef4444' : '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(pseudopod.x, pseudopod.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Bacteria
+      bacteriaList.forEach(b => {
+        ctx.save();
+        ctx.translate(b.x, b.y);
+
+        if (b.type === 'staph') {
+          ctx.fillStyle = '#fef08a';
+          ctx.strokeStyle = '#5a4a42';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#5a4a42';
+          ctx.beginPath();
+          ctx.arc(-3, -2, 1.8, 0, Math.PI * 2);
+          ctx.arc(3, -2, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#d6d3d1';
+          ctx.strokeStyle = '#5a4a42';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2 + b.wobble;
+            const dist = b.radius + Math.sin(angle * 3) * 2.5;
+            const px = Math.cos(angle) * dist;
+            const py = Math.sin(angle) * dist;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+      });
+
+      // Helper T NPC
+      helperTCells.forEach(ht => {
+        ctx.save();
+        ctx.translate(ht.x, ht.y);
+        ctx.fillStyle = '#38bdf8';
+        ctx.strokeStyle = '#5a4a42';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('T細胞', 0, 3);
+        ctx.restore();
+      });
+
+      // Player Macrophage
+      drawMacrophagePlayer();
+
+      // Particles
+      particleList.forEach(p => {
+        ctx.save();
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Floating Texts
+      floatingTexts.forEach(ft => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, ft.alpha);
+        ctx.fillStyle = ft.color;
+        ctx.font = 'bold 12px "Kiwi Maru", serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.strokeText(ft.text, ft.x, ft.y);
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      });
+    }
+
+    function drawMacrophagePlayer() {
+      ctx.save();
+      ctx.translate(player.x, player.y);
+
+      let fillColor = '#fde047';
+      let strokeColor = '#5a4a42';
+      let auraColor = 'rgba(253, 224, 71, 0.35)';
+
+      if (player.mode === 'M1') {
+        fillColor = '#fb923c';
+        auraColor = 'rgba(249, 115, 22, 0.45)';
+      } else if (player.mode === 'M2') {
+        fillColor = '#6ee7b7';
+        auraColor = 'rgba(52, 211, 153, 0.45)';
+      }
+
+      ctx.fillStyle = auraColor;
+      ctx.beginPath();
+      ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = fillColor;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      const points = 10;
+      for (let i = 0; i < points; i++) {
+        const angle = (i / points) * Math.PI * 2;
+        let wobble = Math.sin(player.wobbleAngle + i * 1.5) * 3;
+        if (player.mode === 'M1' && i % 2 === 0) wobble += 5;
+
+        const r = player.radius + wobble;
+        const px = Math.cos(angle) * r;
+        const py = Math.sin(angle) * r;
+
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.quadraticCurveTo(0, 0, px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Eyes facing aim direction
+      const ex = Math.cos(player.aimAngle) * 5;
+      const ey = Math.sin(player.aimAngle) * 5;
+
+      ctx.fillStyle = '#5a4a42';
+      ctx.beginPath();
+      ctx.arc(-6 + ex, -3 + ey, 3, 0, Math.PI * 2);
+      ctx.arc(6 + ex, -3 + ey, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(ex, 3 + ey, 3.5, 0, Math.PI);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function updateHUD() {
+      document.getElementById('hp-bar').style.width = Math.max(0, (player.hp / player.maxHp) * 100) + '%';
+      document.getElementById('atp-count').innerText = player.atp;
+      document.getElementById('fullness-bar').style.width = player.fullness + '%';
+
+      const cytokineBtn = document.getElementById('cytokine-btn');
+      if (player.antigens >= player.maxAntigens) {
+        cytokineBtn.disabled = false;
+        cytokineBtn.classList.add('bg-amber-400', 'animate-bounce');
+      } else {
+        cytokineBtn.disabled = true;
+        cytokineBtn.classList.remove('bg-amber-400', 'animate-bounce');
+      }
+    }
+
+    function gameLoop() {
+      if (!gameRunning) return;
+      update();
+      render();
+      animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    function endGame(isClear) {
+      gameRunning = false;
+      cancelAnimationFrame(animationFrameId);
+
+      const journalScreen = document.getElementById('journal-screen');
+      const journalTitle = document.getElementById('journal-title');
+      const journalContent = document.getElementById('journal-content');
+
+      journalScreen.classList.remove('hidden');
+
+      if (isClear) {
+        journalTitle.innerText = '🎉 パトロール大成功！';
+        journalContent.innerHTML = `
+          <p class="font-bold text-emerald-800 text-sm mb-1">体内の平和が守られました！✨</p>
+          <p>・<b>食べたプチブドウ菌:</b> ${stats.eatenStaph} 匹</p>
+          <p>・<b>お掃除した細胞ゴミ:</b> ${stats.eatenDust} 個</p>
+          <p>・<b>修復した炎症スポット:</b> ${stats.repairedInflammation} 箇所</p>
+          <p>・<b>獲得合計ATP:</b> ${player.atp} ATP</p>
+          <p class="text-[11px] text-amber-700 mt-2 pt-1.5 border-t border-amber-200">きょうもマクロファージは大活躍！明日も体内を守ろう！</p>
+        `;
+      } else {
+        journalTitle.innerText = '💔 パトロール中断...';
+        journalContent.innerHTML = `
+          <p class="font-bold text-rose-800 text-sm mb-1">マクロファージのエネルギー切れ...</p>
+          <p>・<b>食べたプチブドウ菌:</b> ${stats.eatenStaph} 匹</p>
+          <p>・<b>修復した炎症:</b> ${stats.repairedInflammation} 箇所</p>
+          <p class="text-[11px] text-stone-600 mt-2 pt-1.5 border-t border-amber-200">💡 <b>ヒント:</b> 炎症の上では 🟢 M2修復モード に切り替えて治そう！</p>
+        `;
+      }
+    }
+
+    function restartGame() {
+      document.getElementById('journal-screen').classList.add('hidden');
+      startGame();
+    }
+  </script>
+</body>
+</html>
