@@ -1,1101 +1,1140 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>マクロファージの一日</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@500;700&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>マクロファージの一日 - 絵本風 免疫アクション</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: #2b1f31;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            overflow: hidden;
+        }
 
-    * {
-      touch-action: none;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
+        .font-magic {
+            font-family: 'Yusei Magic', sans-serif;
+        }
 
-    body {
-      font-family: 'Kiwi Maru', serif;
-      background-color: #f6f0e6;
-      color: #5a4a42;
-      overflow: hidden;
-      width: 100vw;
-      height: 100vh;
-      position: fixed;
-    }
+        /* Glassmorphism Panel */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(8px);
+            border: 3px solid #6b4d3b;
+            box-shadow: 0 8px 0 #4a3324;
+        }
 
-    /* Picture book paper texture */
-    .paper-bg {
-      background-color: #faf5ed;
-      background-image: 
-        radial-gradient(#ebdccb 15%, transparent 16%),
-        radial-gradient(#ebdccb 15%, transparent 16%);
-      background-size: 20px 20px;
-      background-position: 0 0, 10px 10px;
-    }
+        .glass-panel-dark {
+            background: rgba(43, 31, 49, 0.92);
+            backdrop-filter: blur(10px);
+            border: 3px solid #e2bc80;
+            box-shadow: 0 8px 0 #8c6a38;
+        }
 
-    .hand-border {
-      border: 3.5px solid #5a4a42;
-      border-radius: 22px 12px 20px 14px / 14px 20px 12px 22px;
-      box-shadow: 3px 4px 0px rgba(90, 74, 66, 0.18);
-    }
+        .btn-retro {
+            transition: transform 0.1s, box-shadow 0.1s;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.25);
+        }
+        .btn-retro:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+        }
 
-    .hand-btn {
-      border: 3.5px solid #5a4a42;
-      border-radius: 50%;
-      box-shadow: 2px 3.5px 0px #5a4a42;
-      transition: transform 0.08s ease, box-shadow 0.08s ease;
-    }
+        /* Red damage vignette flash */
+        @keyframes damage-flash {
+            0% { box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0); }
+            50% { box-shadow: inset 0 0 60px 20px rgba(239, 68, 68, 0.7); }
+            100% { box-shadow: inset 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .damage-active {
+            animation: damage-flash 0.35s ease-out;
+        }
 
-    .hand-btn:active {
-      transform: translateY(3px) scale(0.93);
-      box-shadow: 0px 1px 0px #5a4a42;
-    }
-
-    /* Virtual Joystick Styles */
-    .joystick-base {
-      width: 110px;
-      height: 110px;
-      background: rgba(255, 251, 244, 0.85);
-      border: 3.5px solid #5a4a42;
-      border-radius: 50%;
-      position: absolute;
-      bottom: 20px;
-      left: 18px;
-      touch-action: none;
-      box-shadow: 2px 3px 0px rgba(90, 74, 66, 0.2);
-    }
-
-    .joystick-stick {
-      width: 48px;
-      height: 48px;
-      background: #fbbf24;
-      border: 3.5px solid #5a4a42;
-      border-radius: 50%;
-      position: absolute;
-      top: 27px;
-      left: 27px;
-      pointer-events: none;
-      box-shadow: 1px 2px 0px #5a4a42;
-    }
-
-    /* Keyframe pulse animations for icon alerts */
-    @keyframes pulse-glow {
-      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(245,158,11,0.5)); }
-      50% { transform: scale(1.12); filter: drop-shadow(0 0 8px rgba(245,158,11,0.9)); }
-    }
-
-    .glow-ready {
-      animation: pulse-glow 1s infinite ease-in-out;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-  </style>
+        /* Custom scrollbar for encyclopedia */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1e4d3;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8c6a38;
+            border-radius: 4px;
+        }
+    </style>
 </head>
-<body class="w-full h-full flex flex-col justify-between items-center paper-bg p-2 select-none overflow-hidden">
+<body class="w-screen h-screen flex flex-col justify-between items-center relative select-none">
 
-  <!-- TOP MOBILE VISUAL HUD BAR -->
-  <header class="w-full max-w-lg flex items-center justify-between bg-[#fffbf4] hand-border px-3 py-2 z-20">
-    <!-- HP & ATP STARS -->
-    <div class="flex items-center space-x-2">
-      <!-- HP Heart Meter -->
-      <div class="flex items-center bg-rose-50 px-2 py-1 rounded-full border-2 border-[#5a4a42]">
-        <span class="text-sm mr-1">❤️</span>
-        <div class="w-16 sm:w-20 h-3 bg-rose-100 rounded-full border border-[#5a4a42] overflow-hidden">
-          <div id="hp-bar" class="h-full bg-rose-400 transition-all duration-200" style="width: 100%;"></div>
-        </div>
-      </div>
-
-      <!-- Energy Star Count -->
-      <div class="flex items-center bg-amber-100 px-2.5 py-1 rounded-full border-2 border-[#5a4a42]">
-        <span class="text-sm mr-1">⭐</span>
-        <span id="atp-count" class="text-sm font-bold text-amber-950">0</span>
-      </div>
-    </div>
-
-    <!-- FULLNESS & MODE ICON BADGES -->
-    <div class="flex items-center space-x-2">
-      <!-- Fullness Belly Meter -->
-      <div class="flex items-center bg-amber-50 px-2 py-1 rounded-full border-2 border-[#5a4a42]">
-        <span id="belly-icon" class="text-sm mr-1">🥐</span>
-        <div class="w-10 h-2.5 bg-amber-100 rounded-full border border-[#5a4a42] overflow-hidden">
-          <div id="fullness-bar" class="h-full bg-amber-400 transition-all duration-200" style="width: 0%;"></div>
-        </div>
-      </div>
-
-      <!-- Current Form Indicator -->
-      <div id="hud-mode-badge" class="w-9 h-9 rounded-full border-2 border-[#5a4a42] bg-amber-200 flex items-center justify-center text-lg shadow-sm">
-        <span id="hud-mode-icon">🟡</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- MAIN CANVAS CONTAINER -->
-  <main class="relative w-full max-w-lg flex-1 my-1 overflow-hidden hand-border bg-[#fcf8f2]">
-    <canvas id="gameCanvas"></canvas>
-
-    <!-- START / VISUAL TUTORIAL OVERLAY -->
-    <div id="overlay-screen" class="absolute inset-0 bg-[#faf5ed]/95 flex flex-col justify-center items-center p-3 text-center z-40 transition-opacity duration-300">
-      <div class="bg-[#fffbf4] hand-border p-4 max-w-xs w-full flex flex-col items-center">
-        <!-- Title with Emoji -->
-        <div class="text-3xl mb-1">🧫 🩹 🦠</div>
-
-        <!-- Visual Touch Tutorial Cards -->
-        <div class="grid grid-cols-2 gap-2 my-3 w-full">
-          <div class="bg-amber-50 p-2 rounded-xl border-2 border-[#5a4a42] flex flex-col items-center">
-            <span class="text-2xl">🕹️</span>
-            <span class="text-[11px] font-bold mt-1 text-stone-700">🏃‍♂️ ──></span>
-          </div>
-
-          <div class="bg-rose-50 p-2 rounded-xl border-2 border-[#5a4a42] flex flex-col items-center">
-            <span class="text-2xl">🖐️</span>
-            <span class="text-[11px] font-bold mt-1 text-stone-700">👅 ──> 🦠</span>
-          </div>
-
-          <div class="bg-orange-50 p-2 rounded-xl border-2 border-[#5a4a42] flex flex-col items-center">
-            <span class="text-2xl">🔥 / 🩹</span>
-            <span class="text-[11px] font-bold mt-1 text-stone-700">⚔️ 💥 / 🌱 ✨</span>
-          </div>
-
-          <div class="bg-sky-50 p-2 rounded-xl border-2 border-[#5a4a42] flex flex-col items-center">
-            <span class="text-2xl">🎺</span>
-            <span class="text-[11px] font-bold mt-1 text-stone-700">🧫×5 ──> 🦺</span>
-          </div>
+    <!-- Top Navigation & HUD Bar -->
+    <header class="w-full max-w-4xl px-3 py-2 z-20 flex justify-between items-center">
+        <!-- Day & Objective Info -->
+        <div class="glass-panel px-3 py-1.5 rounded-2xl flex items-center gap-2 text-amber-900">
+            <span id="day-badge" class="bg-amber-600 text-white font-black text-xs sm:text-sm px-2.5 py-1 rounded-xl shadow-sm font-magic">Day 1</span>
+            <div>
+                <div id="day-title" class="font-bold text-xs sm:text-sm leading-none text-amber-950">平穏な血管の巡回</div>
+                <div id="day-sub" class="text-[10px] sm:text-xs text-amber-800 font-semibold">黄色ブドウ球菌をたべてATPを集めよう</div>
+            </div>
         </div>
 
-        <button onclick="startGame()" class="hand-btn bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold w-16 h-16 text-2xl flex items-center justify-center cursor-pointer my-1">
-          ▶️
-        </button>
-      </div>
-    </div>
-
-    <!-- PICTURE BOOK PATROL DIARY (RESULT SCREEN) -->
-    <div id="journal-screen" class="hidden absolute inset-0 bg-[#faf5ed]/95 flex flex-col justify-center items-center p-4 z-50">
-      <div class="bg-[#fffbf4] hand-border p-5 max-w-xs w-full text-center flex flex-col items-center">
-        <div id="journal-stamp" class="text-5xl mb-2">💮</div>
-
-        <div class="w-full h-1 bg-[#5a4a42] rounded-full my-2"></div>
-        
-        <!-- VISUAL RESULT STICKERS -->
-        <div id="journal-content" class="text-base font-bold my-3 w-full bg-amber-50 p-3 rounded-xl border-2 border-[#5a4a42] space-y-2">
+        <!-- Vital Stats (HP / ATP) -->
+        <div class="glass-panel px-3 py-1.5 rounded-2xl flex items-center gap-3">
+            <!-- Health Bar -->
+            <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-heart text-red-500 text-sm sm:text-lg animate-pulse"></i>
+                <div class="w-20 sm:w-28 bg-red-100 rounded-full h-3.5 border-2 border-red-800 overflow-hidden relative">
+                    <div id="hp-bar" class="bg-gradient-to-r from-red-500 to-pink-500 h-full w-full transition-all duration-300"></div>
+                </div>
+            </div>
+            <!-- ATP Counter -->
+            <div class="flex items-center gap-1 font-black text-xs sm:text-sm text-amber-900">
+                <i class="fa-solid fa-bolt text-yellow-500 text-base"></i>
+                <span id="atp-count" class="font-mono text-base">0</span>
+            </div>
         </div>
 
-        <button onclick="restartGame()" class="hand-btn bg-amber-400 w-14 h-14 text-2xl flex items-center justify-center cursor-pointer mt-1">
-          🔄
+        <!-- Encyclopedia / Audio Controls -->
+        <div class="flex items-center gap-1.5">
+            <button id="btn-encyclopedia" class="glass-panel text-amber-900 font-bold p-2 sm:px-3 rounded-2xl btn-retro flex items-center gap-1 text-xs sm:text-sm">
+                <i class="fa-solid fa-book-bookmark text-amber-700"></i>
+                <span class="hidden sm:inline">パトロール日記</span>
+            </button>
+            <button id="btn-sound" class="glass-panel text-amber-900 p-2 rounded-2xl btn-retro text-xs sm:text-sm">
+                <i id="sound-icon" class="fa-solid fa-volume-high text-amber-700"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Game Canvas Container -->
+    <main id="game-container" class="relative w-full max-w-4xl flex-1 mx-auto my-1 rounded-3xl overflow-hidden border-4 border-amber-900 shadow-2xl bg-amber-50">
+        <canvas id="gameCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+        <!-- Damage Vignette Overlay -->
+        <div id="damage-overlay" class="pointer-events-none absolute inset-0 z-10 rounded-3xl"></div>
+
+        <!-- Speech / Narrative Bubble Overlay -->
+        <div id="story-modal" class="absolute inset-x-4 bottom-4 z-30 transition-all duration-300 transform translate-y-0">
+            <div class="glass-panel p-4 rounded-2xl flex gap-3 items-center relative">
+                <div id="narrator-avatar" class="w-12 h-12 rounded-2xl bg-amber-200 border-2 border-amber-800 flex items-center justify-center text-2xl flex-shrink-0">
+                    🦠
+                </div>
+                <div class="flex-1">
+                    <div id="narrator-name" class="font-magic font-bold text-xs text-amber-700">マクロファージ</div>
+                    <p id="narrator-text" class="text-xs sm:text-sm font-bold text-amber-950 leading-snug">今日もパトロール開始！あやしい細菌を見つけたら、偽足をのばしてパクッと食べちゃおう！</p>
+                </div>
+                <button id="btn-close-story" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs btn-retro self-end">
+                    進む <i class="fa-solid fa-play ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Just Devour / Combo Popup Notification -->
+        <div id="combo-popup" class="pointer-events-none absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 opacity-0 transition-all duration-300 scale-50">
+            <div class="bg-yellow-400 text-amber-950 font-magic font-black text-xl sm:text-3xl px-6 py-2 rounded-full border-4 border-amber-900 shadow-lg flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-red-600 animate-bounce"></i>
+                <span id="combo-text">ジャスト貪食！ ATP x2</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Controls & Skill Action Dock -->
+    <footer class="w-full max-w-4xl px-3 py-2 z-20 flex justify-between items-center gap-2">
+        <!-- Phenotype Switch Button (Normal / M1 Inflammatory / M2 Repair) -->
+        <div class="flex items-center gap-2">
+            <button id="btn-mode-m1" class="glass-panel px-3 py-2 rounded-2xl btn-retro flex flex-col items-center min-w-[70px] bg-red-100 border-red-800">
+                <span class="text-[10px] font-black text-red-800">M1 攻撃形態</span>
+                <div class="flex items-center gap-1 text-xs font-bold text-red-900">
+                    <i class="fa-solid fa-fire text-red-600"></i> <span id="m1-cost">15 ATP</span>
+                </div>
+            </button>
+            <button id="btn-mode-m2" class="glass-panel px-3 py-2 rounded-2xl btn-retro flex flex-col items-center min-w-[70px] bg-emerald-100 border-emerald-800">
+                <span class="text-[10px] font-black text-emerald-800">M2 修復形態</span>
+                <div class="flex items-center gap-1 text-xs font-bold text-emerald-900">
+                    <i class="fa-solid fa-leaf text-emerald-600"></i> <span id="m2-cost">10 ATP</span>
+                </div>
+            </button>
+        </div>
+
+        <!-- Cytokine Signal & Wire Indicator Info -->
+        <div class="hidden sm:flex items-center gap-2 text-xs font-bold text-amber-200">
+            <div class="flex items-center gap-1 bg-amber-950/60 px-3 py-1.5 rounded-xl border border-amber-700/50">
+                <i class="fa-solid fa-bullhorn text-amber-400"></i>
+                <span>クリック/タップ: 偽足伸び & ワイヤー移動</span>
+            </div>
+        </div>
+
+        <!-- Call Cytokines / Helper Cell Signal Bugle -->
+        <button id="btn-cytokine" class="glass-panel px-4 py-2 rounded-2xl btn-retro bg-amber-300 border-amber-800 flex items-center gap-2">
+            <div class="relative">
+                <i class="fa-solid fa-bullhorn text-amber-900 text-lg sm:text-xl"></i>
+                <span id="cytokine-badge" class="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center">0</span>
+            </div>
+            <div class="text-left">
+                <div class="text-[10px] font-black text-amber-950 leading-tight">サイトカインラッパ</div>
+                <div class="text-xs font-bold text-amber-800">ヘルパーT呼出</div>
+            </div>
         </button>
-      </div>
+    </footer>
+
+    <!-- Modal: Encyclopedia (パトロール日記) -->
+    <div id="modal-encyclopedia" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel-dark w-full max-w-2xl rounded-3xl p-5 text-amber-100 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center border-b-2 border-amber-600/40 pb-3">
+                <h2 class="font-magic text-xl sm:text-2xl font-bold text-amber-300 flex items-center gap-2">
+                    <i class="fa-solid fa-book-open"></i> マクロファージのパトロール日記
+                </h2>
+                <button id="btn-close-encyclopedia" class="text-amber-400 hover:text-white text-xl p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto my-4 space-y-3 pr-2">
+                <!-- Entry: Macrophage -->
+                <div class="bg-amber-950/80 p-3 rounded-2xl border border-amber-700/60 flex gap-3 items-center">
+                    <div class="w-12 h-12 bg-pink-200/20 rounded-xl flex items-center justify-center text-3xl">🧫</div>
+                    <div>
+                        <h3 class="font-bold text-amber-200 text-sm">マクロファージ (Macrophage)</h3>
+                        <p class="text-xs text-amber-300/80 mt-0.5">体内の大食細胞。異物を貪食(パクパク食べる)し、M1(炎症・攻撃)やM2(組織修復)に変化して活躍する万能細胞！</p>
+                    </div>
+                </div>
+                <!-- Entry: Staphylococcus aureus -->
+                <div class="bg-amber-950/80 p-3 rounded-2xl border border-amber-700/60 flex gap-3 items-center">
+                    <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center text-3xl">🟡</div>
+                    <div>
+                        <h3 class="font-bold text-amber-200 text-sm">黄色ブドウ球菌 (Staphylococcus)</h3>
+                        <p class="text-xs text-amber-300/80 mt-0.5">皮膚などに常在する一般的な細菌。増殖すると炎症を引き起こす。貪食してエネルギー(ATP)を獲得しよう。</p>
+                    </div>
+                </div>
+                <!-- Entry: Bifidobacterium (Good Bacteria) -->
+                <div class="bg-amber-950/80 p-3 rounded-2xl border border-amber-700/60 flex gap-3 items-center">
+                    <div class="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-3xl">🟢</div>
+                    <div>
+                        <h3 class="font-bold text-emerald-300 text-sm">ビフィズス菌 (善玉菌)</h3>
+                        <p class="text-xs text-amber-300/80 mt-0.5">お腹の調子を整える味方の細菌！間違えて食べちゃうとお腹が痛くなってスピードダウン＆ATP減少！</p>
+                    </div>
+                </div>
+                <!-- Entry: Influenza Virus -->
+                <div class="bg-amber-950/80 p-3 rounded-2xl border border-amber-700/60 flex gap-3 items-center">
+                    <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-3xl">👾</div>
+                    <div>
+                        <h3 class="font-bold text-amber-200 text-sm">インフルエンザウイルス</h3>
+                        <p class="text-xs text-amber-300/80 mt-0.5">素早く動き回り細胞を傷つける強敵。M1姿の攻撃や、ヘルパーT細胞を呼んで抗体攻撃で退治！</p>
+                    </div>
+                </div>
+                <!-- Entry: Vaccine Drops -->
+                <div class="bg-amber-950/80 p-3 rounded-2xl border border-amber-700/60 flex gap-3 items-center">
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-3xl">💊</div>
+                    <div>
+                        <h3 class="font-bold text-cyan-300 text-sm">ワクチンカプセル (Vaccine)</h3>
+                        <p class="text-xs text-amber-300/80 mt-0.5">事前にウイルスの情報を学習させるカプセル。拾うと一気にサイトカインゲージが最大チャージ！</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center text-xs text-amber-400 font-bold border-t border-amber-600/40 pt-2">
+                全7日間のストーリーをクリアして、完璧な免疫マスターを目指そう！
+            </div>
+        </div>
     </div>
-  </main>
 
-  <!-- TOUCH CONTROLS OVERLAY -->
-  <div id="touch-controls" class="w-full max-w-lg h-36 relative z-30 select-none">
-    <!-- Virtual Joystick Left -->
-    <div id="joystick-base" class="joystick-base">
-      <div id="joystick-stick" class="joystick-stick"></div>
-    </div>
-
-    <!-- Virtual Action Icon Buttons Right -->
-    <div class="absolute bottom-2 right-3 flex flex-col items-end space-y-2">
-      <!-- Top Row: Cytokine & Form Toggle -->
-      <div class="flex items-center space-x-2">
-        <!-- Cytokine Bugle Button -->
-        <button id="cytokine-btn" onclick="triggerCytokine()" class="hand-btn w-13 h-13 bg-sky-200 text-xl flex flex-col items-center justify-center disabled:opacity-40" disabled>
-          <span>🎺</span>
-          <!-- Antigen Visual Stamp Bar -->
-          <div id="antigen-stamps" class="flex space-x-0.5 mt-0.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-stone-300 border border-[#5a4a42]"></span>
-            <span class="w-1.5 h-1.5 rounded-full bg-stone-300 border border-[#5a4a42]"></span>
-            <span class="w-1.5 h-1.5 rounded-full bg-stone-300 border border-[#5a4a42]"></span>
-          </div>
-        </button>
-
-        <!-- Form Toggle Button (⚔️ Attack / 🩹 Repair) -->
-        <button id="mode-btn" onclick="toggleMode()" class="hand-btn w-13 h-13 bg-amber-300 text-2xl flex items-center justify-center">
-          <span id="mode-icon">🟡</span>
-        </button>
-      </div>
-
-      <!-- Bottom Row: Big Pseudopod Arm Button -->
-      <button id="shoot-btn" onclick="shootPseudopodButton()" class="hand-btn w-16 h-16 bg-rose-400 active:bg-rose-500 text-3xl flex items-center justify-center shadow-md">
-        🖐️
-      </button>
-    </div>
-  </div>
-
-  <script>
-    /* --- AUDIO SYNTHESIS (Web Audio API) --- */
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    let audioCtx = null;
-
-    function initAudio() {
-      if (!audioCtx) audioCtx = new AudioContext();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-
-    function playSound(type) {
-      if (!audioCtx) return;
-      try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        const now = audioCtx.currentTime;
-
-        if (type === 'eat') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(320, now);
-          osc.frequency.exponentialRampToValueAtTime(620, now + 0.12);
-          gain.gain.setValueAtTime(0.3, now);
-          gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
-          osc.start(now);
-          osc.stop(now + 0.12);
-        } else if (type === 'shoot') {
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(180, now);
-          osc.frequency.linearRampToValueAtTime(80, now + 0.18);
-          gain.gain.setValueAtTime(0.2, now);
-          gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
-          osc.start(now);
-          osc.stop(now + 0.18);
-        } else if (type === 'repair') {
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(523, now);
-          osc.frequency.setValueAtTime(659, now + 0.08);
-          gain.gain.setValueAtTime(0.25, now);
-          gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
-          osc.start(now);
-          osc.stop(now + 0.18);
-        } else if (type === 'shockwave') {
-          osc.type = 'sawtooth';
-          osc.frequency.setValueAtTime(160, now);
-          osc.frequency.exponentialRampToValueAtTime(50, now + 0.25);
-          gain.gain.setValueAtTime(0.35, now);
-          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-          osc.start(now);
-          osc.stop(now + 0.25);
-        } else if (type === 'hit') {
-          osc.type = 'square';
-          osc.frequency.setValueAtTime(120, now);
-          osc.frequency.linearRampToValueAtTime(40, now + 0.12);
-          gain.gain.setValueAtTime(0.3, now);
-          gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
-          osc.start(now);
-          osc.stop(now + 0.12);
-        }
-      } catch (e) { console.error(e); }
-    }
-
-    /* --- GAME ENGINE & CANVAS SETUP --- */
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-
-    let gameRunning = false;
-    let animationFrameId = null;
-
-    function resizeCanvas() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    /* --- VIRTUAL JOYSTICK & TOUCH --- */
-    const joystickBase = document.getElementById('joystick-base');
-    const joystickStick = document.getElementById('joystick-stick');
-
-    let joystickActive = false;
-    let joystickVector = { x: 0, y: 0 };
-    let joystickTouchId = null;
-
-    function handleJoystickStart(e) {
-      initAudio();
-      e.preventDefault();
-      const touch = e.changedTouches ? e.changedTouches[0] : e;
-      joystickTouchId = touch.identifier ?? 'mouse';
-      joystickActive = true;
-      updateJoystick(touch);
-    }
-
-    joystickBase.addEventListener('touchstart', handleJoystickStart, { passive: false });
-    joystickBase.addEventListener('mousedown', handleJoystickStart);
-
-    window.addEventListener('touchmove', (e) => {
-      if (!joystickActive) return;
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === joystickTouchId) {
-          updateJoystick(e.changedTouches[i]);
-          break;
-        }
-      }
-    }, { passive: false });
-
-    window.addEventListener('mousemove', (e) => {
-      if (joystickActive && joystickTouchId === 'mouse') {
-        updateJoystick(e);
-      }
-    });
-
-    const endJoystick = (e) => {
-      if (!joystickActive) return;
-      if (e.changedTouches) {
-        for (let i = 0; i < e.changedTouches.length; i++) {
-          if (e.changedTouches[i].identifier === joystickTouchId) {
-            joystickActive = false;
-            joystickTouchId = null;
-            joystickVector = { x: 0, y: 0 };
-            joystickStick.style.transform = 'translate(0px, 0px)';
-            break;
-          }
-        }
-      } else {
-        joystickActive = false;
-        joystickTouchId = null;
-        joystickVector = { x: 0, y: 0 };
-        joystickStick.style.transform = 'translate(0px, 0px)';
-      }
-    };
-
-    window.addEventListener('touchend', endJoystick);
-    window.addEventListener('touchcancel', endJoystick);
-    window.addEventListener('mouseup', endJoystick);
-
-    function updateJoystick(touch) {
-      const rect = joystickBase.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-
-      let dx = touch.clientX - centerX;
-      let dy = touch.clientY - centerY;
-      const dist = Math.hypot(dx, dy);
-      const maxRadius = 38;
-
-      if (dist > maxRadius) {
-        dx = (dx / dist) * maxRadius;
-        dy = (dy / dist) * maxRadius;
-      }
-
-      joystickStick.style.transform = `translate(${dx}px, ${dy}px)`;
-      joystickVector = { x: dx / maxRadius, y: dy / maxRadius };
-    }
-
-    /* --- CANVAS TAP / CLICK --- */
-    function handleCanvasInput(e) {
-      initAudio();
-      if (!gameRunning) return;
-      e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const targetX = clientX - rect.left;
-      const targetY = clientY - rect.top;
-
-      shootPseudopodTowards(targetX, targetY);
-    }
-
-    canvas.addEventListener('touchstart', handleCanvasInput, { passive: false });
-    canvas.addEventListener('mousedown', handleCanvasInput);
-
-    /* --- KEYBOARD CONTROLS (PC) --- */
-    const keys = {};
-    window.addEventListener('keydown', (e) => {
-      keys[e.key] = true;
-      if (e.key === ' ' || e.key === 'Enter') {
-        shootPseudopodButton();
-      } else if (e.key === 'Shift') {
-        toggleMode();
-      } else if (e.key === 'q' || e.key === 'Q') {
-        triggerCytokine();
-      }
-    });
-    window.addEventListener('keyup', (e) => {
-      keys[e.key] = false;
-    });
-
-    /* --- GAME STATE & ENTITIES --- */
-    let player = {
-      x: 180, y: 220,
-      radius: 25,
-      vx: 0, vy: 0,
-      speed: 3.6,
-      hp: 100, maxHp: 100,
-      atp: 0,
-      fullness: 0, maxFullness: 100,
-      mode: 'NORMAL',
-      antigens: 0,
-      maxAntigens: 3,
-      wobbleAngle: 0,
-      aimAngle: 0
-    };
-
-    let pseudopod = {
-      active: false,
-      x: 0, y: 0,
-      targetX: 0, targetY: 0,
-      length: 0,
-      maxLength: 210,
-      speed: 17,
-      state: 'extending'
-    };
-
-    let bacteriaList = [];
-    let inflammationList = [];
-    let particleList = [];
-    let visualPopups = [];
-    let helperTCells = [];
-
-    let stats = { eatenStaph: 0, eatenDust: 0, repairedInflammation: 0, cytokinesCalled: 0 };
-
-    /* --- GAME CONTROLS & MODES --- */
-    function startGame() {
-      initAudio();
-      document.getElementById('overlay-screen').classList.add('opacity-0', 'pointer-events-none');
-      setTimeout(() => {
-        document.getElementById('overlay-screen').classList.add('hidden');
-      }, 300);
-
-      resetGameState();
-      gameRunning = true;
-      requestAnimationFrame(gameLoop);
-    }
-
-    function resetGameState() {
-      resizeCanvas();
-      player.x = canvas.width / 2;
-      player.y = canvas.height / 2;
-      player.hp = 100;
-      player.atp = 0;
-      player.fullness = 0;
-      player.antigens = 0;
-      player.mode = 'NORMAL';
-
-      stats = { eatenStaph: 0, eatenDust: 0, repairedInflammation: 0, cytokinesCalled: 0 };
-
-      bacteriaList = [];
-      inflammationList = [];
-      particleList = [];
-      visualPopups = [];
-      helperTCells = [];
-
-      for (let i = 0; i < 6; i++) spawnBacteria();
-      for (let i = 0; i < 3; i++) spawnInflammation();
-
-      updateHUD();
-      setMode('NORMAL');
-    }
-
-    function toggleMode() {
-      if (!gameRunning) return;
-      if (player.mode === 'NORMAL') setMode('M1');
-      else if (player.mode === 'M1') setMode('M2');
-      else setMode('NORMAL');
-    }
-
-    function setMode(mode) {
-      player.mode = mode;
-      const modeIcon = document.getElementById('mode-icon');
-      const modeBtn = document.getElementById('mode-btn');
-      const hudBadge = document.getElementById('hud-mode-badge');
-      const hudIcon = document.getElementById('hud-mode-icon');
-
-      if (mode === 'M1') {
-        modeIcon.innerText = '🔥';
-        hudIcon.innerText = '🔥';
-        modeBtn.className = 'hand-btn w-13 h-13 bg-rose-300 text-2xl flex items-center justify-center';
-        hudBadge.className = 'w-9 h-9 rounded-full border-2 border-[#5a4a42] bg-rose-300 flex items-center justify-center text-lg shadow-sm';
-        addVisualPopup(player.x, player.y - 25, '⚔️⚡');
-        playSound('shockwave');
-      } else if (mode === 'M2') {
-        modeIcon.innerText = '🌱';
-        hudIcon.innerText = '🌱';
-        modeBtn.className = 'hand-btn w-13 h-13 bg-emerald-300 text-2xl flex items-center justify-center';
-        hudBadge.className = 'w-9 h-9 rounded-full border-2 border-[#5a4a42] bg-emerald-300 flex items-center justify-center text-lg shadow-sm';
-        addVisualPopup(player.x, player.y - 25, '🩹✨');
-        playSound('repair');
-      } else {
-        modeIcon.innerText = '🟡';
-        hudIcon.innerText = '🟡';
-        modeBtn.className = 'hand-btn w-13 h-13 bg-amber-300 text-2xl flex items-center justify-center';
-        hudBadge.className = 'w-9 h-9 rounded-full border-2 border-[#5a4a42] bg-amber-200 flex items-center justify-center text-lg shadow-sm';
-      }
-    }
-
-    function triggerCytokine() {
-      if (player.antigens >= player.maxAntigens) {
-        player.antigens = 0;
-        stats.cytokinesCalled++;
-        playSound('shockwave');
-
-        helperTCells.push({
-          x: player.x,
-          y: player.y - 80,
-          life: 250
-        });
-
-        addVisualPopup(player.x, player.y - 35, '🎺🦺✨');
-        
-        bacteriaList.forEach(b => {
-          if (Math.hypot(b.x - player.x, b.y - player.y) < 220) {
-            b.hp -= 2;
-            createParticles(b.x, b.y, '#f59e0b', 6);
-          }
-        });
-
-        updateHUD();
-      }
-    }
-
-    function shootPseudopodButton() {
-      if (!gameRunning || pseudopod.active) return;
-      
-      let angle = player.aimAngle;
-      if (joystickVector.x !== 0 || joystickVector.y !== 0) {
-        angle = Math.atan2(joystickVector.y, joystickVector.x);
-      }
-      
-      const targetX = player.x + Math.cos(angle) * pseudopod.maxLength;
-      const targetY = player.y + Math.sin(angle) * pseudopod.maxLength;
-      shootPseudopodTowards(targetX, targetY);
-    }
-
-    function shootPseudopodTowards(tx, ty) {
-      if (pseudopod.active) return;
-
-      const angle = Math.atan2(ty - player.y, tx - player.x);
-      player.aimAngle = angle;
-
-      pseudopod.active = true;
-      pseudopod.x = player.x;
-      pseudopod.y = player.y;
-      pseudopod.targetX = player.x + Math.cos(angle) * pseudopod.maxLength;
-      pseudopod.targetY = player.y + Math.sin(angle) * pseudopod.maxLength;
-      pseudopod.length = 0;
-      pseudopod.state = 'extending';
-
-      playSound('shoot');
-    }
-
-    /* --- SPAWNERS --- */
-    function spawnBacteria() {
-      const margin = 30;
-      const type = Math.random() < 0.7 ? 'staph' : 'dust';
-      bacteriaList.push({
-        x: margin + Math.random() * (canvas.width - margin * 2),
-        y: margin + Math.random() * (canvas.height - margin * 2),
-        type: type,
-        radius: type === 'staph' ? 12 : 15,
-        vx: (Math.random() - 0.5) * 1.2,
-        vy: (Math.random() - 0.5) * 1.2,
-        hp: type === 'staph' ? 1 : 2,
-        wobble: Math.random() * Math.PI * 2
-      });
-    }
-
-    function spawnInflammation() {
-      const margin = 50;
-      inflammationList.push({
-        x: margin + Math.random() * (canvas.width - margin * 2),
-        y: margin + Math.random() * (canvas.height - margin * 2),
-        radius: 22 + Math.random() * 12,
-        health: 100,
-        pulse: 0
-      });
-    }
-
-    function addVisualPopup(x, y, icon) {
-      visualPopups.push({ x, y, icon, alpha: 1, life: 35, scale: 0.7 });
-    }
-
-    function createParticles(x, y, color, count = 6) {
-      for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 1 + Math.random() * 2.5;
-        particleList.push({
-          x, y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          color,
-          radius: 2.5 + Math.random() * 2.5,
-          life: 15 + Math.random() * 12
-        });
-      }
-    }
-
-    /* --- UPDATE LOOP --- */
-    function update() {
-      let moveSpeed = player.speed;
-      if (player.mode === 'M1') moveSpeed *= 1.35;
-      if (player.fullness > 80) moveSpeed *= 0.75;
-
-      let kx = 0, ky = 0;
-      if (keys['ArrowUp'] || keys['w'] || keys['W']) ky -= 1;
-      if (keys['ArrowDown'] || keys['s'] || keys['S']) ky += 1;
-      if (keys['ArrowLeft'] || keys['a'] || keys['A']) kx -= 1;
-      if (keys['ArrowRight'] || keys['d'] || keys['D']) kx += 1;
-
-      let inputX = joystickVector.x || kx;
-      let inputY = joystickVector.y || ky;
-
-      if (inputX !== 0 || inputY !== 0) {
-        const len = Math.hypot(inputX, inputY);
-        const normX = len > 1 ? inputX / len : inputX;
-        const normY = len > 1 ? inputY / len : inputY;
-
-        player.vx = player.vx * 0.6 + normX * moveSpeed * 0.4;
-        player.vy = player.vy * 0.6 + normY * moveSpeed * 0.4;
-        player.aimAngle = Math.atan2(normY, normX);
-      } else {
-        player.vx *= 0.7;
-        player.vy *= 0.7;
-      }
-
-      player.x += player.vx;
-      player.y += player.vy;
-
-      player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
-      player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
-
-      player.wobbleAngle += 0.08;
-
-      if (player.fullness > 0) player.fullness -= 0.06;
-
-      // Pseudopod Action
-      if (pseudopod.active) {
-        const angle = Math.atan2(pseudopod.targetY - player.y, pseudopod.targetX - player.x);
-
-        if (pseudopod.state === 'extending') {
-          pseudopod.length += pseudopod.speed;
-          pseudopod.x = player.x + Math.cos(angle) * pseudopod.length;
-          pseudopod.y = player.y + Math.sin(angle) * pseudopod.length;
-
-          bacteriaList.forEach(b => {
-            if (Math.hypot(b.x - pseudopod.x, b.y - pseudopod.y) < b.radius + 10) {
-              b.x = pseudopod.x;
-              b.y = pseudopod.y;
-              pseudopod.state = 'retracting';
+    <!-- Main Game Logic Script -->
+    <script>
+        // --- Web Audio Adaptive Sound Engine ---
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.isMuted = false;
+                this.currentStyle = 'calm';
+                this.timer = null;
             }
-          });
 
-          if (pseudopod.length >= pseudopod.maxLength) pseudopod.state = 'retracting';
-        } else {
-          pseudopod.length -= pseudopod.speed * 1.2;
-          pseudopod.x = player.x + Math.cos(angle) * pseudopod.length;
-          pseudopod.y = player.y + Math.sin(angle) * pseudopod.length;
-
-          if (pseudopod.length <= 0) pseudopod.active = false;
-        }
-      }
-
-      // Update Bacteria
-      for (let i = bacteriaList.length - 1; i >= 0; i--) {
-        const b = bacteriaList[i];
-        b.x += b.vx;
-        b.y += b.vy;
-        b.wobble += 0.05;
-
-        if (b.x < b.radius || b.x > canvas.width - b.radius) b.vx *= -1;
-        if (b.y < b.radius || b.y > canvas.height - b.radius) b.vy *= -1;
-
-        const dist = Math.hypot(player.x - b.x, player.y - b.y);
-        const devourRange = player.radius + b.radius + (player.mode === 'M1' ? 8 : 0);
-
-        if (dist < devourRange) {
-          playSound('eat');
-          createParticles(b.x, b.y, b.type === 'staph' ? '#fbbf24' : '#a8a29e', 8);
-
-          if (b.type === 'staph') {
-            player.atp += 15;
-            player.hp = Math.min(player.maxHp, player.hp + 6);
-            stats.eatenStaph++;
-            addVisualPopup(b.x, b.y, '⭐✨');
-          } else {
-            player.atp += 25;
-            player.hp = Math.min(player.maxHp, player.hp + 12);
-            stats.eatenDust++;
-            addVisualPopup(b.x, b.y, '🧹✨');
-          }
-
-          player.fullness = Math.min(player.maxFullness, player.fullness + 25);
-          if (player.antigens < player.maxAntigens) player.antigens++;
-
-          bacteriaList.splice(i, 1);
-          spawnBacteria();
-          updateHUD();
-        }
-      }
-
-      // Update Inflammation
-      for (let i = inflammationList.length - 1; i >= 0; i--) {
-        const inf = inflammationList[i];
-        inf.pulse += 0.05;
-
-        const dist = Math.hypot(player.x - inf.x, player.y - inf.y);
-
-        if (player.mode === 'M2' && dist < player.radius + inf.radius) {
-          inf.health -= 2.5;
-          createParticles(inf.x, inf.y, '#34d399', 2);
-
-          if (Math.random() < 0.1) playSound('repair');
-
-          if (inf.health <= 0) {
-            playSound('repair');
-            addVisualPopup(inf.x, inf.y, '🩹❇️');
-            createParticles(inf.x, inf.y, '#10b981', 16);
-            player.atp += 35;
-            stats.repairedInflammation++;
-            inflammationList.splice(i, 1);
-            spawnInflammation();
-            updateHUD();
-            continue;
-          }
-        }
-
-        if (player.mode !== 'M2' && dist < inf.radius) {
-          if (Math.random() < 0.03) {
-            player.hp -= 3;
-            playSound('hit');
-            addVisualPopup(player.x, player.y, '😵⚡');
-            updateHUD();
-
-            if (player.hp <= 0) {
-              endGame(false);
-              return;
+            init() {
+                if (this.ctx) return;
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioCtx();
+                this.startBGM();
             }
-          }
+
+            playTone(freq, type = 'sine', duration = 0.15, vol = 0.1) {
+                if (this.isMuted || !this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            }
+
+            playEatsound() {
+                this.playTone(320, 'triangle', 0.1, 0.15);
+                setTimeout(() => this.playTone(540, 'sine', 0.15, 0.2), 50);
+            }
+
+            playJustDevourSound() {
+                this.playTone(400, 'square', 0.1, 0.2);
+                setTimeout(() => this.playTone(800, 'triangle', 0.2, 0.25), 80);
+                setTimeout(() => this.playTone(1200, 'sine', 0.3, 0.3), 160);
+            }
+
+            playHurtSound() {
+                this.playTone(150, 'sawtooth', 0.2, 0.25);
+            }
+
+            playWireSound() {
+                this.playTone(600, 'sine', 0.08, 0.12);
+                setTimeout(() => this.playTone(900, 'sine', 0.12, 0.15), 40);
+            }
+
+            playHealSound() {
+                this.playTone(440, 'sine', 0.15, 0.15);
+                setTimeout(() => this.playTone(660, 'sine', 0.2, 0.15), 100);
+            }
+
+            setTheme(style) {
+                this.currentStyle = style;
+            }
+
+            startBGM() {
+                if (this.timer) clearInterval(this.timer);
+                let step = 0;
+                this.timer = setInterval(() => {
+                    if (this.isMuted || !this.ctx) return;
+                    
+                    if (this.currentStyle === 'calm') {
+                        // Gentle picture book melody
+                        const notes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; // C-E-G-C-G-E
+                        if (step % 2 === 0) {
+                            const freq = notes[(step / 2) % notes.length];
+                            this.playTone(freq, 'sine', 0.3, 0.04);
+                        }
+                    } else if (this.currentStyle === 'battle') {
+                        // Fast upbeat energetic battle beat
+                        const notes = [174.61, 220.00, 261.63, 349.23]; // F-A-C-F
+                        const freq = notes[step % notes.length];
+                        this.playTone(freq, 'triangle', 0.1, 0.06);
+                        if (step % 4 === 0) {
+                            this.playTone(110, 'sawtooth', 0.15, 0.08); // Bass drum feel
+                        }
+                    } else if (this.currentStyle === 'healing') {
+                        // Soft M2 music box tune
+                        const notes = [349.23, 440.00, 523.25, 659.25]; // F-A-C-E
+                        if (step % 3 === 0) {
+                            const freq = notes[(step / 3) % notes.length];
+                            this.playTone(freq, 'sine', 0.4, 0.03);
+                        }
+                    }
+                    step++;
+                }, 250);
+            }
         }
-      }
 
-      // Update Helper T
-      for (let i = helperTCells.length - 1; i >= 0; i--) {
-        const ht = helperTCells[i];
-        ht.life--;
-        ht.x += (player.x + 30 - ht.x) * 0.05;
-        ht.y += (player.y - 30 - ht.y) * 0.05;
-        if (ht.life <= 0) helperTCells.splice(i, 1);
-      }
+        const audio = new AudioEngine();
 
-      // Update Particles
-      for (let i = particleList.length - 1; i >= 0; i--) {
-        const p = particleList[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        if (p.life <= 0) particleList.splice(i, 1);
-      }
+        // --- Game Setup & Story Definitions ---
+        const CANVAS_WIDTH = 800;
+        const CANVAS_HEIGHT = 500;
 
-      // Update Visual Popups
-      for (let i = visualPopups.length - 1; i >= 0; i--) {
-        const vp = visualPopups[i];
-        vp.y -= 0.9;
-        vp.life--;
-        vp.scale = Math.min(1.2, vp.scale + 0.03);
-        vp.alpha = vp.life / 35;
-        if (vp.life <= 0) visualPopups.splice(i, 1);
-      }
+        const STORY_DAYS = [
+            {
+                day: 1,
+                title: "平穏な血管の巡回",
+                sub: "黄色ブドウ球菌をたべてATPを集めよう",
+                dialog: "今日もパトロール開始！あやしい細菌を見つけたら、タップで偽足を伸ばしてパクッと食べちゃおう！画面端をタップすると「ワイヤー移動」で素早く移動できるよ！",
+                targetATP: 30,
+                bgmStyle: 'calm',
+                bacterialTypes: ['staph'],
+                goodBacteria: false
+            },
+            {
+                day: 2,
+                title: "腸内フローラの冒険",
+                sub: "善玉菌(ビフィズス菌🟢)を守り悪玉菌を食べよう",
+                dialog: "腸内にやってきたよ！ここにはお腹に良い『ビフィズス菌🟢』もいるんだ。間違えて食べちゃダメだよ！お腹をこわしてスピードダウンしちゃうよ！",
+                targetATP: 40,
+                bgmStyle: 'calm',
+                bacterialTypes: ['staph'],
+                goodBacteria: true
+            },
+            {
+                day: 3,
+                title: "すり傷と緊急召喚",
+                sub: "ワクチンドロップ💊を拾ってヘルパーT細胞を呼ぼう",
+                dialog: "たいへん！皮膚にすり傷ができて細菌が増えてきた！『ワクチンカプセル💊』を拾うと、一気に『サイトカインラッパ』がチャージされて仲間のB細胞が来てくれるよ！",
+                targetATP: 50,
+                bgmStyle: 'calm',
+                bacterialTypes: ['staph'],
+                goodBacteria: true
+            },
+            {
+                day: 4,
+                title: "インフルエンザウイルスの襲来",
+                sub: "M1攻撃形態(🔥)になってウイルスを撃退せよ",
+                dialog: "すばやい『インフルエンザウイルス👾』が現れた！敵の攻撃寸前に食べる『ジャスト貪食』でATP2倍！M1ボタンを押して攻撃形態に変身しよう！",
+                targetATP: 65,
+                bgmStyle: 'battle',
+                bacterialTypes: ['staph', 'flu'],
+                goodBacteria: true
+            },
+            {
+                day: 5,
+                title: "炎症の鎮静と組織修復",
+                sub: "M2修復形態(🌿)に変身して傷ついた細胞を治そう",
+                dialog: "たたかいが終わったあとの血管はボロボロ…。M2ボタンを押して『修復形態🌿』になろう！傷ついた組織(治癒ポイント)に触れてやさしく手当てしてね！",
+                targetATP: 50,
+                bgmStyle: 'healing',
+                bacterialTypes: [],
+                repairNodesNeeded: 5,
+                goodBacteria: false
+            },
+            {
+                day: 6,
+                title: "がん細胞の芽と変異",
+                sub: "変異細胞を早めに貪食して進行を防ごう",
+                dialog: "変異した細胞(がん細胞の芽)が誕生しちゃった！増殖する前に素早く貪食しよう！",
+                targetATP: 80,
+                bgmStyle: 'battle',
+                bacterialTypes: ['staph', 'mutant'],
+                goodBacteria: true
+            },
+            {
+                day: 7,
+                title: "決戦！巨大病原体ボス",
+                sub: "全免疫システムを結集して巨大ボスを倒せ！",
+                dialog: "巨大な病原体ボスが出現！！M1変身・サイトカインラッパ・ワイヤー移動をフル活用して体を守りぬこう！",
+                targetATP: 100,
+                bgmStyle: 'battle',
+                isBossLevel: true,
+                goodBacteria: true
+            },
+            {
+                day: 8,
+                title: "平和な体とマクロファージ",
+                sub: "クリアおめでとう！体は今日も元気に守られました",
+                dialog: "ありがとう！君のおかげで体はすっかり元気になったよ！これからも免疫細胞たちは毎日休みなく体を見守っているよ！クリアおめでとう！🎉",
+                targetATP: 999,
+                bgmStyle: 'healing',
+                gameCompleted: true
+            }
+        ];
 
-      // Victory Condition (150 Stars)
-      if (player.atp >= 150) {
-        endGame(true);
-      }
-    }
+        // --- Game State Object ---
+        const state = {
+            currentDayIdx: 0,
+            hp: 100,
+            maxHp: 100,
+            atp: 0,
+            mode: 'normal', // 'normal', 'm1', 'm2'
+            cytokineCharge: 0,
+            maxCytokineCharge: 3,
+            isStoryActive: true,
+            isWireActive: false,
+            wireTarget: null,
+            slowMoTimer: 0,
+            bellyAcheTimer: 0,
+            
+            // Entities
+            player: {
+                x: CANVAS_WIDTH / 2,
+                y: CANVAS_HEIGHT / 2,
+                vx: 0,
+                vy: 0,
+                radius: 26,
+                baseRadius: 26,
+                squishX: 1,
+                squishY: 1,
+                pseudopodTarget: null,
+                pseudopodLen: 0,
+                maxPseudopodLen: 140
+            },
+            enemies: [],
+            goodBacteriaList: [],
+            vaccines: [],
+            repairNodes: [],
+            particles: [],
+            helpers: [], // B-Cells / Neutrophils
+            boss: null
+        };
 
-    /* --- RENDERING --- */
-    function render() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // DOM Element Cache
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
 
-      // Tissue Background
-      ctx.save();
-      ctx.strokeStyle = '#f3e8d8';
-      ctx.lineWidth = 1.5;
-      for (let x = 30; x < canvas.width; x += 85) {
-        for (let y = 30; y < canvas.height; y += 85) {
-          ctx.beginPath();
-          ctx.arc(x, y, 26, 0, Math.PI * 2);
-          ctx.stroke();
+        const elHpBar = document.getElementById('hp-bar');
+        const elAtpCount = document.getElementById('atp-count');
+        const elDayBadge = document.getElementById('day-badge');
+        const elDayTitle = document.getElementById('day-title');
+        const elDaySub = document.getElementById('day-sub');
+        const elStoryModal = document.getElementById('story-modal');
+        const elNarratorText = document.getElementById('narrator-text');
+        const elBtnCloseStory = document.getElementById('btn-close-story');
+        const elDamageOverlay = document.getElementById('damage-overlay');
+        const elComboPopup = document.getElementById('combo-popup');
+        const elComboText = document.getElementById('combo-text');
+        const elCytokineBadge = document.getElementById('cytokine-badge');
+
+        const elBtnM1 = document.getElementById('btn-mode-m1');
+        const elBtnM2 = document.getElementById('btn-mode-m2');
+        const elBtnCytokine = document.getElementById('btn-cytokine');
+        const elBtnEncyclopedia = document.getElementById('btn-encyclopedia');
+        const elBtnCloseEncyclopedia = document.getElementById('btn-close-encyclopedia');
+        const elModalEncyclopedia = document.getElementById('modal-encyclopedia');
+        const elBtnSound = document.getElementById('btn-sound');
+
+        // --- Event Listeners & Controls ---
+        function setupEventListeners() {
+            // Pointer tap for extend pseudopod or wire-action
+            canvas.addEventListener('pointerdown', (e) => {
+                audio.init();
+                if (state.isStoryActive) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = CANVAS_WIDTH / rect.width;
+                const scaleY = CANVAS_HEIGHT / rect.height;
+                const targetX = (e.clientX - rect.left) * scaleX;
+                const targetY = (e.clientY - rect.top) * scaleY;
+
+                // Check if wire action to screen border (within 35px of edges)
+                if (targetX < 35 || targetX > CANVAS_WIDTH - 35 || targetY < 35 || targetY > CANVAS_HEIGHT - 35) {
+                    state.isWireActive = true;
+                    state.wireTarget = { x: targetX, y: targetY };
+                    audio.playWireSound();
+                }
+
+                // Set pseudopod extension target
+                state.player.pseudopodTarget = { x: targetX, y: targetY };
+                state.player.pseudopodLen = 0;
+            });
+
+            // Phenotype Mode Switch Buttons
+            elBtnM1.addEventListener('click', () => {
+                audio.init();
+                if (state.atp >= 15) {
+                    state.atp -= 15;
+                    state.mode = (state.mode === 'm1') ? 'normal' : 'm1';
+                    audio.playTone(600, 'sawtooth', 0.2);
+                    updateHUD();
+                }
+            });
+
+            elBtnM2.addEventListener('click', () => {
+                audio.init();
+                if (state.atp >= 10) {
+                    state.atp -= 10;
+                    state.mode = (state.mode === 'm2') ? 'normal' : 'm2';
+                    audio.playHealSound();
+                    updateHUD();
+                }
+            });
+
+            // Call Cytokines / B-Cells
+            elBtnCytokine.addEventListener('click', () => {
+                audio.init();
+                if (state.cytokineCharge >= 1) {
+                    state.cytokineCharge--;
+                    spawnHelperCells();
+                    audio.playTone(880, 'sine', 0.3, 0.3);
+                    updateHUD();
+                }
+            });
+
+            // Story dialogue button
+            elBtnCloseStory.addEventListener('click', () => {
+                audio.init();
+                state.isStoryActive = false;
+                elStoryModal.classList.add('translate-y-full', 'opacity-0');
+            });
+
+            // Encyclopedia Modal
+            elBtnEncyclopedia.addEventListener('click', () => {
+                elModalEncyclopedia.classList.remove('hidden');
+            });
+            elBtnCloseEncyclopedia.addEventListener('click', () => {
+                elModalEncyclopedia.classList.add('hidden');
+            });
+
+            // Sound Toggle
+            elBtnSound.addEventListener('click', () => {
+                audio.isMuted = !audio.isMuted;
+                document.getElementById('sound-icon').className = audio.isMuted ? 
+                    "fa-solid fa-volume-xmark text-red-500" : "fa-solid fa-volume-high text-amber-700";
+            });
         }
-      }
-      ctx.restore();
 
-      // Inflamed Spots
-      inflammationList.forEach(inf => {
-        ctx.save();
-        ctx.translate(inf.x, inf.y);
-        const r = inf.radius * (1 + Math.sin(inf.pulse) * 0.06);
-
-        const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, r);
-        grad.addColorStop(0, `rgba(244, 63, 94, ${0.45 * (inf.health / 100)})`);
-        grad.addColorStop(1, 'rgba(244, 63, 94, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(0, 0, r, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = `rgba(225, 29, 72, ${0.6 * (inf.health / 100)})`;
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash([5, 3]);
-        ctx.beginPath();
-        ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.font = '14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('🩹', 0, 5);
-        ctx.restore();
-      });
-
-      // Pseudopod Line
-      if (pseudopod.active) {
-        ctx.save();
-        ctx.strokeStyle = player.mode === 'M1' ? '#f87171' : (player.mode === 'M2' ? '#34d399' : '#fbbf24');
-        ctx.lineWidth = 11;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(player.x, player.y);
-        ctx.lineTo(pseudopod.x, pseudopod.y);
-        ctx.stroke();
-
-        ctx.strokeStyle = '#fffbf4';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-
-        ctx.fillStyle = player.mode === 'M1' ? '#ef4444' : '#f59e0b';
-        ctx.beginPath();
-        ctx.arc(pseudopod.x, pseudopod.y, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      // Bacteria
-      bacteriaList.forEach(b => {
-        ctx.save();
-        ctx.translate(b.x, b.y);
-
-        if (b.type === 'staph') {
-          ctx.fillStyle = '#fef08a';
-          ctx.strokeStyle = '#5a4a42';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-
-          ctx.fillStyle = '#5a4a42';
-          ctx.beginPath();
-          ctx.arc(-3, -2, 2, 0, Math.PI * 2);
-          ctx.arc(3, -2, 2, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.fillStyle = '#d6d3d1';
-          ctx.strokeStyle = '#5a4a42';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2 + b.wobble;
-            const dist = b.radius + Math.sin(angle * 3) * 2.5;
-            const px = Math.cos(angle) * dist;
-            const py = Math.sin(angle) * dist;
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-          }
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
+        // --- Helper Spawning Logic ---
+        function spawnHelperCells() {
+            for (let i = 0; i < 3; i++) {
+                state.helpers.push({
+                    x: state.player.x + (Math.random() - 0.5) * 40,
+                    y: state.player.y + (Math.random() - 0.5) * 40,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    lifeTimer: 300,
+                    type: 'b-cell'
+                });
+            }
         }
-        ctx.restore();
-      });
 
-      // Helper T NPC
-      helperTCells.forEach(ht => {
-        ctx.save();
-        ctx.translate(ht.x, ht.y);
-        ctx.fillStyle = '#38bdf8';
-        ctx.strokeStyle = '#5a4a42';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, 15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+        // --- Day Initialization ---
+        function initDay(dayIdx) {
+            state.currentDayIdx = dayIdx;
+            const currentStory = STORY_DAYS[dayIdx];
 
-        ctx.font = '13px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('🦺', 0, 4);
-        ctx.restore();
-      });
+            state.mode = 'normal';
+            state.enemies = [];
+            state.goodBacteriaList = [];
+            state.vaccines = [];
+            state.repairNodes = [];
+            state.particles = [];
+            state.helpers = [];
+            state.boss = null;
+            state.isStoryActive = true;
 
-      // Player Macrophage
-      drawMacrophagePlayer();
+            // Update UI Narrative Text
+            elDayBadge.textContent = `Day ${currentStory.day}`;
+            elDayTitle.textContent = currentStory.title;
+            elDaySub.textContent = currentStory.sub;
+            elNarratorText.textContent = currentStory.dialog;
 
-      // Particles
-      particleList.forEach(p => {
-        ctx.save();
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      });
+            elStoryModal.classList.remove('translate-y-full', 'opacity-0');
+            audio.setTheme(currentStory.bgmStyle);
 
-      // Visual Popups
-      visualPopups.forEach(vp => {
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, vp.alpha);
-        ctx.font = `${Math.round(20 * vp.scale)}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText(vp.icon, vp.x, vp.y);
-        ctx.restore();
-      });
-    }
+            // Populate Repair Nodes for Day 5
+            if (currentStory.repairNodesNeeded) {
+                for (let i = 0; i < currentStory.repairNodesNeeded; i++) {
+                    state.repairNodes.push({
+                        x: 100 + Math.random() * (CANVAS_WIDTH - 200),
+                        y: 100 + Math.random() * (CANVAS_HEIGHT - 200),
+                        hp: 0,
+                        maxHp: 100
+                    });
+                }
+            }
 
-    function drawMacrophagePlayer() {
-      ctx.save();
-      ctx.translate(player.x, player.y);
+            // Populate Boss for Day 7
+            if (currentStory.isBossLevel) {
+                state.boss = {
+                    x: CANVAS_WIDTH / 2,
+                    y: 120,
+                    hp: 300,
+                    maxHp: 300,
+                    radius: 55,
+                    vx: 2
+                };
+            }
 
-      let fillColor = '#fde047';
-      let strokeColor = '#5a4a42';
-      let auraColor = 'rgba(253, 224, 71, 0.35)';
-
-      if (player.mode === 'M1') {
-        fillColor = '#fb923c';
-        auraColor = 'rgba(249, 115, 22, 0.45)';
-      } else if (player.mode === 'M2') {
-        fillColor = '#6ee7b7';
-        auraColor = 'rgba(52, 211, 153, 0.45)';
-      }
-
-      ctx.fillStyle = auraColor;
-      ctx.beginPath();
-      ctx.arc(0, 0, player.radius + 6, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = fillColor;
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 3.5;
-
-      ctx.beginPath();
-      const points = 10;
-      for (let i = 0; i < points; i++) {
-        const angle = (i / points) * Math.PI * 2;
-        let wobble = Math.sin(player.wobbleAngle + i * 1.5) * 3;
-        if (player.mode === 'M1' && i % 2 === 0) wobble += 6;
-
-        const r = player.radius + wobble;
-        const px = Math.cos(angle) * r;
-        const py = Math.sin(angle) * r;
-
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.quadraticCurveTo(0, 0, px, py);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
-      // Eyes & Expression
-      const ex = Math.cos(player.aimAngle) * 5;
-      const ey = Math.sin(player.aimAngle) * 5;
-
-      ctx.fillStyle = '#5a4a42';
-      
-      if (player.hp < 30) {
-        ctx.font = '14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('😵', 0, 5);
-      } else if (player.mode === 'M1') {
-        ctx.beginPath();
-        ctx.arc(-6 + ex, -3 + ey, 3, 0, Math.PI * 2);
-        ctx.arc(6 + ex, -3 + ey, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(ex, 5 + ey, 4, Math.PI, 0);
-        ctx.stroke();
-      } else {
-        ctx.beginPath();
-        ctx.arc(-6 + ex, -3 + ey, 3, 0, Math.PI * 2);
-        ctx.arc(6 + ex, -3 + ey, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(ex, 2 + ey, 4, 0, Math.PI);
-        ctx.stroke();
-      }
-
-      ctx.restore();
-    }
-
-    function updateHUD() {
-      document.getElementById('hp-bar').style.width = Math.max(0, (player.hp / player.maxHp) * 100) + '%';
-      document.getElementById('atp-count').innerText = player.atp;
-      document.getElementById('fullness-bar').style.width = player.fullness + '%';
-
-      const bellyIcon = document.getElementById('belly-icon');
-      if (player.fullness > 80) bellyIcon.innerText = '🤰';
-      else if (player.fullness > 40) bellyIcon.innerText = '🥐';
-      else bellyIcon.innerText = '🫙';
-
-      const stampsContainer = document.getElementById('antigen-stamps');
-      stampsContainer.innerHTML = '';
-      for (let i = 0; i < player.maxAntigens; i++) {
-        const dot = document.createElement('span');
-        if (i < player.antigens) {
-          dot.className = 'w-2 h-2 rounded-full bg-amber-400 border border-[#5a4a42]';
-        } else {
-          dot.className = 'w-2 h-2 rounded-full bg-stone-300 border border-[#5a4a42]';
+            updateHUD();
         }
-        stampsContainer.appendChild(dot);
-      }
 
-      const cytokineBtn = document.getElementById('cytokine-btn');
-      if (player.antigens >= player.maxAntigens) {
-        cytokineBtn.disabled = false;
-        cytokineBtn.classList.add('glow-ready', 'bg-amber-300');
-      } else {
-        cytokineBtn.disabled = true;
-        cytokineBtn.classList.remove('glow-ready', 'bg-amber-300');
-      }
-    }
+        // --- Trigger Combo Popups ---
+        function triggerCombo(msg) {
+            elComboText.textContent = msg;
+            elComboPopup.classList.remove('opacity-0', 'scale-50');
+            elComboPopup.classList.add('opacity-100', 'scale-100');
+            setTimeout(() => {
+                elComboPopup.classList.add('opacity-0', 'scale-50');
+                elComboPopup.classList.remove('opacity-100', 'scale-100');
+            }, 1200);
+        }
 
-    function gameLoop() {
-      if (!gameRunning) return;
-      update();
-      render();
-      animationFrameId = requestAnimationFrame(gameLoop);
-    }
+        // --- Screen Damage Flash ---
+        function triggerDamageFlash() {
+            elDamageOverlay.classList.remove('damage-active');
+            void elDamageOverlay.offsetWidth; // trigger reflow
+            elDamageOverlay.classList.add('damage-active');
+            audio.playHurtSound();
+        }
 
-    function endGame(isClear) {
-      gameRunning = false;
-      cancelAnimationFrame(animationFrameId);
+        // --- HUD Update ---
+        function updateHUD() {
+            elHpBar.style.width = `${Math.max(0, (state.hp / state.maxHp) * 100)}%`;
+            elAtpCount.textContent = state.atp;
+            elCytokineBadge.textContent = state.cytokineCharge;
 
-      const journalScreen = document.getElementById('journal-screen');
-      const journalStamp = document.getElementById('journal-stamp');
-      const journalContent = document.getElementById('journal-content');
+            // Highlight Active Mode Buttons
+            if (state.mode === 'm1') {
+                elBtnM1.classList.add('ring-4', 'ring-red-500');
+                elBtnM2.classList.remove('ring-4', 'ring-emerald-500');
+            } else if (state.mode === 'm2') {
+                elBtnM2.classList.add('ring-4', 'ring-emerald-500');
+                elBtnM1.classList.remove('ring-4', 'ring-red-500');
+            } else {
+                elBtnM1.classList.remove('ring-4', 'ring-red-500');
+                elBtnM2.classList.remove('ring-4', 'ring-emerald-500');
+            }
+        }
 
-      journalScreen.classList.remove('hidden');
+        // --- Main Game Update Loop ---
+        function update() {
+            if (state.isStoryActive) return;
 
-      if (isClear) {
-        journalStamp.innerText = '💮';
-        journalContent.innerHTML = `
-          <div class="flex items-center justify-between"><span>🟡 🧫</span><span>× ${stats.eatenStaph}</span></div>
-          <div class="flex items-center justify-between"><span>🧹 🩶</span><span>× ${stats.eatenDust}</span></div>
-          <div class="flex items-center justify-between"><span>🩹 ❇️</span><span>× ${stats.repairedInflammation}</span></div>
-          <div class="flex items-center justify-between text-amber-700 text-lg border-t border-amber-200 pt-1 mt-1"><span>⭐</span><span>${player.atp}</span></div>
-        `;
-      } else {
-        journalStamp.innerText = '💔';
-        journalContent.innerHTML = `
-          <div class="flex items-center justify-between"><span>🟡 🧫</span><span>× ${stats.eatenStaph}</span></div>
-          <div class="flex items-center justify-between"><span>🩹 ❇️</span><span>× ${stats.repairedInflammation}</span></div>
-          <div class="text-xs text-rose-700 mt-2 border-t border-amber-200 pt-1">🩹 🌱 ──> ✨</div>
-        `;
-      }
-    }
+            const currentStory = STORY_DAYS[state.currentDayIdx];
 
-    function restartGame() {
-      document.getElementById('journal-screen').classList.add('hidden');
-      startGame();
-    }
-  </script>
+            // 1. Player Physics & Wire Movement
+            let speedMult = (state.bellyAcheTimer > 0) ? 0.5 : 1.0;
+            if (state.mode === 'm1') speedMult *= 1.3;
+
+            if (state.isWireActive && state.wireTarget) {
+                const dx = state.wireTarget.x - state.player.x;
+                const dy = state.wireTarget.y - state.player.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 10) {
+                    state.player.vx = (dx / dist) * 12 * speedMult;
+                    state.player.vy = (dy / dist) * 12 * speedMult;
+                } else {
+                    state.isWireActive = false;
+                }
+            } else {
+                // Natural spring friction
+                state.player.vx *= 0.88;
+                state.player.vy *= 0.88;
+            }
+
+            state.player.x += state.player.vx;
+            state.player.y += state.player.vy;
+
+            // Keep within screen bounds
+            state.player.x = Math.max(state.player.radius, Math.min(CANVAS_WIDTH - state.player.radius, state.player.x));
+            state.player.y = Math.max(state.player.radius, Math.min(CANVAS_HEIGHT - state.player.radius, state.player.y));
+
+            // Jelly spring physics squish animation
+            const speed = Math.hypot(state.player.vx, state.player.vy);
+            state.player.squishX = 1 + Math.sin(Date.now() * 0.01) * 0.08 + (speed * 0.015);
+            state.player.squishY = 1 - Math.sin(Date.now() * 0.01) * 0.08 - (speed * 0.015);
+
+            // Timers
+            if (state.bellyAcheTimer > 0) state.bellyAcheTimer--;
+
+            // Pseudopod Extension Logic
+            if (state.player.pseudopodTarget) {
+                state.player.pseudopodLen += 16;
+                if (state.player.pseudopodLen > state.player.maxPseudopodLen) {
+                    state.player.pseudopodTarget = null;
+                    state.player.pseudopodLen = 0;
+                }
+            }
+
+            // 2. Enemy Spawning & Updating
+            if (currentStory.bacterialTypes.length > 0 && state.enemies.length < 8 && Math.random() < 0.03) {
+                const type = currentStory.bacterialTypes[Math.floor(Math.random() * currentStory.bacterialTypes.length)];
+                state.enemies.push({
+                    x: Math.random() < 0.5 ? -20 : CANVAS_WIDTH + 20,
+                    y: Math.random() * CANVAS_HEIGHT,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    type: type, // 'staph', 'flu', 'mutant'
+                    radius: type === 'flu' ? 14 : 18,
+                    attackTimer: 0
+                });
+            }
+
+            // Good Bacteria Spawning (Day 2, 3, 4, 6, 7)
+            if (currentStory.goodBacteria && state.goodBacteriaList.length < 3 && Math.random() < 0.01) {
+                state.goodBacteriaList.push({
+                    x: Math.random() * CANVAS_WIDTH,
+                    y: Math.random() * CANVAS_HEIGHT,
+                    vx: (Math.random() - 0.5) * 1.2,
+                    vy: (Math.random() - 0.5) * 1.2,
+                    radius: 16
+                });
+            }
+
+            // Vaccine Drops Spawning (Day 3+)
+            if (state.currentDayIdx >= 2 && state.vaccines.length < 1 && Math.random() < 0.005) {
+                state.vaccines.push({
+                    x: 80 + Math.random() * (CANVAS_WIDTH - 160),
+                    y: 80 + Math.random() * (CANVAS_HEIGHT - 160),
+                    radius: 15
+                });
+            }
+
+            // Update Enemies
+            state.enemies.forEach((enemy, idx) => {
+                enemy.x += enemy.vx;
+                enemy.y += enemy.vy;
+                enemy.attackTimer++;
+
+                // Collision with Macrophage
+                const distToPlayer = Math.hypot(enemy.x - state.player.x, enemy.y - state.player.y);
+                
+                // Just-Devour Window Check (If enemy is close & attack imminent)
+                const isJustDevourWindow = (distToPlayer < state.player.radius + enemy.radius + 20 && enemy.attackTimer % 60 < 15);
+
+                if (distToPlayer < state.player.radius + enemy.radius) {
+                    if (isJustDevourWindow || state.mode === 'm1') {
+                        // JUST-DEVOUR TRIGGER!
+                        state.enemies.splice(idx, 1);
+                        state.atp += 10;
+                        audio.playJustDevourSound();
+                        triggerCombo("ジャスト貪食！ ATP +10");
+                        
+                        // Blast surrounding enemies away
+                        state.enemies.forEach(other => {
+                            const d = Math.hypot(other.x - enemy.x, other.y - enemy.y);
+                            if (d < 120) {
+                                other.vx += (other.x - enemy.x) * 0.1;
+                                other.vy += (other.y - enemy.y) * 0.1;
+                            }
+                        });
+                    } else {
+                        // Normal hit damage
+                        state.hp -= 12;
+                        triggerDamageFlash();
+                        state.enemies.splice(idx, 1);
+                        updateHUD();
+                    }
+                }
+            });
+
+            // Update Good Bacteria
+            state.goodBacteriaList.forEach((good, idx) => {
+                good.x += good.vx;
+                good.y += good.vy;
+                const dist = Math.hypot(good.x - state.player.x, good.y - state.player.y);
+                if (dist < state.player.radius + good.radius) {
+                    // Ate good bacteria penalty!
+                    state.goodBacteriaList.splice(idx, 1);
+                    state.atp = Math.max(0, state.atp - 8);
+                    state.bellyAcheTimer = 180; // 3 seconds penalty
+                    triggerCombo("腹痛！ 善玉菌を食べちゃった 😭");
+                    audio.playHurtSound();
+                    updateHUD();
+                }
+            });
+
+            // Update Vaccines
+            state.vaccines.forEach((vac, idx) => {
+                const dist = Math.hypot(vac.x - state.player.x, vac.y - state.player.y);
+                if (dist < state.player.radius + vac.radius) {
+                    state.vaccines.splice(idx, 1);
+                    state.cytokineCharge = state.maxCytokineCharge;
+                    triggerCombo("ワクチン獲得！ サイトカインMAX 💊");
+                    audio.playTone(1000, 'sine', 0.2, 0.25);
+                    updateHUD();
+                }
+            });
+
+            // Pseudopod EAT Detection
+            if (state.player.pseudopodTarget) {
+                const pX = state.player.x + (state.player.pseudopodTarget.x - state.player.x) * (state.player.pseudopodLen / state.player.maxPseudopodLen);
+                const pY = state.player.y + (state.player.pseudopodTarget.y - state.player.y) * (state.player.pseudopodLen / state.player.maxPseudopodLen);
+
+                state.enemies.forEach((enemy, idx) => {
+                    if (Math.hypot(enemy.x - pX, enemy.y - pY) < enemy.radius + 15) {
+                        state.enemies.splice(idx, 1);
+                        state.atp += 5;
+                        audio.playEatsound();
+                        updateHUD();
+                    }
+                });
+            }
+
+            // Update Helper B-Cells
+            state.helpers.forEach((helper, hIdx) => {
+                helper.x += helper.vx;
+                helper.y += helper.vy;
+                helper.lifeTimer--;
+
+                // Helper attacks nearest enemy with antibody missile
+                state.enemies.forEach((enemy, eIdx) => {
+                    if (Math.hypot(enemy.x - helper.x, enemy.y - helper.y) < 100) {
+                        state.enemies.splice(eIdx, 1);
+                        state.atp += 5;
+                        audio.playTone(700, 'sine', 0.1);
+                        updateHUD();
+                    }
+                });
+
+                if (helper.lifeTimer <= 0) state.helpers.splice(hIdx, 1);
+            });
+
+            // Day 5 Repair Nodes Logic (M2 Mode)
+            if (state.mode === 'm2' && currentStory.repairNodesNeeded) {
+                state.repairNodes.forEach(node => {
+                    if (node.hp < node.maxHp && Math.hypot(node.x - state.player.x, node.y - state.player.y) < 50) {
+                        node.hp += 1.5;
+                        if (node.hp >= node.maxHp) {
+                            state.atp += 10;
+                            audio.playHealSound();
+                            updateHUD();
+                        }
+                    }
+                });
+            }
+
+            // Boss Level Logic (Day 7)
+            if (state.boss) {
+                state.boss.x += state.boss.vx;
+                if (state.boss.x < 100 || state.boss.x > CANVAS_WIDTH - 100) state.boss.vx *= -1;
+
+                // Hit by player in M1 mode
+                if (state.mode === 'm1' && Math.hypot(state.boss.x - state.player.x, state.boss.y - state.player.y) < state.boss.radius + state.player.radius) {
+                    state.boss.hp -= 1.2;
+                    audio.playTone(300, 'sawtooth', 0.05);
+                    if (state.boss.hp <= 0) {
+                        state.boss = null;
+                        state.atp += 50;
+                        updateHUD();
+                    }
+                }
+            }
+
+            // Particle Updates (Auras)
+            if (state.mode === 'm1') {
+                // Fire Aura Particles
+                state.particles.push({
+                    x: state.player.x + (Math.random() - 0.5) * 30,
+                    y: state.player.y + (Math.random() - 0.5) * 30,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: -Math.random() * 3,
+                    life: 20,
+                    color: '#ef4444'
+                });
+            } else if (state.mode === 'm2') {
+                // Healing Green Sparkle Particles
+                state.particles.push({
+                    x: state.player.x + (Math.random() - 0.5) * 30,
+                    y: state.player.y + (Math.random() - 0.5) * 30,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    life: 25,
+                    color: '#10b981'
+                });
+            }
+
+            state.particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) state.particles.splice(idx, 1);
+            });
+
+            // Objective Completion Check
+            let levelComplete = false;
+            if (currentStory.repairNodesNeeded) {
+                levelComplete = state.repairNodes.every(node => node.hp >= node.maxHp);
+            } else if (currentStory.isBossLevel) {
+                levelComplete = (state.boss === null);
+            } else {
+                levelComplete = (state.atp >= currentStory.targetATP);
+            }
+
+            if (levelComplete && state.currentDayIdx < STORY_DAYS.length - 1) {
+                initDay(state.currentDayIdx + 1);
+            }
+        }
+
+        // --- Render Canvas Graphics ---
+        function render() {
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Draw Background Vessel Texture
+            ctx.fillStyle = '#fbf0e4';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Vessel Lines
+            ctx.strokeStyle = '#eed2c1';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 220, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Render Particles (Auras)
+            state.particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.life * 0.2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Render Repair Nodes (Day 5)
+            state.repairNodes.forEach(node => {
+                ctx.save();
+                ctx.translate(node.x, node.y);
+                ctx.fillStyle = node.hp >= node.maxHp ? '#34d399' : '#fca5a5';
+                ctx.beginPath();
+                ctx.arc(0, 0, 24, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#6b4d3b';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Cross Icon
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-4, -12, 8, 24);
+                ctx.fillRect(-12, -4, 24, 8);
+                ctx.restore();
+            });
+
+            // Render Good Bacteria (ビフィズス菌 🟢)
+            state.goodBacteriaList.forEach(good => {
+                ctx.save();
+                ctx.translate(good.x, good.y);
+                ctx.fillStyle = '#10b981';
+                ctx.beginPath();
+                ctx.arc(0, 0, good.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#047857';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Cute Face
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(-5, -3, 3, 0, Math.PI * 2);
+                ctx.arc(5, -3, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Render Vaccine Drops 💊
+            state.vaccines.forEach(vac => {
+                ctx.save();
+                ctx.translate(vac.x, vac.y);
+                ctx.fillStyle = '#3b82f6';
+                ctx.beginPath();
+                ctx.roundRect(-12, -8, 24, 16, 8);
+                ctx.fill();
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.roundRect(0, -8, 12, 16, [0, 8, 8, 0]);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Render Enemies (黄色ブドウ球菌 / ウイルス)
+            state.enemies.forEach(enemy => {
+                ctx.save();
+                ctx.translate(enemy.x, enemy.y);
+                if (enemy.type === 'staph') {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (enemy.type === 'flu') {
+                    ctx.fillStyle = '#a855f7';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, enemy.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.strokeStyle = '#4a3324';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // Render Helper B-Cells
+            state.helpers.forEach(helper => {
+                ctx.save();
+                ctx.translate(helper.x, helper.y);
+                ctx.fillStyle = '#60a5fa';
+                ctx.beginPath();
+                ctx.arc(0, 0, 14, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Render Boss (Day 7)
+            if (state.boss) {
+                ctx.save();
+                ctx.translate(state.boss.x, state.boss.y);
+                ctx.fillStyle = '#dc2626';
+                ctx.beginPath();
+                ctx.arc(0, 0, state.boss.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#450a0a';
+                ctx.lineWidth = 5;
+                ctx.stroke();
+
+                // Boss HP Bar
+                ctx.fillStyle = '#fee2e2';
+                ctx.fillRect(-40, -70, 80, 10);
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(-40, -70, 80 * (state.boss.hp / state.boss.maxHp), 10);
+                ctx.restore();
+            }
+
+            // Render Macrophage (Player) with Jelly Physics Deformation
+            ctx.save();
+            ctx.translate(state.player.x, state.player.y);
+            ctx.scale(state.player.squishX, state.player.squishY);
+
+            // Extend Pseudopod Arm
+            if (state.player.pseudopodTarget) {
+                const angle = Math.atan2(state.player.pseudopodTarget.y - state.player.y, state.player.pseudopodTarget.x - state.player.x);
+                ctx.save();
+                ctx.rotate(angle);
+                ctx.fillStyle = state.mode === 'm1' ? '#f87171' : state.mode === 'm2' ? '#34d399' : '#fbcfe8';
+                ctx.beginPath();
+                ctx.roundRect(0, -10, state.player.pseudopodLen, 20, 10);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Body Main Shape
+            ctx.fillStyle = state.mode === 'm1' ? '#ef4444' : state.mode === 'm2' ? '#10b981' : '#f472b6';
+            ctx.beginPath();
+            ctx.arc(0, 0, state.player.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#831843';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Face (Big Friendly Eyes)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-8, -6, 7, 0, Math.PI * 2);
+            ctx.arc(8, -6, 7, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pupils
+            ctx.fillStyle = '#1e1b4b';
+            ctx.beginPath();
+            ctx.arc(-8, -6, 3, 0, Math.PI * 2);
+            ctx.arc(8, -6, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bellyache Face Emoji Effect
+            if (state.bellyAcheTimer > 0) {
+                ctx.fillStyle = '#047857';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText('🤢', -10, 12);
+            }
+
+            ctx.restore();
+        }
+
+        // --- Main Animation Loop ---
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize on Window Load
+        window.onload = function() {
+            setupEventListeners();
+            initDay(0);
+            gameLoop();
+        };
+    </script>
 </body>
 </html>
