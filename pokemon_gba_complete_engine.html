@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ポケットモンスター GBA Style RPG Complete Edition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      font-family: 'DotGothic16', monospace;
+      background-color: #090d16;
+      color: #1e293b;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* Screen Wrapper */
+    #game-container {
+      width: 100vw;
+      max-width: 680px;
+      height: 100vh;
+      max-height: 980px;
+      aspect-ratio: 2 / 3;
+      background-color: #111827;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);
+    }
+
+    @media (min-aspect-ratio: 2/3) {
+      #game-container {
+        height: 98vh;
+        width: auto;
+      }
+    }
+
+    .screen-border {
+      border: 6px solid #1e293b;
+      border-radius: 8px;
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.9);
+      position: relative;
+      overflow: hidden;
+      background: #0f172a;
+    }
+
+    .pixel-text {
+      font-family: 'DotGothic16', monospace;
+      letter-spacing: 0.5px;
+      line-height: 1.4;
+    }
+
+    /* Classic GBA Retro Panels */
+    .gba-panel {
+      background: #f8fafc;
+      border: 3px solid #334155;
+      border-radius: 6px;
+      box-shadow: inset -2px -2px 0px #cbd5e1, inset 2px 2px 0px #ffffff, 2px 2px 4px rgba(0,0,0,0.4);
+    }
+
+    .gba-panel-dark {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 3px solid #0f172a;
+      border-radius: 6px;
+      box-shadow: inset -2px -2px 0px #334155, inset 2px 2px 0px #475569;
+    }
+
+    .status-box {
+      background: #f1f5f9;
+      border: 3px solid #334155;
+      border-radius: 8px 2px 8px 2px;
+      box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .hp-fill { transition: width 0.35s ease-out, background-color 0.35s ease; }
+    .exp-fill { transition: width 0.35s ease-out; }
+
+    /* Keyframe Animations */
+    @keyframes flash-encounter {
+      0% { filter: brightness(1) invert(0); }
+      20% { filter: brightness(3) invert(1); }
+      40% { filter: brightness(0.2) invert(0); }
+      60% { filter: brightness(3) invert(1); }
+      80% { filter: brightness(0.2) invert(0); }
+      100% { filter: brightness(1) invert(0); }
+    }
+
+    @keyframes anim-attack-player {
+      0% { transform: translate(0, 0); }
+      35% { transform: translate(35px, -18px) scale(1.08); }
+      100% { transform: translate(0, 0); }
+    }
+
+    @keyframes anim-attack-enemy {
+      0% { transform: translate(0, 0); }
+      35% { transform: translate(-35px, 18px) scale(1.08); }
+      100% { transform: translate(0, 0); }
+    }
+
+    @keyframes anim-shake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-9px, 0); }
+      40% { transform: translate(9px, 0); }
+      60% { transform: translate(-6px, 0); }
+      80% { transform: translate(6px, 0); }
+    }
+
+    @keyframes anim-ball-throw {
+      0% { transform: translate(-100px, 80px) scale(0.5) rotate(0deg); }
+      50% { transform: translate(10px, -60px) scale(1.1) rotate(360deg); }
+      100% { transform: translate(110px, -20px) scale(0.8) rotate(720deg); }
+    }
+
+    @keyframes anim-ball-shake {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-25deg); }
+      75% { transform: rotate(25deg); }
+    }
+
+    @keyframes anim-faint {
+      0% { transform: translateY(0); opacity: 1; filter: contrast(1); }
+      100% { transform: translateY(65px); opacity: 0; filter: contrast(0); }
+    }
+
+    .encounter-flash { animation: flash-encounter 0.8s ease-in-out; }
+    .attack-p { animation: anim-attack-player 0.35s ease-in-out; }
+    .attack-e { animation: anim-attack-enemy 0.35s ease-in-out; }
+    .shake { animation: anim-shake 0.4s ease-in-out; }
+    .ball-throw { animation: anim-ball-throw 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+    .ball-shake { animation: anim-ball-shake 0.7s ease-in-out infinite; }
+    .faint { animation: anim-faint 0.65s ease-in forwards; }
+
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .dpad-btn {
+      background: #334155;
+      box-shadow: 0 4px 0 #0f172a;
+      border: 2px solid #64748b;
+    }
+    .dpad-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #0f172a;
+    }
+
+    .action-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-weight: bold;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+      border: 2px solid rgba(255,255,255,0.25);
+    }
+    .action-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.5);
+    }
+
+    /* Type Badges */
+    .type-normal { background-color: #a8a878; color: white; }
+    .type-fire { background-color: #f08030; color: white; }
+    .type-water { background-color: #6890f0; color: white; }
+    .type-grass { background-color: #78c850; color: white; }
+    .type-electric { background-color: #f8d030; color: #1e293b; }
+    .type-ice { background-color: #98d8d8; color: #1e293b; }
+    .type-ground { background-color: #e0c068; color: white; }
+    .type-flying { background-color: #a890f0; color: white; }
+    .type-ghost { background-color: #705898; color: white; }
+
+    /* Status Badges */
+    .status-brn { background-color: #ef4444; color: white; }
+    .status-psn { background-color: #a855f7; color: white; }
+    .status-slp { background-color: #64748b; color: white; }
+    .status-par { background-color: #eab308; color: #1e293b; }
+
+    .menu-item-selected {
+      background-color: #38bdf8 !important;
+      color: #0f172a !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container" class="p-2 sm:p-3 select-none flex flex-col justify-between">
+    
+    <!-- Header Controls & Sound State -->
+    <div class="flex justify-between items-center bg-slate-900 text-slate-200 px-3 py-1.5 rounded-t-lg text-xs font-bold border-b-2 border-slate-700">
+      <div id="sound-toggle-btn" onclick="toggleAudio()" class="cursor-pointer text-amber-400 hover:text-amber-300">
+        🔊 BGM/SE: ON
+      </div>
+      <div class="text-slate-400 tracking-wider">POKÉMON GBA ENGINE</div>
+    </div>
+
+    <!-- Main Viewport Layer (Field Map, Battle Canvas, Menus) -->
+    <div id="viewport" class="screen-border flex-1 w-full flex flex-col justify-between p-2 relative overflow-hidden">
+      
+      <!-- Field Map Screen (Exploration mode) -->
+      <div id="map-screen" class="absolute inset-0 w-full h-full z-10 flex flex-col justify-center items-center bg-slate-950">
+        <canvas id="map-canvas" width="240" height="160" class="w-full h-full object-contain"></canvas>
+        <div class="absolute top-2 left-2 bg-slate-900/85 text-amber-300 text-[11px] px-2.5 py-1 rounded border border-slate-700 shadow">
+          📍 マサラタウン (草むらで モンスターと そうぐう！)
+        </div>
+      </div>
+
+      <!-- Turn-Based Battle Viewport -->
+      <div id="battle-screen" class="absolute inset-0 w-full h-full z-20 hidden flex-col justify-between p-2 sm:p-3 bg-gradient-to-b from-sky-400 via-sky-200 to-emerald-600">
+        
+        <!-- Top Half: Enemy Status & Enemy Monster SVG -->
+        <div class="flex justify-between items-start w-full relative pt-1">
+          <!-- Enemy Status Box -->
+          <div class="status-box p-2 w-48 sm:w-56 z-10">
+            <div class="flex justify-between items-baseline mb-1">
+              <span id="enemy-name" class="font-bold text-xs sm:text-sm text-slate-900">???</span>
+              <div class="flex items-center gap-1">
+                <span id="enemy-status-badge" class="hidden text-[9px] px-1 py-0.5 rounded font-bold"></span>
+                <span id="enemy-level" class="text-[11px] font-bold text-slate-700">Lv.5</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-[9px] font-bold text-amber-800">HP</span>
+              <div class="bar-bg flex-1 h-2.5 bg-slate-600 rounded overflow-hidden border border-slate-800">
+                <div id="enemy-hp-bar" class="hp-fill h-full bg-green-500 w-full"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enemy Monster Sprite -->
+          <div class="relative flex flex-col items-center mr-4 mt-2">
+            <div class="w-28 h-7 rounded-full bg-emerald-800/40 absolute -bottom-1 z-0"></div>
+            <div id="enemy-sprite-wrapper" class="z-10 transition-transform"></div>
+          </div>
+        </div>
+
+        <!-- Bottom Half: Player Monster SVG & Status -->
+        <div class="flex justify-between items-end w-full relative pb-1">
+          <!-- Player Monster Sprite -->
+          <div class="relative flex flex-col items-center ml-4 mb-1">
+            <div class="w-32 h-8 rounded-full bg-emerald-900/40 absolute -bottom-1 z-0"></div>
+            <div id="player-sprite-wrapper" class="z-10 transition-transform"></div>
+          </div>
+
+          <!-- Player Status Box -->
+          <div class="status-box p-2 w-52 sm:w-60 z-10">
+            <div class="flex justify-between items-baseline mb-1">
+              <span id="player-name" class="font-bold text-xs sm:text-sm text-slate-900">???</span>
+              <div class="flex items-center gap-1">
+                <span id="player-status-badge" class="hidden text-[9px] px-1 py-0.5 rounded font-bold"></span>
+                <span id="player-level" class="text-[11px] font-bold text-slate-700">Lv.5</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 mb-1">
+              <span class="text-[9px] font-bold text-amber-800">HP</span>
+              <div class="bar-bg flex-1 h-2.5 bg-slate-600 rounded overflow-hidden border border-slate-800">
+                <div id="player-hp-bar" class="hp-fill h-full bg-green-500 w-full"></div>
+              </div>
+            </div>
+            <div class="flex justify-between items-center text-[10px] text-slate-800 font-bold">
+              <div class="flex items-center gap-1 flex-1 mr-2">
+                <span class="text-[8px] text-blue-700">EXP</span>
+                <div class="bar-bg flex-1 h-1.5 bg-slate-600 rounded overflow-hidden">
+                  <div id="player-exp-bar" class="exp-fill h-full bg-blue-500 w-0"></div>
+                </div>
+              </div>
+              <div><span id="player-hp-curr">0</span>/<span id="player-hp-max">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Battle Animation & Pokeball Layer -->
+        <div id="battle-fx-layer" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center"></div>
+      </div>
+
+      <!-- GBA Start Menu Overlay (START / ESC) -->
+      <div id="gba-start-menu" class="absolute top-2 right-2 w-36 bg-slate-900/95 text-white z-40 hidden border-2 border-slate-600 rounded-md p-1.5 shadow-2xl">
+        <div class="text-[10px] font-bold text-slate-400 mb-1 border-b border-slate-700 pb-0.5">メインメニュー</div>
+        <div class="flex flex-col gap-1 text-xs font-bold">
+          <button onclick="openPokedex()" class="p-1 text-left rounded hover:bg-sky-600 flex justify-between"><span>ずかん</span><span>📖</span></button>
+          <button onclick="openPartyMenu()" class="p-1 text-left rounded hover:bg-sky-600 flex justify-between"><span>ポケモン</span><span>🐾</span></button>
+          <button onclick="openBagMenu()" class="p-1 text-left rounded hover:bg-sky-600 flex justify-between"><span>バッグ</span><span>🎒</span></button>
+          <button onclick="openTrainerCard()" class="p-1 text-left rounded hover:bg-sky-600 flex justify-between"><span>トレーナー</span><span>🪪</span></button>
+          <button onclick="saveGameData()" class="p-1 text-left rounded hover:bg-sky-600 flex justify-between"><span>セーブ</span><span>💾</span></button>
+          <button onclick="closeStartMenu()" class="p-1 text-left rounded hover:bg-red-600 text-slate-300"><span>とじる</span><span>✕</span></button>
+        </div>
+      </div>
+
+      <!-- 3. POKEDEX SCREEN (ポケモン図鑑) -->
+      <div id="pokedex-screen" class="absolute inset-0 w-full h-full bg-slate-900 z-50 hidden flex-col p-3 text-white overflow-hidden">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-1 mb-2">
+          <span class="font-bold text-xs text-red-400">📖 ポケモンずかん (<span id="dex-caught-count">0</span>/15)</span>
+          <button onclick="closePokedex()" class="text-xs bg-slate-700 px-2 py-0.5 rounded">X: とじる</button>
+        </div>
+        <div class="flex-1 flex gap-2 overflow-hidden">
+          <!-- Monster List -->
+          <div id="pokedex-list" class="w-1/2 overflow-y-auto flex flex-col gap-1 pr-1 border-r border-slate-800 text-xs font-bold"></div>
+          <!-- Detailed View -->
+          <div id="pokedex-detail" class="w-1/2 flex flex-col items-center justify-start p-1 text-[11px] overflow-y-auto">
+            <div class="text-slate-400">リストから モンスターを えらんでください</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. PARTY MENU & SUMMARY SCREEN (手持ちのモンスター) -->
+      <div id="party-menu" class="absolute inset-0 w-full h-full bg-slate-950/95 z-40 hidden p-3 flex-col justify-between text-white">
+        <div class="text-xs font-bold border-b border-slate-800 pb-1 flex justify-between">
+          <span>🐾 てもち モンスター</span>
+          <span class="text-slate-400">X: もどる</span>
+        </div>
+        <div id="party-list" class="flex-1 flex flex-col gap-1.5 overflow-y-auto my-2"></div>
+        <button onclick="closePartyMenu()" class="w-full py-1.5 bg-slate-800 text-slate-200 rounded text-xs font-bold border border-slate-600">
+          もどる
+        </button>
+      </div>
+
+      <!-- Party Summary View Modal -->
+      <div id="summary-screen" class="absolute inset-0 w-full h-full bg-slate-900 z-50 hidden flex-col p-3 text-white">
+        <div class="flex justify-between items-center border-b border-slate-700 pb-1 text-xs font-bold">
+          <span class="text-amber-400">📊 モンスター つよさをみる</span>
+          <button onclick="closeSummary()" class="bg-slate-700 px-2 py-0.5 rounded">X: もどる</button>
+        </div>
+        <div id="summary-content" class="flex-1 flex flex-col gap-2 mt-2 text-xs overflow-y-auto"></div>
+      </div>
+
+      <!-- BAG MENU SCREEN (バッグ) -->
+      <div id="bag-menu" class="absolute inset-0 w-full h-full bg-slate-950/95 z-40 hidden p-3 flex-col justify-between text-white">
+        <div class="text-xs font-bold border-b border-slate-800 pb-1 flex justify-between">
+          <span>🎒 バッグ (どうぐ)</span>
+          <span class="text-slate-400">X: もどる</span>
+        </div>
+        <div id="bag-list" class="flex-1 flex flex-col gap-2 overflow-y-auto my-2"></div>
+        <button onclick="closeBagMenu()" class="w-full py-1.5 bg-slate-800 text-slate-200 rounded text-xs font-bold border border-slate-600">
+          もどる
+        </button>
+      </div>
+
+      <!-- TRAINER CARD SCREEN (トレーナーカード) -->
+      <div id="trainer-card" class="absolute inset-0 w-full h-full bg-slate-900 z-50 hidden flex-col p-4 text-white">
+        <div class="flex justify-between border-b border-slate-700 pb-1 mb-3 text-xs font-bold">
+          <span class="text-amber-400">🪪 トレーナーカード</span>
+          <button onclick="closeTrainerCard()" class="bg-slate-700 px-2 py-0.5 rounded">X: もどる</button>
+        </div>
+        <div class="gba-panel-dark p-3 text-xs font-bold flex flex-col gap-2">
+          <div class="flex justify-between"><span>なまえ:</span><span id="tc-name" class="text-amber-300">サトシ</span></div>
+          <div class="flex justify-between"><span>おこづかい:</span><span id="tc-money" class="text-green-400">¥ 3,500</span></div>
+          <div class="flex justify-between"><span>あるいたあしあと:</span><span id="tc-steps" class="text-sky-300">0 歩</span></div>
+          <div class="mt-2 border-t border-slate-700 pt-2">
+            <div class="mb-1 text-[10px] text-slate-400">かくとくバッジ:</div>
+            <div class="flex gap-2 text-lg"><span>⚪</span><span>🔴</span><span>🔵</span><span>🟡</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Battle Dialogue & Command Matrix -->
+    <div class="mt-2 flex flex-col gap-1">
+      
+      <!-- Dialogue Box -->
+      <div class="gba-panel p-2.5 min-h-[58px] flex items-center shadow-md">
+        <p id="dialog-text" class="pixel-text text-xs sm:text-sm text-slate-900 font-bold leading-relaxed">
+          草むらを あるいて モンスターを さがそう！ (STARTキーで メニュー)
+        </p>
+      </div>
+
+      <!-- Commands Container -->
+      <div id="command-container" class="h-24 relative">
+        <!-- Main Battle Commands -->
+        <div id="main-commands" class="grid grid-cols-2 gap-2 h-full">
+          <button onclick="handleCommandSelect(0)" class="gba-panel p-2 text-left text-xs sm:text-sm font-bold text-slate-900 flex items-center justify-between hover:bg-slate-100">
+            <span>たたかう</span><span class="text-xs">⚔️</span>
+          </button>
+          <button onclick="handleCommandSelect(1)" class="gba-panel p-2 text-left text-xs sm:text-sm font-bold text-slate-900 flex items-center justify-between hover:bg-slate-100">
+            <span>バッグ</span><span class="text-xs">🎒</span>
+          </button>
+          <button onclick="handleCommandSelect(2)" class="gba-panel p-2 text-left text-xs sm:text-sm font-bold text-slate-900 flex items-center justify-between hover:bg-slate-100">
+            <span>ポケモン</span><span class="text-xs">🐾</span>
+          </button>
+          <button onclick="handleCommandSelect(3)" class="gba-panel p-2 text-left text-xs sm:text-sm font-bold text-slate-900 flex items-center justify-between hover:bg-slate-100">
+            <span>にげる</span><span class="text-xs">🏃</span>
+          </button>
+        </div>
+
+        <!-- Fight Moves Selection Grid -->
+        <div id="moves-commands" class="grid grid-cols-2 gap-1.5 h-full hidden">
+          <button id="move-btn-0" onclick="chooseMove(0)" class="gba-panel p-1.5 text-left flex flex-col justify-between hover:bg-slate-100">
+            <span class="move-name font-bold text-xs text-slate-900">---</span>
+            <div class="flex justify-between items-center text-[9px] font-bold">
+              <span class="move-type px-1 rounded text-white">TYPE</span>
+              <span class="move-pp text-slate-600">PP --/--</span>
+            </div>
+          </button>
+          <button id="move-btn-1" onclick="chooseMove(1)" class="gba-panel p-1.5 text-left flex flex-col justify-between hover:bg-slate-100">
+            <span class="move-name font-bold text-xs text-slate-900">---</span>
+            <div class="flex justify-between items-center text-[9px] font-bold">
+              <span class="move-type px-1 rounded text-white">TYPE</span>
+              <span class="move-pp text-slate-600">PP --/--</span>
+            </div>
+          </button>
+          <button id="move-btn-2" onclick="chooseMove(2)" class="gba-panel p-1.5 text-left flex flex-col justify-between hover:bg-slate-100">
+            <span class="move-name font-bold text-xs text-slate-900">---</span>
+            <div class="flex justify-between items-center text-[9px] font-bold">
+              <span class="move-type px-1 rounded text-white">TYPE</span>
+              <span class="move-pp text-slate-600">PP --/--</span>
+            </div>
+          </button>
+          <button id="move-btn-3" onclick="chooseMove(3)" class="gba-panel p-1.5 text-left flex flex-col justify-between hover:bg-slate-100">
+            <span class="move-name font-bold text-xs text-slate-900">---</span>
+            <div class="flex justify-between items-center text-[9px] font-bold">
+              <span class="move-type px-1 rounded text-white">TYPE</span>
+              <span class="move-pp text-slate-600">PP --/--</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Virtual Controller (Mobile Touch Pad) -->
+    <div class="mt-2 bg-slate-900 p-2 rounded-xl border-2 border-slate-700 flex justify-between items-center">
+      <!-- Cross D-Pad -->
+      <div class="grid grid-cols-3 gap-1 w-28 h-28">
+        <div></div>
+        <button onmousedown="handlePadInput('UP')" ontouchstart="handlePadInput('UP')" class="dpad-btn rounded-t-lg flex items-center justify-center text-slate-300 font-bold">▲</button>
+        <div></div>
+        <button onmousedown="handlePadInput('LEFT')" ontouchstart="handlePadInput('LEFT')" class="dpad-btn rounded-l-lg flex items-center justify-center text-slate-300 font-bold">◀</button>
+        <div class="bg-slate-700 border border-slate-600"></div>
+        <button onmousedown="handlePadInput('RIGHT')" ontouchstart="handlePadInput('RIGHT')" class="dpad-btn rounded-r-lg flex items-center justify-center text-slate-300 font-bold">▶</button>
+        <div></div>
+        <button onmousedown="handlePadInput('DOWN')" ontouchstart="handlePadInput('DOWN')" class="dpad-btn rounded-b-lg flex items-center justify-center text-slate-300 font-bold">▼</button>
+        <div></div>
+      </div>
+
+      <!-- Key Guide & Start Button -->
+      <div class="flex flex-col items-center gap-1">
+        <div class="text-[9px] text-slate-400 text-center leading-tight">
+          <span>WASD/矢印: 移動</span><br>
+          <span>Z: Aボタン / X: Bボタン</span>
+        </div>
+        <button onclick="toggleStartMenu()" class="mt-1 px-3 py-1 bg-slate-700 text-amber-300 text-[10px] font-bold rounded border border-slate-500 shadow active:bg-slate-600">
+          START / メニュー
+        </button>
+      </div>
+
+      <!-- Action Buttons A & B -->
+      <div class="flex gap-2">
+        <button onmousedown="handleBtnA()" ontouchstart="handleBtnA()" class="action-btn bg-red-600 hover:bg-red-500 active:bg-red-700 text-sm">A</button>
+        <button onmousedown="handleBtnB()" ontouchstart="handleBtnB()" class="action-btn bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-sm mt-4">B</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Game Logic & Web Audio Synthesizer JavaScript -->
+  <script>
+    /* ===================================================================
+       1. RETRO WEB AUDIO API SYNTHESIZER
+       =================================================================== */
+    class RetroAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+      }
+      playTone(freq, duration, type = 'square', gainVal = 0.08) {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+      playNoise(duration, gainVal = 0.1) {
+        if (!this.enabled) return;
+        this.init();
+        try {
+          const bufferSize = this.ctx.sampleRate * duration;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+          noise.connect(gain);
+          gain.connect(this.ctx.destination);
+          noise.start();
+        } catch (e) {}
+      }
+      sfxSelect() { this.playTone(880, 0.06, 'square', 0.08); }
+      sfxBump() { this.playTone(130, 0.08, 'triangle', 0.12); }
+      sfxHit() { this.playNoise(0.18, 0.18); this.playTone(160, 0.12, 'sawtooth', 0.12); }
+      sfxSuperEffective() {
+        this.playTone(523, 0.08, 'square', 0.1);
+        setTimeout(() => this.playTone(659, 0.08, 'square', 0.1), 70);
+        setTimeout(() => this.playTone(783, 0.18, 'square', 0.12), 140);
+      }
+      sfxNotEffective() {
+        this.playTone(280, 0.12, 'sawtooth', 0.1);
+        setTimeout(() => this.playTone(190, 0.16, 'sawtooth', 0.1), 100);
+      }
+      sfxCaptureShake() {
+        this.playTone(420, 0.06, 'sine', 0.08);
+        setTimeout(() => this.playTone(320, 0.06, 'sine', 0.08), 80);
+      }
+      sfxLevelUp() {
+        const notes = [523, 587, 659, 698, 783, 880, 987, 1046];
+        notes.forEach((freq, idx) => setTimeout(() => this.playTone(freq, 0.1, 'square', 0.09), idx * 75));
+      }
+      sfxEncounter() {
+        for (let i = 0; i < 6; i++) setTimeout(() => this.playTone(300 + i * 140, 0.05, 'sawtooth', 0.1), i * 45);
+      }
+    }
+    const audio = new RetroAudioEngine();
+    function toggleAudio() {
+      audio.enabled = !audio.enabled;
+      document.getElementById('sound-toggle-btn').innerText = audio.enabled ? '🔊 BGM/SE: ON' : '🔇 BGM/SE: OFF';
+    }
+
+    /* ===================================================================
+       2. TYPE CHART & MOVES DATABASE
+       =================================================================== */
+    const TYPE_CHART = {
+      FIRE: { GRASS: 2.0, WATER: 0.5, FIRE: 0.5, ICE: 2.0 },
+      WATER: { FIRE: 2.0, GRASS: 0.5, WATER: 0.5, GROUND: 2.0 },
+      GRASS: { WATER: 2.0, FIRE: 0.5, GRASS: 0.5, GROUND: 2.0, FLYING: 0.5 },
+      ELECTRIC: { WATER: 2.0, GRASS: 0.5, ELECTRIC: 0.5, GROUND: 0.0, FLYING: 2.0 },
+      GROUND: { FIRE: 2.0, ELECTRIC: 2.0, GRASS: 0.5, FLYING: 0.0 },
+      FLYING: { GRASS: 2.0, ELECTRIC: 0.5, GROUND: 1.0 },
+      GHOST: { NORMAL: 0.0, GHOST: 2.0 },
+      NORMAL: { GHOST: 0.0 }
+    };
+
+    const MOVES_DB = {
+      TACKLE: { name: 'たいあたり', type: 'NORMAL', power: 40, accuracy: 100, maxPp: 35, category: 'PHYSICAL' },
+      SCRATCH: { name: 'ひっかく', type: 'NORMAL', power: 40, accuracy: 100, maxPp: 35, category: 'PHYSICAL' },
+      EMBER: { name: 'ひのこ', type: 'FIRE', power: 40, accuracy: 100, maxPp: 25, category: 'SPECIAL', effect: { type: 'BRN', chance: 0.1 } },
+      FLAMETHROWER: { name: 'かえんほうしゃ', type: 'FIRE', power: 90, accuracy: 100, maxPp: 15, category: 'SPECIAL', effect: { type: 'BRN', chance: 0.1 } },
+      WATER_GUN: { name: 'みずでっぽう', type: 'WATER', power: 40, accuracy: 100, maxPp: 25, category: 'SPECIAL' },
+      SURF: { name: 'なみのり', type: 'WATER', power: 90, accuracy: 100, maxPp: 15, category: 'SPECIAL' },
+      VINE_WHIP: { name: 'つるのムチ', type: 'GRASS', power: 45, accuracy: 100, maxPp: 25, category: 'PHYSICAL' },
+      RAZOR_LEAF: { name: 'はっぱカッター', type: 'GRASS', power: 55, accuracy: 95, maxPp: 25, category: 'PHYSICAL' },
+      THUNDERSHOCK: { name: 'でんきショック', type: 'ELECTRIC', power: 40, accuracy: 100, maxPp: 30, category: 'SPECIAL', effect: { type: 'PAR', chance: 0.1 } },
+      THUNDERBOLT: { name: '10まんボルト', type: 'ELECTRIC', power: 90, accuracy: 100, maxPp: 15, category: 'SPECIAL', effect: { type: 'PAR', chance: 0.1 } },
+      GUST: { name: 'かぜおこし', type: 'FLYING', power: 40, accuracy: 100, maxPp: 35, category: 'SPECIAL' },
+      GROWL: { name: 'なきごえ', type: 'NORMAL', power: 0, accuracy: 100, maxPp: 40, category: 'STATUS', statBuff: { stat: 'atk', stage: -1 } },
+      TAIL_WHIP: { name: 'しっぽをふる', type: 'NORMAL', power: 0, accuracy: 100, maxPp: 30, category: 'STATUS', statBuff: { stat: 'def', stage: -1 } },
+      THUNDER_WAVE: { name: 'でんじは', type: 'ELECTRIC', power: 0, accuracy: 90, maxPp: 20, category: 'STATUS', effect: { type: 'PAR', chance: 1.0 } },
+      HYPNOSIS: { name: 'さいみんじゅつ', type: 'GHOST', power: 0, accuracy: 60, maxPp: 20, category: 'STATUS', effect: { type: 'SLP', chance: 1.0 } }
+    };
+
+    /* 15 Regional Pokedex Database */
+    const MONSTERS_DB = {
+      001: {
+        num: '001', id: 'GRASS_FROG', name: 'フシギダネ', category: 'たねポケモン', height: '0.7m', weight: '6.9kg', type: 'GRASS',
+        baseStats: { hp: 45, atk: 49, def: 49, spd: 45 }, moves: ['TACKLE', 'VINE_WHIP', 'GROWL', 'RAZOR_LEAF'],
+        desc: 'うまれたときから 背中に 植物の たねが 植えられており 少しずつ 大きく 育つ。',
+        svg: `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28"><ellipse cx="50" cy="60" rx="26" ry="20" fill="#34d399"/><path d="M50 35 Q35 15 50 5 Q65 15 50 35 Z" fill="#15803d"/><circle cx="38" cy="48" r="4" fill="#1e293b"/><circle cx="62" cy="48" r="4" fill="#1e293b"/><path d="M44 56 Q50 60 56 56" stroke="#065f46" stroke-width="2" fill="none"/></svg>`
+      },
+      004: {
+        num: '004', id: 'FLAME_LIZARD', name: 'ヒトカゲ', category: 'とかげポケモン', height: '0.6m', weight: '8.5kg', type: 'FIRE',
+        baseStats: { hp: 39, atk: 52, def: 43, spd: 65 }, moves: ['SCRATCH', 'EMBER', 'GROWL', 'FLAMETHROWER'],
+        desc: 'しっぽの ほのおは 生命力の あかし。元気な ときは ほのおも 力強く 燃えあがる。',
+        svg: `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28"><ellipse cx="50" cy="55" rx="22" ry="26" fill="#f97316"/><ellipse cx="50" cy="30" rx="18" ry="16" fill="#f97316"/><circle cx="43" cy="26" r="3" fill="#1e293b"/><circle cx="57" cy="26" r="3" fill="#1e293b"/><path d="M68 62 Q85 55 80 40 Z" fill="#f97316"/><circle cx="82" cy="38" r="5" fill="#ef4444"/><circle cx="82" cy="38" r="3" fill="#facc15"/></svg>`
+      },
+      006: {
+        num: '006', id: 'FLAME_DRAGON', name: 'リザードン', category: 'かえんポケモン', height: '1.7m', weight: '90.5kg', type: 'FIRE',
+        baseStats: { hp: 78, atk: 84, def: 78, spd: 100 }, moves: ['SCRATCH', 'FLAMETHROWER', 'EMBER', 'GROWL'],
+        desc: '岩も 焼けてしまうほどの 高熱の ほのおを 吐きだし 山火事を 引き起こすことがある。',
+        svg: `<svg viewBox="0 0 100 100" class="w-28 h-28 sm:w-32 sm:h-32"><path d="M20 30 Q10 10 35 25 Z" fill="#ea580c"/><path d="M80 30 Q90 10 65 25 Z" fill="#ea580c"/><ellipse cx="50" cy="55" rx="26" ry="30" fill="#f97316"/><ellipse cx="50" cy="28" rx="20" ry="18" fill="#f97316"/><circle cx="42" cy="24" r="4" fill="#1e293b"/><circle cx="58" cy="24" r="4" fill="#1e293b"/></svg>`
+      },
+      007: {
+        num: '007', id: 'AQUA_TURTLE', name: 'ゼニガメ', category: 'かめの子ポケモン', height: '0.5m', weight: '9.0kg', type: 'WATER',
+        baseStats: { hp: 44, atk: 48, def: 65, spd: 43 }, moves: ['TACKLE', 'WATER_GUN', 'TAIL_WHIP', 'SURF'],
+        desc: '長い 首を 甲羅の中に 引っこめるとき 勢いよく 水鉄砲を 発射する。',
+        svg: `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28"><circle cx="50" cy="55" r="26" fill="#0284c7"/><path d="M28 55 Q50 30 72 55 Q50 80 28 55 Z" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/><circle cx="50" cy="30" r="18" fill="#38bdf8"/><circle cx="43" cy="26" r="3" fill="#1e293b"/><circle cx="57" cy="26" r="3" fill="#1e293b"/></svg>`
+      },
+      025: {
+        num: '025', id: 'ELECTRIC_MOUSE', name: 'ピカチュウ', category: 'ねずみポケモン', height: '0.4m', weight: '6.0kg', type: 'ELECTRIC',
+        baseStats: { hp: 35, atk: 55, def: 40, spd: 90 }, moves: ['TACKLE', 'THUNDERSHOCK', 'THUNDER_WAVE', 'THUNDERBOLT'],
+        desc: 'ほっぺたの 両側に 電気袋を つ持つ。怒ると 蓄えられた 電気を 一気に 放出する。',
+        svg: `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28"><polygon points="25,30 10,5 30,20" fill="#facc15"/><polygon points="75,30 90,5 70,20" fill="#facc15"/><circle cx="50" cy="50" r="26" fill="#facc15"/><circle cx="32" cy="58" r="5" fill="#ef4444"/><circle cx="68" cy="58" r="5" fill="#ef4444"/><circle cx="40" cy="46" r="3" fill="#1e293b"/><circle cx="60" cy="46" r="3" fill="#1e293b"/></svg>`
+      },
+      016: {
+        num: '016', id: 'WILD_PIDGEON', name: 'ポッポ', category: 'とりポケモン', height: '0.3m', weight: '1.8kg', type: 'FLYING',
+        baseStats: { hp: 40, atk: 45, def: 40, spd: 56 }, moves: ['TACKLE', 'GUST'],
+        desc: '戦いを 好まない おとなしい 性質。草むらで はばたいて 砂を かけ 敵を 追いはらう。',
+        svg: `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28"><ellipse cx="50" cy="55" rx="20" ry="24" fill="#a16207"/><circle cx="50" cy="30" r="16" fill="#ca8a04"/><polygon points="50,32 60,35 50,38" fill="#f97316"/><circle cx="44" cy="26" r="3" fill="#1e293b"/></svg>`
+      },
+      093: {
+        num: '093', id: 'GHOST_HAUNTER', name: 'ゴースト', category: 'ガス状ポケモン', height: '1.6m', weight: '0.1kg', type: 'GHOST',
+        baseStats: { hp: 45, atk: 50, def: 45, spd: 95 }, moves: ['HYPNOSIS', 'TACKLE'],
+        desc: '暗闇から 現れて 人の 命を 吸いとる。誰もいない 室内に 気配を 感じたら ゴーストがいる。',
+        svg: `<svg viewBox="0 0 100 100" class="w-24 h-24 sm:w-28 sm:h-28"><path d="M20 50 Q50 10 80 50 Q70 90 50 80 Q30 90 20 50 Z" fill="#6b21a8"/><circle cx="38" cy="40" r="5" fill="#fff"/><circle cx="62" cy="40" r="5" fill="#fff"/><circle cx="38" cy="40" r="2" fill="#ef4444"/><circle cx="62" cy="40" r="2" fill="#ef4444"/></svg>`
+      }
+    };
+
+    /* ===================================================================
+       3. GLOBAL GAME STATE
+       =================================================================== */
+    let gameState = {
+      mode: 'EXPLORE', // 'EXPLORE' or 'BATTLE'
+      party: [],
+      pokedex: {}, // { '001': { seen: true, caught: true } }
+      bag: [
+        { id: 'BALL', name: 'モンスターボール', count: 12 },
+        { id: 'GREAT_BALL', name: 'スーパーボール', count: 4 },
+        { id: 'POTION', name: 'きずぐすり', count: 6 },
+        { id: 'ANTIDOTE', name: 'どくけし', count: 3 }
+      ],
+      activePlayerIdx: 0,
+      enemy: null,
+      turnBusy: false,
+      trainer: { name: 'サトシ', money: 3500, steps: 0, badges: 1 }
+    };
+
+    function createMonsterInstance(dexNum, level) {
+      const spec = MONSTERS_DB[dexNum];
+      const maxHp = Math.floor((spec.baseStats.hp * 2 * level) / 100) + level + 10;
+      const atk = Math.floor((spec.baseStats.atk * 2 * level) / 100) + 5;
+      const def = Math.floor((spec.baseStats.def * 2 * level) / 100) + 5;
+      const spd = Math.floor((spec.baseStats.spd * 2 * level) / 100) + 5;
+
+      const moves = spec.moves.map(mKey => {
+        const m = MOVES_DB[mKey];
+        return { ...m, currentPp: m.maxPp };
+      });
+
+      return {
+        dexNum: dexNum,
+        ...spec,
+        level: level,
+        maxHp: maxHp,
+        currentHp: maxHp,
+        atk: atk,
+        def: def,
+        spd: spd,
+        exp: 0,
+        maxExp: level * level * 8,
+        moves: moves,
+        status: null,
+        statStages: { atk: 0, def: 0 }
+      };
+    }
+
+    function initGame() {
+      // Starter Party & Pokedex Register
+      gameState.party = [
+        createMonsterInstance('004', 5),
+        createMonsterInstance('007', 5)
+      ];
+
+      // Mark Seen & Caught for Starters
+      gameState.pokedex['004'] = { seen: true, caught: true };
+      gameState.pokedex['007'] = { seen: true, caught: true };
+      gameState.pokedex['001'] = { seen: true, caught: false };
+
+      // Load Saved Game if present
+      loadSavedGame();
+
+      initMapCanvas();
+      updateAllUI();
+    }
+
+    /* ===================================================================
+       4. MAP EXPLORATION CANVAS & ENCOUNTER ENGINE
+       =================================================================== */
+    const canvas = document.getElementById('map-canvas');
+    const ctx = canvas.getContext('2d');
+    const playerMapPos = { x: 7, y: 5 };
+
+    const MAP_GRID = [
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,0,0,0,0,0,1,2,2,2,2,2,0,0,1],
+      [1,0,3,0,0,0,1,2,2,2,2,2,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,0,2,2,2,0,1],
+      [1,0,0,0,0,0,0,0,0,0,2,2,2,0,1],
+      [1,2,2,2,2,0,0,0,0,0,0,0,0,0,1],
+      [1,2,2,2,2,0,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ];
+
+    function initMapCanvas() { renderMap(); }
+
+    function renderMap() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const tileSize = 16;
+
+      for (let r = 0; r < MAP_GRID.length; r++) {
+        for (let c = 0; c < MAP_GRID[r].length; c++) {
+          const tile = MAP_GRID[r][c];
+          if (tile === 1) { // Tree Wall
+            ctx.fillStyle = '#065f46';
+            ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+            ctx.fillStyle = '#047857';
+            ctx.fillRect(c * tileSize + 2, r * tileSize + 2, tileSize - 4, tileSize - 4);
+          } else if (tile === 2) { // Tall Grass
+            ctx.fillStyle = '#15803d';
+            ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(c * tileSize + 3, r * tileSize + 3, tileSize - 6, tileSize - 6);
+          } else if (tile === 3) { // Lab Building
+            ctx.fillStyle = '#b91c1c';
+            ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+          } else { // Path
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+          }
+        }
+      }
+
+      // Draw Player Sprite
+      const px = playerMapPos.x * tileSize;
+      const py = playerMapPos.y * tileSize;
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(px + 4, py + 2, 8, 4);
+      ctx.fillStyle = '#3b82f6';
+      ctx.fillRect(px + 4, py + 6, 8, 8);
+    }
+
+    function movePlayer(dx, dy) {
+      if (gameState.mode !== 'EXPLORE' || gameState.turnBusy) return;
+
+      const newX = playerMapPos.x + dx;
+      const newY = playerMapPos.y + dy;
+
+      if (newX >= 0 && newX < MAP_GRID[0].length && newY >= 0 && newY < MAP_GRID.length) {
+        if (MAP_GRID[newY][newX] !== 1 && MAP_GRID[newY][newX] !== 3) {
+          playerMapPos.x = newX;
+          playerMapPos.y = newY;
+          gameState.trainer.steps++;
+          renderMap();
+
+          // Check Tall Grass Wild Encounter (22% Chance)
+          if (MAP_GRID[newY][newX] === 2 && Math.random() < 0.22) {
+            triggerWildEncounter();
+          }
+        } else {
+          audio.sfxBump();
+        }
+      }
+    }
+
+    function triggerWildEncounter() {
+      gameState.mode = 'BATTLE';
+      audio.sfxEncounter();
+
+      const encounterKeys = ['001', '025', '016', '093', '007', '004'];
+      const randKey = encounterKeys[Math.floor(Math.random() * encounterKeys.length)];
+      const wildLevel = Math.max(2, gameState.party[0].level + Math.floor(Math.random() * 3) - 1);
+      gameState.enemy = createMonsterInstance(randKey, wildLevel);
+
+      // Record Seen in Pokedex
+      if (!gameState.pokedex[randKey]) {
+        gameState.pokedex[randKey] = { seen: true, caught: false };
+      } else {
+        gameState.pokedex[randKey].seen = true;
+      }
+
+      // Screen Flash Encounter Effect
+      const viewport = document.getElementById('viewport');
+      viewport.classList.add('encounter-flash');
+
+      setTimeout(() => {
+        viewport.classList.remove('encounter-flash');
+        document.getElementById('map-screen').classList.add('hidden');
+        document.getElementById('battle-screen').classList.remove('hidden');
+        document.getElementById('battle-screen').classList.add('flex');
+        
+        setDialog(`あせった！ やせいの ${gameState.enemy.name} が とびだしてきた！`);
+        updateAllUI();
+      }, 700);
+    }
+
+    /* ===================================================================
+       5. BATTLE SYSTEM & CONTROLLER
+       =================================================================== */
+
+    function getActivePlayer() { return gameState.party[gameState.activePlayerIdx]; }
+
+    function updateAllUI() {
+      const p = getActivePlayer();
+      const e = gameState.enemy;
+
+      if (p) {
+        document.getElementById('player-name').innerText = p.name;
+        document.getElementById('player-level').innerText = `Lv.${p.level}`;
+        document.getElementById('player-hp-curr').innerText = p.currentHp;
+        document.getElementById('player-hp-max').innerText = p.maxHp;
+        updateBar('player-hp-bar', p.currentHp, p.maxHp);
+        updateBar('player-exp-bar', p.exp, p.maxExp);
+        document.getElementById('player-sprite-wrapper').innerHTML = p.svg;
+        updateStatusBadge('player-status-badge', p.status);
+      }
+
+      if (e) {
+        document.getElementById('enemy-name').innerText = e.name;
+        document.getElementById('enemy-level').innerText = `Lv.${e.level}`;
+        updateBar('enemy-hp-bar', e.currentHp, e.maxHp);
+        document.getElementById('enemy-sprite-wrapper').innerHTML = e.svg;
+        updateStatusBadge('enemy-status-badge', e.status);
+      }
+
+      if (p && p.moves) {
+        p.moves.forEach((m, idx) => {
+          const btn = document.getElementById(`move-btn-${idx}`);
+          if (m) {
+            btn.querySelector('.move-name').innerText = m.name;
+            btn.querySelector('.move-pp').innerText = `PP ${m.currentPp}/${m.maxPp}`;
+            const typeBadge = btn.querySelector('.move-type');
+            typeBadge.innerText = m.type;
+            typeBadge.className = `move-type px-1 rounded text-white type-${m.type.toLowerCase()}`;
+            btn.disabled = m.currentPp <= 0;
+          }
+        });
+      }
+    }
+
+    function updateBar(id, curr, max) {
+      const bar = document.getElementById(id);
+      const pct = Math.max(0, Math.min(100, (curr / max) * 100));
+      bar.style.width = `${pct}%`;
+      if (id.includes('hp')) {
+        if (pct > 50) bar.className = 'hp-fill h-full bg-green-500';
+        else if (pct > 20) bar.className = 'hp-fill h-full bg-yellow-400';
+        else bar.className = 'hp-fill h-full bg-red-500';
+      }
+    }
+
+    function updateStatusBadge(id, status) {
+      const el = document.getElementById(id);
+      if (!status) el.classList.add('hidden');
+      else {
+        el.classList.remove('hidden');
+        el.innerText = status;
+        el.className = `text-[9px] px-1 py-0.5 rounded font-bold status-${status.toLowerCase()}`;
+      }
+    }
+
+    function setDialog(txt) { document.getElementById('dialog-text').innerText = txt; }
+
+    function handleCommandSelect(idx) {
+      if (gameState.turnBusy) return;
+      audio.sfxSelect();
+      if (idx === 0) { // Fight
+        document.getElementById('main-commands').classList.add('hidden');
+        document.getElementById('moves-commands').classList.remove('hidden');
+        document.getElementById('moves-commands').classList.add('grid');
+      } else if (idx === 1) openBagMenu();
+      else if (idx === 2) openPartyMenu();
+      else if (idx === 3) attemptRun();
+    }
+
+    function showMainCommands() {
+      document.getElementById('moves-commands').classList.add('hidden');
+      document.getElementById('moves-commands').classList.remove('grid');
+      document.getElementById('main-commands').classList.remove('hidden');
+    }
+
+    async function chooseMove(moveIdx) {
+      if (gameState.turnBusy) return;
+      const playerMon = getActivePlayer();
+      const move = playerMon.moves[moveIdx];
+      if (!move || move.currentPp <= 0) return;
+
+      gameState.turnBusy = true;
+      move.currentPp--;
+      showMainCommands();
+
+      const enemyMon = gameState.enemy;
+      const playerFirst = playerMon.spd >= enemyMon.spd;
+
+      if (playerFirst) {
+        await executeMoveTurn(playerMon, enemyMon, move, true);
+        if (enemyMon.currentHp > 0) {
+          await delay(700);
+          await executeEnemyAI();
+        }
+      } else {
+        await executeEnemyAI();
+        if (playerMon.currentHp > 0) {
+          await delay(700);
+          await executeMoveTurn(playerMon, enemyMon, move, true);
+        }
+      }
+
+      await handleTurnEnd();
+      gameState.turnBusy = false;
+      updateAllUI();
+    }
+
+    async function executeEnemyAI() {
+      const eMon = gameState.enemy;
+      if (eMon.currentHp <= 0) return;
+      const validMoves = eMon.moves.filter(m => m.currentPp > 0);
+      const chosenMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+      chosenMove.currentPp--;
+      await executeMoveTurn(eMon, getActivePlayer(), chosenMove, false);
+    }
+
+    async function executeMoveTurn(attacker, defender, move, isPlayer) {
+      setDialog(`${attacker.name} の ${move.name}！`);
+      audio.sfxSelect();
+
+      const spriteEl = document.getElementById(isPlayer ? 'player-sprite-wrapper' : 'enemy-sprite-wrapper');
+      spriteEl.classList.add(isPlayer ? 'attack-p' : 'attack-e');
+      await delay(350);
+      spriteEl.classList.remove('attack-p', 'attack-e');
+
+      if (move.category === 'STATUS') {
+        if (move.statBuff) {
+          const target = move.statBuff.stage < 0 ? defender : attacker;
+          target.statStages[move.statBuff.stat] += move.statBuff.stage;
+          setDialog(`${target.name} の ステータスが へんかした！`);
+        }
+        await delay(900);
+        return;
+      }
+
+      const defenderSprite = document.getElementById(isPlayer ? 'enemy-sprite-wrapper' : 'player-sprite-wrapper');
+      defenderSprite.classList.add('shake');
+      audio.sfxHit();
+
+      let typeMult = 1.0;
+      if (TYPE_CHART[move.type] && TYPE_CHART[move.type][defender.type] !== undefined) {
+        typeMult = TYPE_CHART[move.type][defender.type];
+      }
+
+      const baseDmg = Math.floor((((2 * attacker.level / 5 + 2) * move.power * (attacker.atk / defender.def)) / 50) + 2);
+      const totalDmg = Math.max(1, Math.floor(baseDmg * typeMult));
+
+      defender.currentHp = Math.max(0, defender.currentHp - totalDmg);
+      updateAllUI();
+
+      await delay(400);
+      defenderSprite.classList.remove('shake');
+
+      if (typeMult > 1.0) {
+        audio.sfxSuperEffective();
+        setDialog('こうかは ばつぐんだ！');
+        await delay(900);
+      } else if (typeMult < 1.0 && typeMult > 0) {
+        audio.sfxNotEffective();
+        setDialog('こうかは いまひとつの ようだ...');
+        await delay(900);
+      }
+    }
+
+    async function handleTurnEnd() {
+      const pMon = getActivePlayer();
+      const eMon = gameState.enemy;
+
+      if (eMon.currentHp <= 0) {
+        document.getElementById('enemy-sprite-wrapper').classList.add('faint');
+        setDialog(`やせいの ${eMon.name} は たおれた！`);
+        await delay(1000);
+
+        const expGained = Math.floor((eMon.baseStats.hp * eMon.level) / 3);
+        pMon.exp += expGained;
+        setDialog(`${pMon.name} は ${expGained} EXP を かくとく！`);
+        updateAllUI();
+        await delay(1000);
+
+        if (pMon.exp >= pMon.maxExp) {
+          pMon.level++;
+          pMon.exp = 0;
+          pMon.maxExp = pMon.level * pMon.level * 8;
+          pMon.maxHp += 3;
+          pMon.currentHp = pMon.maxHp;
+          audio.sfxLevelUp();
+          setDialog(`${pMon.name} は Lv.${pMon.level} に レベルアップ！`);
+          updateAllUI();
+          await delay(1200);
+        }
+        exitBattleMode();
+      } else if (pMon.currentHp <= 0) {
+        document.getElementById('player-sprite-wrapper').classList.add('faint');
+        setDialog(`${pMon.name} は たおれた！`);
+        await delay(1000);
+        const hasAlive = gameState.party.some(m => m.currentHp > 0);
+        if (hasAlive) openPartyMenu();
+        else {
+          setDialog('てのちの モンスターが いなくなった... 目の前が まっくらに なった！');
+          await delay(1500);
+          gameState.party.forEach(m => { m.currentHp = m.maxHp; });
+          exitBattleMode();
+        }
+      }
+    }
+
+    function exitBattleMode() {
+      gameState.mode = 'EXPLORE';
+      document.getElementById('battle-screen').classList.add('hidden');
+      document.getElementById('map-screen').classList.remove('hidden');
+      document.getElementById('enemy-sprite-wrapper').classList.remove('faint');
+      document.getElementById('player-sprite-wrapper').classList.remove('faint');
+      renderMap();
+    }
+
+    async function attemptRun() {
+      if (gameState.turnBusy) return;
+      gameState.turnBusy = true;
+      audio.sfxSelect();
+      setDialog('うまく にげだせた！');
+      await delay(800);
+      gameState.turnBusy = false;
+      exitBattleMode();
+    }
+
+    /* ===================================================================
+       6. START MENU, POKEDEX, PARTY & SUMMARY PANELS
+       =================================================================== */
+
+    function toggleStartMenu() {
+      if (gameState.mode !== 'EXPLORE') return;
+      const menu = document.getElementById('gba-start-menu');
+      menu.classList.toggle('hidden');
+    }
+    function closeStartMenu() { document.getElementById('gba-start-menu').classList.add('hidden'); }
+
+    /* 3. POKEDEX SCREEN */
+    function openPokedex() {
+      closeStartMenu();
+      const listEl = document.getElementById('pokedex-list');
+      listEl.innerHTML = '';
+
+      let caughtCount = 0;
+      Object.keys(MONSTERS_DB).forEach(key => {
+        const entry = MONSTERS_DB[key];
+        const status = gameState.pokedex[key] || { seen: false, caught: false };
+        if (status.caught) caughtCount++;
+
+        const div = document.createElement('div');
+        div.className = 'p-1 bg-slate-800 rounded cursor-pointer flex justify-between items-center hover:bg-slate-700';
+        
+        let label = `No.${entry.num} ???`;
+        let ballIcon = '';
+        if (status.seen || status.caught) label = `No.${entry.num} ${entry.name}`;
+        if (status.caught) ballIcon = '🔴';
+
+        div.innerHTML = `<span>${label}</span><span>${ballIcon}</span>`;
+        div.onclick = () => renderPokedexDetail(key, status);
+        listEl.appendChild(div);
+      });
+
+      document.getElementById('dex-caught-count').innerText = caughtCount;
+      document.getElementById('pokedex-screen').classList.remove('hidden');
+      document.getElementById('pokedex-screen').classList.add('flex');
+    }
+
+    function closePokedex() { document.getElementById('pokedex-screen').classList.add('hidden'); }
+
+    function renderPokedexDetail(key, status) {
+      const detailEl = document.getElementById('pokedex-detail');
+      const entry = MONSTERS_DB[key];
+
+      if (!status.seen && !status.caught) {
+        detailEl.innerHTML = `<div class="my-auto text-slate-500">まだ 出会っていません</div>`;
+        return;
+      }
+
+      detailEl.innerHTML = `
+        <div class="mb-1">${entry.svg}</div>
+        <div class="font-bold text-amber-300 text-xs mb-1">No.${entry.num} ${entry.name}</div>
+        <div class="text-[10px] text-slate-300 mb-1">${entry.category}</div>
+        <div class="flex gap-2 text-[10px] mb-2"><span>たかさ: ${entry.height}</span><span>おもさ: ${entry.weight}</span></div>
+        <div class="w-full bg-slate-800 p-1.5 rounded text-[10px] leading-relaxed mb-2 text-slate-200">${entry.desc}</div>
+        <div class="w-full text-[10px] font-bold">
+          <div>HP:${entry.baseStats.hp} 攻撃:${entry.baseStats.atk} 防御:${entry.baseStats.def} すばやさ:${entry.baseStats.spd}</div>
+        </div>
+      `;
+    }
+
+    /* 4. PARTY MENU & SUMMARY */
+    function openPartyMenu() {
+      closeStartMenu();
+      const listEl = document.getElementById('party-list');
+      listEl.innerHTML = '';
+
+      gameState.party.forEach((mon, idx) => {
+        const div = document.createElement('div');
+        const isCurrent = idx === gameState.activePlayerIdx;
+        div.className = `gba-panel p-2 flex justify-between items-center text-xs font-bold cursor-pointer ${isCurrent ? 'border-amber-500 bg-amber-50 text-slate-900' : 'bg-slate-800 text-white'}`;
+        
+        div.innerHTML = `
+          <div>
+            <div class="text-sm">${mon.name} <span class="text-[10px]">Lv.${mon.level}</span></div>
+            <div class="text-[10px]">HP: ${mon.currentHp}/${mon.maxHp}</div>
+          </div>
+          <div class="flex gap-1">
+            <button onclick="event.stopPropagation(); showSummary(${idx})" class="px-2 py-1 bg-sky-600 text-white rounded text-[10px]">つよさ</button>
+            <button onclick="event.stopPropagation(); switchPartyLead(${idx})" class="px-2 py-1 bg-amber-600 text-white rounded text-[10px]">せんとう</button>
+          </div>
+        `;
+        listEl.appendChild(div);
+      });
+
+      document.getElementById('party-menu').classList.remove('hidden');
+      document.getElementById('party-menu').classList.add('flex');
+    }
+
+    function closePartyMenu() { document.getElementById('party-menu').classList.add('hidden'); }
+
+    function switchPartyLead(idx) {
+      if (idx === 0) return;
+      const temp = gameState.party[0];
+      gameState.party[0] = gameState.party[idx];
+      gameState.party[idx] = temp;
+      gameState.activePlayerIdx = 0;
+      openPartyMenu();
+      updateAllUI();
+    }
+
+    function showSummary(idx) {
+      const mon = gameState.party[idx];
+      const content = document.getElementById('summary-content');
+
+      let movesHTML = mon.moves.map(m => `
+        <div class="flex justify-between items-center bg-slate-800 p-1.5 rounded">
+          <span>${m.name}</span>
+          <span class="text-[10px] text-slate-400">PP ${m.currentPp}/${m.maxPp} (${m.type})</span>
+        </div>
+      `).join('');
+
+      content.innerHTML = `
+        <div class="flex items-center gap-3 bg-slate-800 p-2 rounded">
+          ${mon.svg}
+          <div>
+            <div class="text-sm font-bold text-amber-300">${mon.name}</div>
+            <div class="text-[10px] text-slate-300">Lv.${mon.level} / ${mon.category}</div>
+            <div class="text-[10px] text-green-400">HP: ${mon.currentHp} / ${mon.maxHp}</div>
+          </div>
+        </div>
+        <div class="gba-panel-dark p-2 text-[11px] flex flex-col gap-1">
+          <div class="flex justify-between"><span>こうげき:</span><span>${mon.atk}</span></div>
+          <div class="flex justify-between"><span>ぼうぎょ:</span><span>${mon.def}</span></div>
+          <div class="flex justify-between"><span>すばやさ:</span><span>${mon.spd}</span></div>
+          <div class="flex justify-between"><span>けいけんち:</span><span>${mon.exp} / ${mon.maxExp}</span></div>
+        </div>
+        <div class="font-bold text-[11px] text-slate-300 mt-1">おぼえている わざ:</div>
+        <div class="flex flex-col gap-1">${movesHTML}</div>
+      `;
+
+      document.getElementById('summary-screen').classList.remove('hidden');
+      document.getElementById('summary-screen').classList.add('flex');
+    }
+
+    function closeSummary() { document.getElementById('summary-screen').classList.add('hidden'); }
+
+    /* BAG MENU */
+    function openBagMenu() {
+      closeStartMenu();
+      const listEl = document.getElementById('bag-list');
+      listEl.innerHTML = '';
+
+      gameState.bag.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'gba-panel p-2 flex justify-between items-center text-xs text-slate-900 font-bold cursor-pointer hover:bg-slate-100';
+        div.innerHTML = `<span>${item.name}</span><span>x${item.count}</span>`;
+        div.onclick = () => useBagItem(idx);
+        listEl.appendChild(div);
+      });
+
+      document.getElementById('bag-menu').classList.remove('hidden');
+      document.getElementById('bag-menu').classList.add('flex');
+    }
+
+    function closeBagMenu() { document.getElementById('bag-menu').classList.add('hidden'); }
+
+    async function useBagItem(idx) {
+      const item = gameState.bag[idx];
+      if (item.count <= 0) return;
+
+      closeBagMenu();
+
+      if (gameState.mode === 'BATTLE' && (item.id === 'BALL' || item.id === 'GREAT_BALL')) {
+        gameState.turnBusy = true;
+        item.count--;
+        setDialog(`${item.name} を なげた！`);
+
+        const enemySprite = document.getElementById('enemy-sprite-wrapper');
+        enemySprite.classList.add('ball-shake');
+        audio.sfxCaptureShake();
+        await delay(1200);
+
+        const e = gameState.enemy;
+        const catchProb = Math.min(0.9, ((3 * e.maxHp - 2 * e.currentHp) / (3 * e.maxHp)) * (item.id === 'GREAT_BALL' ? 1.5 : 1.0));
+
+        if (Math.random() < catchProb) {
+          audio.sfxLevelUp();
+          setDialog(`やったー！ ${e.name} を つかまえたぞ！`);
+          gameState.pokedex[e.dexNum] = { seen: true, caught: true };
+          await delay(1200);
+
+          if (gameState.party.length < 6) gameState.party.push(e);
+          exitBattleMode();
+        } else {
+          enemySprite.classList.remove('ball-shake');
+          setDialog('あぁっ！ モンスターが ボールから でてしまった！');
+          await delay(1000);
+          await executeEnemyAI();
+        }
+        gameState.turnBusy = false;
+        updateAllUI();
+      } else if (item.id === 'POTION') {
+        const p = getActivePlayer();
+        p.currentHp = Math.min(p.maxHp, p.currentHp + 20);
+        item.count--;
+        setDialog(`${p.name} の HPが 20 かいふくした！`);
+        updateAllUI();
+      }
+    }
+
+    /* TRAINER CARD & SAVE ENGINE */
+    function openTrainerCard() {
+      closeStartMenu();
+      document.getElementById('tc-name').innerText = gameState.trainer.name;
+      document.getElementById('tc-money').innerText = `¥ ${gameState.trainer.money}`;
+      document.getElementById('tc-steps').innerText = `${gameState.trainer.steps} 歩`;
+      document.getElementById('trainer-card').classList.remove('hidden');
+      document.getElementById('trainer-card').classList.add('flex');
+    }
+    function closeTrainerCard() { document.getElementById('trainer-card').classList.add('hidden'); }
+
+    function saveGameData() {
+      closeStartMenu();
+      try {
+        localStorage.setItem('POKEMON_GBA_SAVE', JSON.stringify(gameState));
+        setDialog('レポートを しっかり かきこみました！');
+      } catch (e) {
+        setDialog('セーブに しっぱいしました。');
+      }
+    }
+
+    function loadSavedGame() {
+      try {
+        const saved = localStorage.getItem('POKEMON_GBA_SAVE');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          gameState.party = parsed.party || gameState.party;
+          gameState.pokedex = parsed.pokedex || gameState.pokedex;
+          gameState.bag = parsed.bag || gameState.bag;
+          gameState.trainer = parsed.trainer || gameState.trainer;
+        }
+      } catch (e) {}
+    }
+
+    /* Controller Key Mapping */
+    function handlePadInput(dir) {
+      if (dir === 'UP') movePlayer(0, -1);
+      if (dir === 'DOWN') movePlayer(0, 1);
+      if (dir === 'LEFT') movePlayer(-1, 0);
+      if (dir === 'RIGHT') movePlayer(1, 0);
+    }
+
+    function handleBtnA() {
+      if (gameState.mode === 'BATTLE') handleCommandSelect(0);
+    }
+    function handleBtnB() {
+      showMainCommands();
+      closeStartMenu();
+      closePokedex();
+      closePartyMenu();
+      closeBagMenu();
+      closeTrainerCard();
+      closeSummary();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'w') movePlayer(0, -1);
+      if (e.key === 'ArrowDown' || e.key === 's') movePlayer(0, 1);
+      if (e.key === 'ArrowLeft' || e.key === 'a') movePlayer(-1, 0);
+      if (e.key === 'ArrowRight' || e.key === 'd') movePlayer(1, 0);
+      if (e.key === 'z' || e.key === 'Z') handleBtnA();
+      if (e.key === 'x' || e.key === 'X') handleBtnB();
+      if (e.key === 'Enter') toggleStartMenu();
+    });
+
+    const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
+    window.onload = () => { initGame(); };
+  </script>
+</body>
+</html>
