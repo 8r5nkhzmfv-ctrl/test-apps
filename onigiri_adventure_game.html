@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>とびだせ！おにぎりくん 〜たびだちのうんちロケット〜</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Picture-book Feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@500;700&family=M+PLUS+Rounded+1c:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', 'Kiwi Maru', sans-serif;
+            background-color: #fdfbf7;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+
+        /* Picture book border & shadow effects */
+        .handdrawn-box {
+            border: 4px solid #7c5c43;
+            border-radius: 24px 12px 28px 18px / 18px 24px 14px 28px;
+            box-shadow: 4px 6px 0px #7c5c43;
+            background-color: #fffdf9;
+        }
+
+        .btn-handdrawn {
+            border: 3px solid #5a3e2b;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 0px 6px 0px #5a3e2b;
+            transition: all 0.1s ease;
+        }
+
+        .btn-handdrawn:active {
+            transform: translateY(4px);
+            box-shadow: 0px 2px 0px #5a3e2b;
+        }
+
+        /* Custom Scrollbar disabled */
+        canvas {
+            display: block;
+            border-radius: 20px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* Swirling Animation for Flush */
+        @keyframes swirl {
+            0% { transform: rotate(0deg) scale(1); opacity: 1; }
+            80% { transform: rotate(720deg) scale(0.2); opacity: 0.8; }
+            100% { transform: rotate(900deg) scale(0); opacity: 0; }
+        }
+
+        .swirl-out {
+            animation: swirl 2.5s ease-in-out forwards;
+        }
+
+        /* Confetti Canvas overlay */
+        #confettiCanvas {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col items-center justify-center p-2 sm:p-4 text-amber-950">
+
+    <!-- Game Outer Wrapper -->
+    <div class="relative w-full max-w-2xl h-full max-h-[850px] flex flex-col justify-between items-center handdrawn-box p-3 sm:p-5 relative overflow-hidden bg-[#fffdf5]">
+        
+        <!-- Header / Status Bar -->
+        <div id="headerBar" class="w-full flex justify-between items-center mb-2 px-2 z-10">
+            <div class="flex items-center gap-2">
+                <span id="stageBadge" class="bg-amber-200 text-amber-900 border-2 border-amber-800 px-3 py-1 rounded-full text-xs sm:text-sm font-bold">
+                    タイトル
+                </span>
+            </div>
+            <div id="scoreDisplay" class="text-sm sm:text-base font-black text-amber-900 bg-amber-100 border-2 border-amber-800 px-3 py-1 rounded-full">
+                🍙 ごはんパワー: <span id="scoreVal">0</span>
+            </div>
+        </div>
+
+        <!-- Main Screen Canvas Container -->
+        <div class="relative w-full flex-1 flex justify-center items-center overflow-hidden my-1">
+            <canvas id="gameCanvas" class="w-full h-full bg-[#fcf8ed] border-4 border-amber-900/40"></canvas>
+            
+            <!-- Confetti Canvas -->
+            <canvas id="confettiCanvas"></canvas>
+
+            <!-- Overlay for Messages / Title / Dialogs -->
+            <div id="overlayScreen" class="absolute inset-0 flex flex-col items-center justify-center p-4 bg-amber-50/90 backdrop-blur-sm z-20 rounded-2xl text-center">
+                <!-- Title Screen -->
+                <div id="titleContent" class="flex flex-col items-center gap-4">
+                    <div class="relative">
+                        <h1 class="text-3xl sm:text-5xl font-black text-amber-900 drop-shadow-md leading-tight">
+                            とびだせ！おにぎりくん
+                        </h1>
+                        <p class="text-lg sm:text-2xl font-bold text-amber-700 mt-1">〜たびだちのうんちロケット〜</p>
+                    </div>
+
+                    <!-- Cute Onigiri Illustration -->
+                    <div class="w-32 h-32 sm:w-40 sm:h-40 relative my-2 animate-bounce">
+                        <svg viewBox="0 0 100 100" class="w-full h-full filter drop-shadow-lg">
+                            <!-- Onigiri Body -->
+                            <path d="M50 15 L85 80 Q88 88 78 88 L22 88 Q12 88 15 80 Z" fill="#ffffff" stroke="#7c5c43" stroke-width="4" stroke-linejoin="round"/>
+                            <!-- Nori -->
+                            <path d="M35 60 L65 60 L62 88 L38 88 Z" fill="#333333" />
+                            <!-- Cheeks -->
+                            <circle cx="36" cy="52" r="5" fill="#ffb3b3" />
+                            <circle cx="64" cy="52" r="5" fill="#ffb3b3" />
+                            <!-- Eyes -->
+                            <circle cx="40" cy="46" r="4" fill="#5a3e2b" />
+                            <circle cx="60" cy="46" r="4" fill="#5a3e2b" />
+                            <!-- Mouth -->
+                            <path d="M45 53 Q50 58 55 53" fill="none" stroke="#5a3e2b" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+
+                    <p class="text-xs sm:text-sm font-bold text-amber-800 bg-amber-100/80 px-4 py-2 rounded-xl border border-amber-300 max-w-xs">
+                        おにぎりくんをお腹のなか探検へ出発させよう！最後はかっこよくロケット発射だ！
+                    </p>
+
+                    <button id="startBtn" class="btn-handdrawn bg-emerald-400 hover:bg-emerald-500 text-white font-black text-xl sm:text-2xl px-8 py-3 mt-2 text-amber-950">
+                        冒険をはじめよう！ 🚀
+                    </button>
+                </div>
+
+                <!-- Stage Clear / Transition Screen -->
+                <div id="transitionContent" class="hidden flex-col items-center gap-3">
+                    <h2 id="transTitle" class="text-2xl sm:text-4xl font-black text-amber-900">ステージクリア！</h2>
+                    <p id="transDesc" class="text-sm sm:text-base font-bold text-amber-800 max-w-sm">次へ進むよ！</p>
+                    <div id="transIcon" class="w-24 h-24 my-2"></div>
+                    <button id="nextStageBtn" class="btn-handdrawn bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xl px-8 py-3 mt-2">
+                        つぎへすすむ ➔
+                    </button>
+                </div>
+
+                <!-- Ending Flush Screen -->
+                <div id="endingContent" class="hidden flex-col items-center gap-3">
+                    <h2 class="text-2xl sm:text-4xl font-black text-amber-900">便器（べんき）にとうちゃく！</h2>
+                    <p class="text-sm sm:text-base font-bold text-amber-800">さいごに『ながす』ボタンをおしてね！</p>
+                    
+                    <button id="flushBtn" class="btn-handdrawn bg-sky-400 hover:bg-sky-500 text-white font-black text-2xl sm:text-3xl px-10 py-4 mt-4 animate-pulse">
+                        🌊 ながす！！
+                    </button>
+                </div>
+
+                <!-- Game Complete Screen -->
+                <div id="completeContent" class="hidden flex-col items-center gap-4">
+                    <h2 class="text-3xl sm:text-5xl font-black text-emerald-600 drop-shadow-md">おめでとう！</h2>
+                    <p class="text-base sm:text-xl font-bold text-amber-900">
+                        今日も おなか スッキリ！！✨
+                    </p>
+                    <div class="bg-amber-100 border-2 border-amber-800 rounded-2xl p-4 my-2">
+                        <p class="text-lg font-black text-amber-900">あつめた ごはんパワー: <span id="finalScore" class="text-2xl text-emerald-600">0</span> つ</p>
+                    </div>
+                    <button id="restartBtn" class="btn-handdrawn bg-emerald-400 hover:bg-emerald-500 text-amber-950 font-black text-xl px-8 py-3">
+                        もう一回あそぶ 🔄
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- On-Screen Controls Footer (Adapted for touch/mobile) -->
+        <div id="controlsFooter" class="w-full flex justify-between items-center gap-2 mt-2 pt-2 border-t-2 border-amber-200">
+            <!-- Left/Right Movement Group -->
+            <div id="dirControls" class="flex gap-2">
+                <button id="leftBtn" class="btn-handdrawn bg-amber-200 active:bg-amber-300 text-amber-900 font-black text-2xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl">
+                    ◀
+                </button>
+                <button id="rightBtn" class="btn-handdrawn bg-amber-200 active:bg-amber-300 text-amber-900 font-black text-2xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl">
+                    ▶
+                </button>
+            </div>
+
+            <!-- Contextual Action Button (Jump, Boost, Tap) -->
+            <div id="actionControls" class="flex-1 flex justify-end">
+                <button id="actionBtn" class="btn-handdrawn bg-rose-400 active:bg-rose-500 text-white font-black text-lg sm:text-xl px-6 h-14 sm:h-16 flex items-center justify-center rounded-2xl w-full max-w-[200px]">
+                    ジャンプ 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* --- Audio Synthesizer (Web Audio API) for Kid-Friendly SFX --- */
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playJump() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playCoin() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.08); // E5
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playFart() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                const baseFreq = 80 + Math.random() * 40;
+                osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(baseFreq - 30, this.ctx.currentTime + 0.2);
+
+                // Add slight wobble
+                const lfo = this.ctx.createOscillator();
+                lfo.frequency.value = 25;
+                const lfoGain = this.ctx.createGain();
+                lfoGain.gain.value = 30;
+                lfo.connect(osc.frequency);
+
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                lfo.start();
+                osc.start();
+                lfo.stop(this.ctx.currentTime + 0.25);
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playBurp() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(110, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(60, this.ctx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            }
+
+            playFlush() {
+                if (!this.ctx) return;
+                // White noise for water flush
+                const bufferSize = this.ctx.sampleRate * 2.5;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(400, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(800, this.ctx.currentTime + 1.0);
+                filter.frequency.linearRampToValueAtTime(200, this.ctx.currentTime + 2.5);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.5, this.ctx.currentTime + 0.5);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 2.5);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            }
+
+            playWin() {
+                if (!this.ctx) return;
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.12);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.12 + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.12);
+                    osc.stop(this.ctx.currentTime + idx * 0.12 + 0.25);
+                });
+            }
+        }
+
+        const sound = new SoundEffects();
+
+        /* --- Game Engines & States --- */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Confetti Canvas setup
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+
+        let stage = 0; // 0: Title, 1: Mouth, 2: Stomach, 3: Small Intestine, 4: Large Intestine, 5: Anus Rocket, 6: Toilet Flush
+        let score = 0;
+        let keys = { left: false, right: false, action: false };
+        let animationFrameId = null;
+
+        // Stage Configs
+        const STAGE_NAMES = [
+            "タイトル",
+            "Stage 1: もぐもぐ口ゾーン",
+            "Stage 2: ドロドロ胃プール",
+            "Stage 3: なが〜い小腸コースター",
+            "Stage 4: うんちに変身！大腸",
+            "FINAL Stage: おしりの穴発射基地！",
+            "トイレのなか"
+        ];
+
+        // Resize Canvas dynamically
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            confettiCanvas.width = container.clientWidth;
+            confettiCanvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        /* --- Player Class --- */
+        class Player {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.width = 44;
+                this.height = 44;
+                this.x = canvas.width / 2 - this.width / 2;
+                this.y = canvas.height - 100;
+                this.vx = 0;
+                this.vy = 0;
+                this.isGrounded = false;
+                this.isUnchi = false;
+                this.rotation = 0;
+                this.squish = 1;
+            }
+
+            update(gravity = 0.5) {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += gravity;
+
+                // Screen bounds
+                if (this.x < 10) this.x = 10;
+                if (this.x + this.width > canvas.width - 10) this.x = canvas.width - 10 - this.width;
+
+                // Ground collision
+                if (this.y + this.height >= canvas.height - 30) {
+                    this.y = canvas.height - 30 - this.height;
+                    this.vy = 0;
+                    this.isGrounded = true;
+                }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+                ctx.rotate(this.rotation);
+                ctx.scale(1, this.squish);
+
+                if (!this.isUnchi) {
+                    // Draw Cute Onigiri-kun
+                    ctx.beginPath();
+                    ctx.moveTo(0, -this.height / 2);
+                    ctx.lineTo(this.width / 2, this.height / 2);
+                    ctx.lineTo(-this.width / 2, this.height / 2);
+                    ctx.closePath();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                    ctx.lineWidth = 3.5;
+                    ctx.strokeStyle = '#7c5c43';
+                    ctx.stroke();
+
+                    // Nori
+                    ctx.fillStyle = '#333333';
+                    ctx.fillRect(-this.width / 4, 2, this.width / 2, this.height / 2 - 2);
+
+                    // Eyes
+                    ctx.fillStyle = '#5a3e2b';
+                    ctx.beginPath();
+                    ctx.arc(-8, -4, 3, 0, Math.PI * 2);
+                    ctx.arc(8, -4, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Cheeks
+                    ctx.fillStyle = '#ffb3b3';
+                    ctx.beginPath();
+                    ctx.arc(-12, 2, 4, 0, Math.PI * 2);
+                    ctx.arc(12, 2, 4, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Mouth
+                    ctx.beginPath();
+                    ctx.arc(0, 2, 4, 0, Math.PI);
+                    ctx.strokeStyle = '#5a3e2b';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else {
+                    // Draw Cute Unchi-kun (Brown Shiny Poop)
+                    ctx.fillStyle = '#8B4513';
+                    ctx.strokeStyle = '#5a3e2b';
+                    ctx.lineWidth = 3;
+
+                    // Bottom tier
+                    ctx.beginPath();
+                    ctx.ellipse(0, 12, 22, 10, 0, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+
+                    // Middle tier
+                    ctx.beginPath();
+                    ctx.ellipse(0, 2, 16, 8, 0, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+
+                    // Top tier & Swirl
+                    ctx.beginPath();
+                    ctx.ellipse(0, -8, 10, 6, 0, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(0, -15, 4, 0, Math.PI * 2);
+                    ctx.fill(); ctx.stroke();
+
+                    // Cute Face
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(-5, 0, 3, 0, Math.PI * 2);
+                    ctx.arc(5, 0, 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.fillStyle = '#000000';
+                    ctx.beginPath();
+                    ctx.arc(-5, 0, 1.5, 0, Math.PI * 2);
+                    ctx.arc(5, 0, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Mouth
+                    ctx.beginPath();
+                    ctx.arc(0, 4, 3, 0, Math.PI);
+                    ctx.strokeStyle = '#3d2314';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Shine / Highlight
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                    ctx.beginPath();
+                    ctx.ellipse(-8, 8, 4, 2, Math.PI / 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        const player = new Player();
+
+        /* --- Global Game Objects --- */
+        let teethStamps = [];
+        let riceGrains = [];
+        let platforms = [];
+        let burps = [];
+        let arms = [];
+        let farts = [];
+        let gaugeValue = 0;
+        let stageTimer = 0;
+        let confetti = [];
+
+        /* --- Stage Initializers & Loops --- */
+
+        // Stage 1: Mouth (Dodge Falling Teeth & Collect Rice)
+        function initStage1() {
+            player.reset();
+            player.isUnchi = false;
+            teethStamps = [];
+            riceGrains = [];
+            stageTimer = 0;
+            updateControlsForStage();
+        }
+
+        function updateStage1() {
+            stageTimer++;
+
+            // Player movement
+            if (keys.left) player.vx = -5;
+            else if (keys.right) player.vx = 5;
+            else player.vx = 0;
+
+            if (keys.action && player.isGrounded) {
+                player.vy = -11;
+                player.isGrounded = false;
+                sound.playJump();
+                keys.action = false;
+            }
+
+            player.update();
+
+            // Spawn Teeth Stamps
+            if (stageTimer % 70 === 0) {
+                teethStamps.push({
+                    x: Math.random() * (canvas.width - 60) + 10,
+                    y: -80,
+                    width: 50,
+                    height: 60,
+                    speed: 4 + Math.random() * 3
+                });
+            }
+
+            // Spawn Rice
+            if (stageTimer % 50 === 0) {
+                riceGrains.push({
+                    x: Math.random() * (canvas.width - 40) + 20,
+                    y: -20,
+                    size: 14
+                });
+            }
+
+            // Teeth collision
+            teethStamps.forEach((tooth, idx) => {
+                tooth.y += tooth.speed;
+                if (
+                    player.x < tooth.x + tooth.width &&
+                    player.x + player.width > tooth.x &&
+                    player.y < tooth.y + tooth.height &&
+                    player.y + player.height > tooth.y
+                ) {
+                    player.squish = 0.4; // Flatten effect
+                    player.vy = 2;
+                } else {
+                    player.squish = 1;
+                }
+            });
+            teethStamps = teethStamps.filter(t => t.y < canvas.height);
+
+            // Rice collection
+            riceGrains.forEach((rice, idx) => {
+                rice.y += 2;
+                if (
+                    Math.abs((player.x + player.width / 2) - rice.x) < 25 &&
+                    Math.abs((player.y + player.height / 2) - rice.y) < 25
+                ) {
+                    riceGrains.splice(idx, 1);
+                    score += 10;
+                    document.getElementById('scoreVal').innerText = score;
+                    sound.playCoin();
+                }
+            });
+            riceGrains = riceGrains.filter(r => r.y < canvas.height);
+
+            // Win Stage Condition
+            if (stageTimer > 700) {
+                showTransition("もぐもぐ成功！", "胃（い）のドロドロプールへご案内〜！");
+            }
+        }
+
+        function drawStage1() {
+            // Draw Mouth Interior
+            ctx.fillStyle = '#ffccd5';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Tongue floor
+            ctx.fillStyle = '#ff8095';
+            ctx.beginPath();
+            ctx.ellipse(canvas.width / 2, canvas.height, canvas.width / 1.2, 80, 0, Math.PI, 0);
+            ctx.fill();
+
+            // Teeth Stamps
+            teethStamps.forEach(t => {
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#5a3e2b';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.roundRect(t.x, t.y, t.width, t.height, 10);
+                ctx.fill(); ctx.stroke();
+
+                // Tooth Details
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(t.x + 10, t.y + t.height - 15, t.width - 20, 10);
+            });
+
+            // Rice Grains
+            riceGrains.forEach(r => {
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(r.x, r.y, r.size / 1.5, r.size, Math.PI / 4, 0, Math.PI * 2);
+                ctx.fill(); ctx.stroke();
+            });
+
+            player.draw(ctx);
+        }
+
+        // Stage 2: Stomach (Floating Platforms on Acid Pool)
+        function initStage2() {
+            player.reset();
+            platforms = [
+                { x: 50, y: canvas.height - 80, w: 90, h: 20, type: 'たくあん' },
+                { x: 180, y: canvas.height - 140, w: 90, h: 20, type: 'お肉' },
+                { x: 310, y: canvas.height - 200, w: 90, h: 20, type: 'たくあん' }
+            ];
+            burps = [];
+            stageTimer = 0;
+            updateControlsForStage();
+        }
+
+        function updateStage2() {
+            stageTimer++;
+
+            if (keys.left) player.vx = -4;
+            else if (keys.right) player.vx = 4;
+            else player.vx = 0;
+
+            if (keys.action && player.isGrounded) {
+                player.vy = -12;
+                player.isGrounded = false;
+                sound.playJump();
+                keys.action = false;
+            }
+
+            player.update();
+
+            // Move & Bounce Platforms
+            platforms.forEach(p => {
+                p.x += Math.sin(stageTimer * 0.05 + p.y) * 1.5;
+
+                // Collision with player
+                if (
+                    player.vy >= 0 &&
+                    player.x + player.width > p.x &&
+                    player.x < p.x + p.w &&
+                    player.y + player.height >= p.y &&
+                    player.y + player.height <= p.y + p.h + 10
+                ) {
+                    player.y = p.y - player.height;
+                    player.vy = 0;
+                    player.isGrounded = true;
+                }
+            });
+
+            // Burp Gusts (Obstacles)
+            if (stageTimer % 90 === 0) {
+                burps.push({
+                    x: canvas.width + 50,
+                    y: Math.random() * (canvas.height - 150) + 50,
+                    radius: 30,
+                    speed: 4
+                });
+                sound.playBurp();
+            }
+
+            burps.forEach((b, idx) => {
+                b.x -= b.speed;
+                if (
+                    Math.abs((player.x + player.width / 2) - b.x) < b.radius + 15 &&
+                    Math.abs((player.y + player.height / 2) - b.y) < b.radius + 15
+                ) {
+                    player.vx = -8; // Pushed back by Burp
+                }
+            });
+            burps = burps.filter(b => b.x > -50);
+
+            // Win Stage Condition
+            if (stageTimer > 650) {
+                showTransition("胃液プールを突破！", "長い小腸（しょうちょう）へぬけだしたよ！");
+            }
+        }
+
+        function drawStage2() {
+            // Stomach Acid Background
+            ctx.fillStyle = '#fef08a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Acid Pool Water
+            ctx.fillStyle = '#eab308';
+            ctx.beginPath();
+            ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+
+            // Acid Bubbles
+            ctx.fillStyle = '#fde047';
+            for (let i = 0; i < 5; i++) {
+                let bx = (stageTimer * 2 + i * 80) % canvas.width;
+                ctx.beginPath();
+                ctx.arc(bx, canvas.height - 30 + Math.sin(stageTimer * 0.1 + i) * 5, 8, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Platforms
+            platforms.forEach(p => {
+                if (p.type === 'たくあん') {
+                    ctx.fillStyle = '#facc15';
+                    ctx.strokeStyle = '#ca8a04';
+                } else {
+                    ctx.fillStyle = '#f87171';
+                    ctx.strokeStyle = '#dc2626';
+                }
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.roundRect(p.x, p.y, p.w, p.h, 10);
+                ctx.fill(); ctx.stroke();
+            });
+
+            // Burp Gusts
+            burps.forEach(b => {
+                ctx.fillStyle = 'rgba(163, 230, 53, 0.6)';
+                ctx.strokeStyle = '#65a30d';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                ctx.fill(); ctx.stroke();
+
+                ctx.fillStyle = '#3f6212';
+                ctx.font = '12px "M PLUS Rounded 1c"';
+                ctx.fillText("ゲフッ！", b.x - 18, b.y + 4);
+            });
+
+            player.draw(ctx);
+        }
+
+        // Stage 3: Small Intestine (Lane Switching / Arm Dodging)
+        function initStage3() {
+            player.reset();
+            player.y = canvas.height / 2;
+            arms = [];
+            stageTimer = 0;
+            updateControlsForStage();
+        }
+
+        function updateStage3() {
+            stageTimer++;
+
+            // Up/Down / Left/Right free run
+            if (keys.left) player.x -= 5;
+            if (keys.right) player.x += 5;
+            if (keys.action) {
+                player.y -= 4; // Use action as up movement
+            } else {
+                player.y += 2; // Natural drift
+            }
+
+            // Bound checking
+            if (player.y < 40) player.y = 40;
+            if (player.y > canvas.height - 70) player.y = canvas.height - 70;
+
+            // Spawn Nutrition Arms
+            if (stageTimer % 45 === 0) {
+                const fromTop = Math.random() > 0.5;
+                arms.push({
+                    x: canvas.width + 40,
+                    y: fromTop ? 20 : canvas.height - 80,
+                    length: 60 + Math.random() * 50,
+                    fromTop: fromTop
+                });
+            }
+
+            arms.forEach((arm, idx) => {
+                arm.x -= 5; // Fast scrolling
+                if (
+                    Math.abs((player.x + player.width / 2) - arm.x) < 30 &&
+                    ((arm.fromTop && player.y < arm.y + arm.length) ||
+                     (!arm.fromTop && player.y + player.height > arm.y))
+                ) {
+                    score = Math.max(0, score - 1); // Nutrition stolen!
+                    document.getElementById('scoreVal').innerText = score;
+                    player.x -= 3;
+                }
+            });
+            arms = arms.filter(a => a.x > -60);
+
+            if (stageTimer > 600) {
+                showTransition("栄養（えいよう）ゾーン通過！", "次はいよいよ大腸（だいちょう）で『うんち』に変身だ！", true);
+            }
+        }
+
+        function drawStage3() {
+            // Intestine Tunnel Background
+            ctx.fillStyle = '#fbcfe8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Tunnel Walls
+            ctx.fillStyle = '#f472b6';
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.arc(x, 0, 30 + Math.sin((stageTimer + x) * 0.05) * 10, 0, Math.PI);
+                ctx.arc(x, canvas.height, 30 + Math.cos((stageTimer + x) * 0.05) * 10, Math.PI, 0);
+                ctx.fill();
+            }
+
+            // Arms
+            arms.forEach(a => {
+                ctx.fillStyle = '#f43f5e';
+                ctx.strokeStyle = '#881337';
+                ctx.lineWidth = 3;
+                if (a.fromTop) {
+                    ctx.fillRect(a.x - 10, 0, 20, a.length);
+                    ctx.beginPath(); ctx.arc(a.x, a.length, 12, 0, Math.PI * 2); ctx.fill();
+                } else {
+                    ctx.fillRect(a.x - 10, canvas.height - a.length, 20, a.length);
+                    ctx.beginPath(); ctx.arc(a.x, canvas.height - a.length, 12, 0, Math.PI * 2); ctx.fill();
+                }
+            });
+
+            player.draw(ctx);
+        }
+
+        // Stage 4: Large Intestine (Unchi Transformation & Fart Boost)
+        function initStage4() {
+            player.reset();
+            player.isUnchi = true; // Transform into Unchi-kun!
+            farts = [];
+            stageTimer = 0;
+            updateControlsForStage();
+        }
+
+        function updateStage4() {
+            stageTimer++;
+
+            // Heavy friction
+            player.vx *= 0.92;
+            player.update(0); // No gravity
+
+            // Fart Boost Action
+            if (keys.action) {
+                player.vx += 4;
+                farts.push({
+                    x: player.x,
+                    y: player.y + player.height / 2,
+                    radius: 10
+                });
+                sound.playFart();
+                keys.action = false;
+            }
+
+            // Keep in vertical center
+            player.y = canvas.height / 2 - player.height / 2;
+
+            // Fart animations
+            farts.forEach((f, idx) => {
+                f.x -= 4;
+                f.radius += 1.5;
+            });
+            farts = farts.filter(f => f.radius < 40);
+
+            // Stage progress via position or fart count
+            if (player.x > canvas.width - 80) {
+                showTransition("うんちに変身完了！", "おしりの穴（こうもん）発射基地へとうちゃく！");
+            }
+        }
+
+        function drawStage4() {
+            // Brownish Large Intestine Background
+            ctx.fillStyle = '#fed7aa';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Water absorption waves
+            ctx.fillStyle = '#f97316';
+            ctx.font = 'bold 16px "M PLUS Rounded 1c"';
+            ctx.fillText("水分吸収中... ギューッ！", 20, 40);
+
+            // Fart Particles
+            farts.forEach(f => {
+                ctx.fillStyle = 'rgba(161, 98, 7, 0.5)';
+                ctx.beginPath();
+                ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Target Exit Gate
+            ctx.fillStyle = '#7c5c43';
+            ctx.fillRect(canvas.width - 30, canvas.height / 2 - 60, 30, 120);
+
+            player.draw(ctx);
+        }
+
+        // Stage 5: Anus Rocket Launch (Rapid Tap Gauge Filling)
+        function initStage5() {
+            player.reset();
+            player.isUnchi = true;
+            player.x = canvas.width / 2 - player.width / 2;
+            player.y = canvas.height - 120;
+            gaugeValue = 0;
+            updateControlsForStage();
+        }
+
+        function updateStage5() {
+            // Tap Action fills launch gauge
+            if (keys.action) {
+                gaugeValue += 8;
+                sound.playFart();
+                keys.action = false;
+            }
+
+            // Gauge decay
+            gaugeValue = Math.max(0, gaugeValue - 0.35);
+
+            if (gaugeValue >= 100) {
+                // Rocket Launch Sequence!
+                player.vy = -18;
+                sound.playWin();
+                setTimeout(() => {
+                    showEndingScreen();
+                }, 1200);
+            }
+        }
+
+        function drawStage5() {
+            // Anus Gate Background
+            ctx.fillStyle = '#fecdd3';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Rocket Pad / Anus Door
+            ctx.fillStyle = '#e11d48';
+            ctx.beginPath();
+            ctx.arc(canvas.width / 2, canvas.height - 30, 100, Math.PI, 0);
+            ctx.fill();
+
+            // Gauge Bar
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(canvas.width / 2 - 100, 50, 200, 30);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(canvas.width / 2 - 100, 50, gaugeValue * 2, 30);
+            ctx.strokeStyle = '#5a3e2b';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(canvas.width / 2 - 100, 50, 200, 30);
+
+            ctx.fillStyle = '#5a3e2b';
+            ctx.font = 'bold 16px "M PLUS Rounded 1c"';
+            ctx.fillText("うんちパワー: " + Math.floor(gaugeValue) + "%", canvas.width / 2 - 60, 42);
+
+            player.draw(ctx);
+        }
+
+        /* --- Global Game Loop --- */
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (stage === 1) {
+                updateStage1(); drawStage1();
+            } else if (stage === 2) {
+                updateStage2(); drawStage2();
+            } else if (stage === 3) {
+                updateStage3(); drawStage3();
+            } else if (stage === 4) {
+                updateStage4(); drawStage4();
+            } else if (stage === 5) {
+                updateStage5(); drawStage5();
+            }
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        /* --- UI & Screen Transitions --- */
+        const stageBadge = document.getElementById('stageBadge');
+        const overlayScreen = document.getElementById('overlayScreen');
+        const titleContent = document.getElementById('titleContent');
+        const transitionContent = document.getElementById('transitionContent');
+        const endingContent = document.getElementById('endingContent');
+        const completeContent = document.getElementById('completeContent');
+        const actionBtn = document.getElementById('actionBtn');
+        const dirControls = document.getElementById('dirControls');
+
+        function updateControlsForStage() {
+            stageBadge.innerText = STAGE_NAMES[stage];
+            if (stage === 1 || stage === 2) {
+                dirControls.style.display = 'flex';
+                actionBtn.innerText = "ジャンプ 🚀";
+            } else if (stage === 3) {
+                dirControls.style.display = 'flex';
+                actionBtn.innerText = "うえにすすむ ⬆️";
+            } else if (stage === 4) {
+                dirControls.style.display = 'none';
+                actionBtn.innerText = "おならバズーカ 💨";
+            } else if (stage === 5) {
+                dirControls.style.display = 'none';
+                actionBtn.innerText = "うーん！(連打) 💥";
+            }
+        }
+
+        function startGame() {
+            sound.init();
+            score = 0;
+            document.getElementById('scoreVal').innerText = score;
+            stage = 1;
+            overlayScreen.classList.add('hidden');
+            initStage1();
+            if (!animationFrameId) gameLoop();
+        }
+
+        function showTransition(title, desc, isUnchiTransform = false) {
+            stage++;
+            overlayScreen.classList.remove('hidden');
+            titleContent.classList.add('hidden');
+            endingContent.classList.add('hidden');
+            completeContent.classList.add('hidden');
+            transitionContent.classList.remove('hidden');
+
+            document.getElementById('transTitle').innerText = title;
+            document.getElementById('transDesc').innerText = desc;
+
+            const iconContainer = document.getElementById('transIcon');
+            if (isUnchiTransform) {
+                iconContainer.innerHTML = `
+                    <div class="text-5xl animate-bounce">💩</div>
+                `;
+            } else {
+                iconContainer.innerHTML = `
+                    <div class="text-5xl animate-bounce">🍙</div>
+                `;
+            }
+        }
+
+        function showEndingScreen() {
+            stage = 6;
+            stageBadge.innerText = STAGE_NAMES[stage];
+            overlayScreen.classList.remove('hidden');
+            transitionContent.classList.add('hidden');
+            endingContent.classList.remove('hidden');
+        }
+
+        // Flush Animation Sequence
+        document.getElementById('flushBtn').addEventListener('click', () => {
+            sound.playFlush();
+            endingContent.classList.add('swirl-out');
+
+            setTimeout(() => {
+                endingContent.classList.add('hidden');
+                endingContent.classList.remove('swirl-out');
+                completeContent.classList.remove('hidden');
+                document.getElementById('finalScore').innerText = score;
+                launchConfetti();
+            }, 2300);
+        });
+
+        // Confetti Particle Effect
+        function launchConfetti() {
+            confetti = [];
+            for (let i = 0; i < 80; i++) {
+                confetti.push({
+                    x: Math.random() * confettiCanvas.width,
+                    y: Math.random() * confettiCanvas.height - confettiCanvas.height,
+                    color: ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'][Math.floor(Math.random() * 5)],
+                    size: 8 + Math.random() * 6,
+                    vy: 2 + Math.random() * 4
+                });
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confetti.forEach(c => {
+                c.y += c.vy;
+                confettiCtx.fillStyle = c.color;
+                confettiCtx.fillRect(c.x, c.y, c.size, c.size);
+            });
+            confetti = confetti.filter(c => c.y < confettiCanvas.height);
+            if (confetti.length > 0) {
+                requestAnimationFrame(animateConfetti);
+            }
+        }
+
+        /* --- Event Listeners --- */
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('nextStageBtn').addEventListener('click', () => {
+            overlayScreen.classList.add('hidden');
+            transitionContent.classList.add('hidden');
+            if (stage === 2) initStage2();
+            else if (stage === 3) initStage3();
+            else if (stage === 4) initStage4();
+            else if (stage === 5) initStage5();
+        });
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            completeContent.classList.add('hidden');
+            titleContent.classList.remove('hidden');
+            stage = 0;
+            stageBadge.innerText = STAGE_NAMES[0];
+        });
+
+        // Controls setup (Touch & Keyboard)
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+
+        const bindControl = (el, keyName) => {
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyName] = true; });
+            el.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyName] = false; });
+            el.addEventListener('mousedown', () => { keys[keyName] = true; });
+            el.addEventListener('mouseup', () => { keys[keyName] = false; });
+        };
+
+        bindControl(leftBtn, 'left');
+        bindControl(rightBtn, 'right');
+        bindControl(actionBtn, 'action');
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = true;
+            if (e.key === 'ArrowRight') keys.right = true;
+            if (e.key === ' ' || e.key === 'ArrowUp') keys.action = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = false;
+            if (e.key === 'ArrowRight') keys.right = false;
+            if (e.key === ' ' || e.key === 'ArrowUp') keys.action = false;
+        });
+
+    </script>
+</body>
+</html>
