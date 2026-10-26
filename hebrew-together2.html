@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヘブル語対話パートナー - Daily Hebrew Practice</title>
+    <!-- Tailwind CSS & FontAwesome -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #fdfbf7;
+        }
+
+        /* ヘブル語RTLと句読点の文字化け・反転防止スタイル */
+        .hebrew-text {
+            font-family: 'Heebo', sans-serif;
+            direction: rtl;
+            unicode-bidi: isolate;
+            line-height: 1.7;
+        }
+
+        /* 単語タップ領域 */
+        .hebrew-word {
+            display: inline-block;
+            direction: rtl;
+            unicode-bidi: isolate;
+            cursor: pointer;
+            padding: 2px 4px;
+            margin: 1px 2px;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        .hebrew-word:hover {
+            background-color: #fef3c7;
+            color: #92400e;
+            transform: translateY(-1px);
+        }
+
+        .kana-word {
+            display: inline-block;
+            cursor: pointer;
+            padding: 1px 3px;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+
+        .kana-word:hover {
+            background-color: #fde68a;
+            color: #78350f;
+        }
+
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between selection:bg-amber-100">
+
+    <!-- ヘッダー -->
+    <header class="bg-amber-900 text-amber-50 shadow-md sticky top-0 z-30 border-b border-amber-700">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-700/80 border border-amber-500/30 flex items-center justify-center text-amber-300 text-xl font-bold shadow-inner">
+                    <i class="fa-solid fa-comments"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-bold tracking-wide text-amber-100">ヘブル語対話パートナー</h1>
+                    <p class="text-xs text-amber-300/80">毎日続ける14の会話シーン（4往復・全112会話）</p>
+                </div>
+            </div>
+            
+            <!-- 全体進捗カウンター -->
+            <div class="bg-amber-950/60 px-3 py-1.5 rounded-xl border border-amber-700/50 text-right">
+                <div class="text-[10px] text-amber-300 uppercase tracking-wider font-semibold">達成度</div>
+                <div class="text-xs md:text-sm font-bold text-amber-200" id="overallProgress">0 / 14 シーン完了</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインレイアウト -->
+    <main class="max-w-5xl mx-auto w-full px-4 py-6 flex-grow grid grid-cols-1 md:grid-cols-12 gap-6">
+
+        <!-- 左側：シーン選択サイドバー -->
+        <section class="md:col-span-4 bg-white rounded-2xl shadow-sm border border-amber-900/10 p-4 flex flex-col h-[480px] md:h-[680px]">
+            <h2 class="text-sm font-bold text-amber-950 mb-3 flex items-center justify-between pb-2 border-b border-amber-100">
+                <span><i class="fa-solid fa-list-check text-amber-700 mr-2"></i>会話シーン（全14場面）</span>
+                <span class="text-xs text-amber-700/60 font-normal">全14場面</span>
+            </h2>
+            <div id="sceneList" class="flex-grow overflow-y-auto space-y-2 pr-1">
+                <!-- JSで14シーン生成 -->
+            </div>
+        </section>
+
+        <!-- 右側：会話ディスプレイ & 操作パネル -->
+        <section class="md:col-span-8 flex flex-col gap-4">
+
+            <!-- コントロールバー（モード切替 & スピード調整） -->
+            <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-amber-900/10 flex flex-wrap gap-3 items-center justify-between">
+                <!-- 練習モード切替 -->
+                <div class="flex bg-amber-50/80 p-1 rounded-xl border border-amber-200/50 w-full sm:w-auto">
+                    <button onclick="setMode('interactive')" id="btnModeInteractive" class="flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all shadow-sm bg-amber-700 text-white">
+                        <i class="fa-solid fa-people-arrows mr-1"></i>2人交互
+                    </button>
+                    <button onclick="setMode('auto')" id="btnModeAuto" class="flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-amber-900 hover:text-amber-700">
+                        <i class="fa-solid fa-circle-play mr-1"></i>自動再生
+                    </button>
+                    <button onclick="setMode('quiz')" id="btnModeQuiz" class="flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-amber-900 hover:text-amber-700">
+                        <i class="fa-solid fa-brain mr-1"></i>クイズ
+                    </button>
+                </div>
+
+                <!-- 読み上げ速度切替 -->
+                <div class="flex items-center gap-1.5 text-xs font-medium text-amber-900 w-full sm:w-auto justify-end">
+                    <span class="text-slate-500 mr-1"><i class="fa-solid fa-gauge-high mr-1"></i>速度:</span>
+                    <button onclick="setSpeed(0.75)" id="speedSlow" class="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900">ゆっくり</button>
+                    <button onclick="setSpeed(0.88)" id="speedNormal" class="px-2 py-1 rounded-lg bg-amber-700 font-bold text-white shadow-sm">ふつう</button>
+                    <button onclick="setSpeed(1.05)" id="speedFast" class="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900">はやめ</button>
+                </div>
+            </div>
+
+            <!-- チャットボックスメイン -->
+            <div class="bg-white rounded-2xl shadow-sm border border-amber-900/10 flex flex-col h-[500px] md:h-[600px] overflow-hidden">
+                
+                <!-- シーンヘッダー -->
+                <div class="bg-amber-50/70 border-b border-amber-100 px-5 py-3.5 flex justify-between items-center">
+                    <div>
+                        <h3 id="currentSceneTitle" class="font-bold text-amber-950 text-base">1. 挨拶 (Greetings)</h3>
+                        <p id="currentSceneDesc" class="text-xs text-amber-800/70">日々の基本的な挨拶とお互いの調子の尋ね合い</p>
+                    </div>
+                    <button id="btnComplete" onclick="toggleComplete()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+                        <i class="fa-regular fa-circle-check mr-1"></i> 完了にする
+                    </button>
+                </div>
+
+                <!-- チャットログエリア -->
+                <div id="chatContainer" class="flex-grow p-4 overflow-y-auto space-y-4 bg-amber-50/20">
+                    <!-- JSでチャットバブル生成 -->
+                </div>
+
+                <!-- ボトムアクションコントロール -->
+                <div class="border-t border-amber-100 p-3 bg-white flex items-center justify-between gap-3">
+                    <button onclick="resetDialogue()" class="p-2.5 text-amber-800/60 hover:text-amber-900 rounded-xl hover:bg-amber-50 transition-colors" title="最初からやり直す">
+                        <i class="fa-solid fa-rotate-right text-base"></i>
+                    </button>
+                    
+                    <button id="mainActionButton" onclick="handleMainAction()" class="flex-1 bg-amber-700 hover:bg-amber-800 active:scale-[0.99] text-white py-3 px-4 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-comments"></i> <span>会話をスタート</span>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- 単語辞書モーダル Popup -->
+    <div id="dictionaryModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 transform transition-all border border-amber-100">
+            <div class="flex justify-between items-start mb-3">
+                <span class="text-[11px] font-bold tracking-wider text-amber-800 uppercase bg-amber-100 px-3 py-1 rounded-full">単語解説</span>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="text-center my-4">
+                <div id="modalHebrew" class="hebrew-text text-3xl font-bold text-amber-950 mb-1.5" dir="rtl">שָׁלוֹם!</div>
+                <div id="modalKana" class="text-sm font-bold text-amber-700 mb-3">シャローム</div>
+                <div id="modalMeaning" class="text-sm text-slate-700 bg-amber-50/60 p-3 rounded-xl border border-amber-100 font-medium">こんにちは！ / 平和</div>
+            </div>
+
+            <div class="mt-5">
+                <button onclick="playModalAudio()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition-all">
+                    <i class="fa-solid fa-volume-high"></i> この単語の発音を聞く
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- フッター -->
+    <footer class="bg-white border-t border-amber-100 py-3 text-center text-xs text-amber-900/50">
+        ヘブル語対話パートナー &copy; 2026 - 14 Scenarios Daily Practice
+    </footer>
+
+    <script>
+        /* --- 単語内訳辞書データ --- */
+        const dictionary = {
+            "שָׁלוֹם!": { kana: "シャローム！", meaning: "こんにちは！ / 平和！" },
+            "שָׁלוֹם": { kana: "シャローム", meaning: "こんにちは / 平和" },
+            "מַה": { kana: "マー", meaning: "何" },
+            "שְׁלוֹמְךָ": { kana: "シュロムハ", meaning: "あなたの調子（男性に）" },
+            "שְׁלוֹמֵךְ": { kana: "シュロメハ", meaning: "あなたの調子（女性に）" },
+            "הַיּוֹם?": { kana: "ハヨーム？", meaning: "今日？" },
+            "הַיּוֹם": { kana: "ハヨーム", meaning: "今日" },
+            "טוֹב,": { kana: "トヴ、", meaning: "良い、元気" },
+            "טוֹב": { kana: "トヴ", meaning: "良い、元気" },
+            "תּוֹדָה!": { kana: "トダ！", meaning: "ありがとう！" },
+            "תּוֹדָה": { kana: "トダ", meaning: "ありがとう" },
+            "וּמַה": { kana: "ウマー", meaning: "そして何" },
+            "אִתְּךָ?": { kana: "イテハ？", meaning: "あなた（男性）は？" },
+            "אִתָּךְ?": { kana: "イターハ？", meaning: "あなた（女性）は？" },
+            "גַּם": { kana: "ガム", meaning: "〜もまた" },
+            "אֲנִי": { kana: "アニー", meaning: "私" },
+            "בְּסֵדֶר,": { kana: "ベセデル、", meaning: "大丈夫、順調" },
+            "בְּסֵדֶר": { kana: "ベセデル", meaning: "大丈夫、順調" },
+            "אֵיךְ": { kana: "エイフ", meaning: "どのように" },
+            "קוראים": { kana: "コルイム", meaning: "呼ばれている" },
+            "לְךָ?": { kana: "レハ？", meaning: "あなたに" },
+            "שְׁמִי": { kana: "シュミー", meaning: "私の名前" },
+            "דָּוִד.": { kana: "ダヴィッド。", meaning: "ダビデ（人名）" },
+            "נָעִים": { kana: "ナイーム", meaning: "心地よい" },
+            "מְאֹד!": { kana: "メオッド！", meaning: "とても！" },
+            "מֵאַיִן": { kana: "メアイエン", meaning: "どこから" },
+            "אַתָּה?": { kana: "アタ？", meaning: "あなた（男性）は？" },
+            "מִיַּפָּן.": { kana: "ミヤパン。", meaning: "日本から" },
+            "סְלִיחָה,": { kana: "スリハ、", meaning: "すみません、ごめんなさい" },
+            "סְלִיחָה": { kana: "スリハ", meaning: "すみません" },
+            "כַּמָּה": { kana: "カマ", meaning: "いくら、いくつ" },
+            "זֶה": { kana: "ゼ", meaning: "これ" },
+            "עוֹלֶה?": { kana: "オレ？", meaning: "費用がかかる？" },
+            "קָפֶה,": { kana: "カフェ、", meaning: "コーヒー" },
+            "מַיִם.": { kana: "マイム。", meaning: "水" },
+            "חָלָב": { kana: "ハラヴ", meaning: "牛乳" },
+            "סוּכָר": { kana: "スカル", meaning: "砂糖" },
+            "חֻמּוּס": { kana: "フムス", meaning: "ひよこ豆ペースト" }
+        };
+
+        /* --- 14会話場面データ (各4往復 = 8発話) --- */
+        const dialogueData = [
+            {
+                id: 1,
+                title: "1. 挨拶 (Greetings)",
+                desc: "日々の基本的な挨拶とお互いの調子の尋ね合い",
+                dialogue: [
+                    { speaker: "A", text: "שָׁלוֹם! מַה שְּׁלוֹמְךָ הַיּוֹם?", kana: "シャローム！ マー シュロムハ ハヨーム？", jp: "こんにちは！今日の調子はどうですか？" },
+                    { speaker: "B", text: "טוֹב, תּוֹדָה! וּמַה אִתְּךָ?", kana: "トヴ、 トダ！ ウマー イテハ？", jp: "元気ですよ、ありがとう！あなたは？" },
+                    { speaker: "A", text: "גַּם אֲנִי בְּסֵדֶר, תּוֹדָה.", kana: "ガム アニー ベセデル、 トダ。", jp: "私も元気です、ありがとう。" },
+                    { speaker: "B", text: "יוֹפִי! יוֹם נָעִים!", kana: "ヨフィ！ ヨーム ナイーム！", jp: "素晴らしい！良い一日を！" },
+                    { speaker: "A", text: "גַּם לְךָ! לְהִתְרָאוֹת.", kana: "ガム レハ！ レヒトライオット。", jp: "あなたもね！また会いましょう。" },
+                    { speaker: "B", text: "לְהִתְרָאוֹת, בַּיי!", kana: "レヒトライオット、 バイ！", jp: "さようなら、バイバイ！" },
+                    { speaker: "A", text: "נִשְׁמֹר עַל קֶשֶׁר!", kana: "ニシュモール アル ケシェル！", jp: "連絡を取り合いましょう！" },
+                    { speaker: "B", text: "בֶּטַח, דַּבֵּר אִתִּי!", kana: "ベタハ、 ダベル イティ！", jp: "もちろんです、連絡してください！" }
+                ]
+            },
+            {
+                id: 2,
+                title: "2. カフェ (At the Cafe)",
+                desc: "コーヒーや飲み物、軽食を注文する会話",
+                dialogue: [
+                    { speaker: "A", text: "סְלִיחָה, אֶפְשָׁר קָפֶה?", kana: "スリハ、 エフシャル カフェ？", jp: "すみません、コーヒーをいただけますか？" },
+                    { speaker: "B", text: "בֶּטַח, קָפֶה עִם חָלָב?", kana: "ベタハ、 カフェ イム ハラヴ？", jp: "もちろんです、ミルク入りですか？" },
+                    { speaker: "A", text: "כֵּן, בְּבָקָשָׁה, וּבְלִי סוּכָר.", kana: "ケン、 ベバカシャ、 ウヴリー スカル。", jp: "はい、お願いします。砂糖なしで。" },
+                    { speaker: "B", text: "רוֹצֶה גַּם עּוגָה?", kana: "ロツェ ガム ウガ？", jp: "ケーキもいかがですか？" },
+                    { speaker: "A", text: "לא, תּוֹדָה, רַק קָפֶה.", kana: "ロ、 トダ、 ラク カフェ。", jp: "いいえ、ありがとう。コーヒーだけで。" },
+                    { speaker: "B", text: "בְּסֵדֶר, זֶה עֶשְׂרִים שְׁקָלִים.", kana: "ベセデル、 ゼ エスリーム シェケリム。", jp: "わかりました、20シェケルです。" },
+                    { speaker: "A", text: "אֶפְשָׁר לַשַׁלֵּם בְּאַשְׁרַאי?", kana: "エフシャル ラシャレム ベアシュライ？", jp: "カードで支払えますか？" },
+                    { speaker: "B", text: "כֵּן, בְּבָקָשָׁה. בְּתֵאָבוֹן!", kana: "ケン、 ベバカシャ。 ベテアヴォン！", jp: "はいどうぞ。召し上がれ！" }
+                ]
+            },
+            {
+                id: 3,
+                title: "3. スーパー (Supermarket)",
+                desc: "食材や日用品を探して購入する会話",
+                dialogue: [
+                    { speaker: "A", text: "אֵיפֹה הַחָלָב, בְּבָקָשָׁה?", kana: "エイフォ ハハラヴ、 ベバカシャ？", jp: "牛乳はどこにありますか？" },
+                    { speaker: "B", text: "הַחָלָב בַּסּוֹף מִשְׂמֹאל.", kana: "ハハラヴ バソフ ミスモイル。", jp: "牛乳は奥の左側にあります。" },
+                    { speaker: "A", text: "יֵשׁ גַּם לֶחֶם טָרִי?", kana: "イェシュ ガム レヘム タリー？", jp: "焼きたてのパンもありますか？" },
+                    { speaker: "B", text: "כֵּן, הִנֵּה הַלֶּחֶם.", kana: "ケン、 ヒネ ハレヘム。", jp: "はい、こちらがパンです。" },
+                    { speaker: "A", text: "כַּמָּה זֶה עוֹלֶה?", kana: "カマ ゼ オレ？", jp: "これはいくらですか？" },
+                    { speaker: "B", text: "עֲשָׂרָה שְׁקָלִים, בְּבָקָשָׁה.", kana: "アサラ シェケリム、 ベバカシャ。", jp: "10シェケルになります。" },
+                    { speaker: "A", text: "קַח עֲשָׂרָה שְׁקָלִים.", kana: "カハ アサラ シェケリム。", jp: "10シェケルどうぞ。" },
+                    { speaker: "B", text: "תּוֹדָה רַבָּה! יוֹם טוֹב!", kana: "トダ ラバ！ ヨーム トヴ！", jp: "ありがとうございます！良い一日を！" }
+                ]
+            },
+            {
+                id: 4,
+                title: "4. 週末の計画 (Weekend Plans)",
+                desc: "週末や安息日（シャバット）の予定を話し合う",
+                dialogue: [
+                    { speaker: "A", text: "מַה אַתָּה עוֹשֶׂה בַּסּוֹפָ"ש?", kana: "マー アタ オセ バソファシュ？", jp: "週末は何をしますか？" },
+                    { speaker: "B", text: "אֲנִי נָח בַּבַּיִת.", kana: "アニー ナハ ババイト。", jp: "家でゆっくり休みます。" },
+                    { speaker: "A", text: "אַתָּה פוֹגֵשׁ חֲבֵרִים?", kana: "アタ フォゲシュ ハヴェリーム？", jp: "友達に会いますか？" },
+                    { speaker: "B", text: "כֵּן, בְּיוֹם שִׁשִּׁי בָּעֶרֶב.", kana: "ケン、 ベヨーム シシー バエレヴ。", jp: "はい、金曜日の夜に。" },
+                    { speaker: "A", text: "שַׁבָּת שָׁלוֹם שֶׁתִּהְיֶה לְךָ!", kana: "シャバット シャローム シェティヒイェ レハ！", jp: "良いシャバット（安息日）を！" },
+                    { speaker: "B", text: "שַׁבָּת שָׁלוֹם וּמְבוֹרָךְ!", kana: "シャバット シャローム ウメヴォラハ！", jp: "祝福されたシャバットを！" },
+                    { speaker: "A", text: "תֶּהֱנֶה מֵהַזְּמַן!", kana: "テヘネ メハズマン！", jp: "時間を楽しんでね！" },
+                    { speaker: "B", text: "תּוֹדָה, גַּם אַתָּה!", kana: "トダ、 ガム アタ！", jp: "ありがとう、あなたもね！" }
+                ]
+            },
+            {
+                id: 5,
+                title: "5. 道案内 (Asking Directions)",
+                desc: "目的地への道順や徒歩での距離を聞く",
+                dialogue: [
+                    { speaker: "A", text: "סְלִיחָה, אֵיפֹה הַתַּחֲנָה?", kana: "スリハ、 エイフォ ハタハナ？", jp: "すみません、駅はどこですか？" },
+                    { speaker: "B", text: "יָשָׁר וְאָז שְׂמֹאילָה.", kana: "ヤシャル ヴェアズ スモイラ。", jp: "真っ直ぐ行って左です。" },
+                    { speaker: "A", text: "זֶה רָחוֹק מִפֹּה?", kana: "ゼ ラホク ミポ？", jp: "ここから遠いですか？" },
+                    { speaker: "B", text: "לא, זֶה חָמֵשׁ דַּקּוֹת.", kana: "ロ、 ゼ ハメシュ ダコト。", jp: "いいえ、徒歩5分です。" },
+                    { speaker: "A", text: "אֶפְשָׁר לָלֶכֶת בְּרֶגֶל?", kana: "エフシャル ラレヘト ベレゲル？", jp: "歩いて行けますか？" },
+                    { speaker: "B", text: "כֵּן, זֶה קָרוֹב מְאֹד.", kana: "ケン、 ゼ カロヴ メオッド。", jp: "はい、とても近いです。" },
+                    { speaker: "A", text: "תּוֹדָה רַבָּה עַל הָעֶזְרָה!", kana: "トダ ラバ アル ハエズラ！", jp: "助けてくれてありがとう！" },
+                    { speaker: "B", text: "בְּכֵף! יוֹם טוֹב!", kana: "ベケフ！ ヨーム トヴ！", jp: "喜んで！良い一日を！" }
+                ]
+            },
+            {
+                id: 6,
+                title: "6. 趣味 (Hobbies)",
+                desc: "休日の過ごし方や好きなことについての会話",
+                dialogue: [
+                    { speaker: "A", text: "מַה אַתָּה אוֹהֵב לַעֲשׂוֹת?", kana: "マー アタ オヘヴ ラアソト？", jp: "何をするのが好きですか？" },
+                    { speaker: "B", text: "אֲנִי אוֹהֵב לִקְרֹא.", kana: "アニー オヘヴ リクロ。", jp: "読書が好きです。" },
+                    { speaker: "A", text: "אַתָּה אוֹהֵב גַּם סְפּוֹרְט?", kana: "アタ オヘヴ ガム スポート？", jp: "スポーツも好きですか？" },
+                    { speaker: "B", text: "כֵּן, אֲנִי שׂוֹחֶה.", kana: "ケン、 アニー ソヘ。", jp: "はい、水泳をします。" },
+                    { speaker: "A", text: "מַה הַמַּאֲכָל הָאָהוּב?", kana: "マー ハマアカル ハアフーヴ？", jp: "一番好きな食べ物は何ですか？" },
+                    { speaker: "B", text: "אֲנִי אוֹהֵב חֻמּוּס!", kana: "アニー オヘヴ フムス！", jp: "フムスが好きです！" },
+                    { speaker: "A", text: "חֻמּוּס זֶה טָעִים מְאֹד!", kana: "フムス ゼ タエイム メオッド！", jp: "フムスはとても美味しいですよね！" },
+                    { speaker: "B", text: "נָכוֹן! אֲנִי אוֹכֵל כָּל יוֹם.", kana: "ナホン！ アニー オヘル コル ヨーム。", jp: "その通り！毎日食べています。" }
+                ]
+            },
+            {
+                id: 7,
+                title: "7. レストラン (Restaurant)",
+                desc: "席の確認やメニューの注文、会計の会話",
+                dialogue: [
+                    { speaker: "A", text: "שָׁלוֹם, יֵשׁ שֻׁלְחָן לִשְׁנַיִם?", kana: "シャローム、 イェシュ シュルハン リシュナイム？", jp: "こんにちは、2人の席はありますか？" },
+                    { speaker: "B", text: "כֵּן, בְּבָקָשָׁה, שְׁבוּ פֹּה.", kana: "ケン、 ベバカシャ、 シュヴ ポ。", jp: "はいどうぞ、こちらにお座りください。" },
+                    { speaker: "A", text: "אֶפְשָׁר לְקַבֵּל תַּפְרִיט?", kana: "エフシャル レカベル タフリート？", jp: "メニューをいただけますか？" },
+                    { speaker: "B", text: "הִנֵּה הַתַּפְרִיט. מַה תִּרְצוּ?", kana: "ヒネ ハタフリート。 マー ティルツ？", jp: "こちらがメニューです。ご注文は？" },
+                    { speaker: "A", text: "אֲנַחְנוּ רוֹצִים סָלָט.", kana: "アナフヌ ロツィーム サラト。", jp: "サラダをお願いします。" },
+                    { speaker: "B", text: "מֶלְצַר יַגִּיעַ מִיָּד.", kana: "メルツァル ヤギア ミヤド。", jp: "ウェイターがすぐ伺います。" },
+                    { speaker: "A", text: "אֶפְשָׁר אֶת הַחֶשְׁבּוֹן?", kana: "エフシャル エト ハヘシュボン？", jp: "お勘定をお願いできますか？" },
+                    { speaker: "B", text: "בֶּטַח, מִיָּד מביא.", kana: "ベタハ、 ミヤド メヴィ。", jp: "もちろんです、すぐ持ってきます。" }
+                ]
+            },
+            {
+                id: 8,
+                title: "8. 家族 (Family)",
+                desc: "兄弟や家族構成についての会話",
+                dialogue: [
+                    { speaker: "A", text: "יֵשׁ לְךָ אַחִים?", kana: "イェシュ レハ アヒーム？", jp: "兄弟はいますか？" },
+                    { speaker: "B", text: "כֵּן, יֵשׁ לִי אָח וְאָחוֹת.", kana: "ケン、 イェシュ リー アハ ヴェアホット。", jp: "はい、兄と姉（妹）がいます。" },
+                    { speaker: "A", text: "איפֹה הֵם גָּרִים?", kana: "エイフォ ヘム ガリーム？", jp: "彼らはどこに住んでいますか？" },
+                    { speaker: "B", text: "הֵם גָּרִים בְּטוקיו.", kana: "ヘム ガリーム ベトウキョウ。", jp: "東京に住んでいます。" },
+                    { speaker: "A", text: "הֵם מְדַבְּרִים עִבְרִית?", kana: "ヘム メダブリーム イヴリート？", jp: "彼らはヘブライ語を話しますか？" },
+                    { speaker: "B", text: "לא, רַק יַפָּנִית.", kana: "ロ、 ラク ヤパニート。", jp: "いいえ、日本語だけです。" },
+                    { speaker: "A", text: "וְאַתָּה מְדַבֵּר מְעַט?", kana: "ヴェアタ メダベル メアト？", jp: "で、あなたは少し話せますか？" },
+                    { speaker: "B", text: "כֵּן, אֲנִי מְנַסֶּה!", kana: "ケン、 アニー メナセ！", jp: "はい、頑張っています！" }
+                ]
+            },
+            {
+                id: 9,
+                title: "9. 日課・ルーティン (Daily Routine)",
+                desc: "毎朝起きる時間や仕事・勉強のスケジュール",
+                dialogue: [
+                    { speaker: "A", text: "מָתַי אַתָּה קָם בַּבֹּקֶר?", kana: "マタイ アタ カム バボケル？", jp: "朝何時に起きますか？" },
+                    { speaker: "B", text: "אֲנִי קָם בְּשֶׁבַע.", kana: "アニー カム ベシェヴァ。", jp: "7時に起きます。" },
+                    { speaker: "A", text: "מַה אַתָּה עוֹשֶׂה אָז?", kana: "マー アタ オセ アズ？", jp: "起きたら何をしますか？" },
+                    { speaker: "B", text: "אֲנִי שׁוֹתֶה קָפֶה.", kana: "アニー ショテ カフェ。", jp: "コーヒーを飲みます。" },
+                    { speaker: "A", text: "מָתַי אַתָּה יוֹצֵא לַעֲבוֹדָה?", kana: "マタイ アタ ヨツェ ラアヴォダ？", jp: "何時に仕事に出かけますか？" },
+                    { speaker: "B", text: "בִּשְׁמוֹנֶה וָחֵצִי.", kana: "ビシュモネ ヴァヘツィ。", jp: "8時半に出かけます。" },
+                    { speaker: "A", text: "אַתָּה חוֹזֵר מְאֻחָר?", kana: "アタ ホゼル メウハル？", jp: "帰りは遅いですか？" },
+                    { speaker: "B", text: "לא, בְּשֵׁשׁ בָּעֶרֶב.", kana: "ロ、 ベシェシュ バエレヴ。", jp: "いいえ、夕方6時です。" }
+                ]
+            },
+            {
+                id: 10,
+                title: "10. 気持ち・体調 (Emotions/Health)",
+                desc: "体調が悪い時の気づかいや調子の確認",
+                dialogue: [
+                    { speaker: "A", text: "מַה קָרָה? אַתָּה עָיֵף?", kana: "マー カラ？ アタ アイエフ？", jp: "どうしましたか？疲れていますか？" },
+                    { speaker: "B", text: "כֵּן, כּוֹאֵב לִי הָרֹאשׁ.", kana: "ケン、 コエヴ リー ハロシュ。", jp: "はい、頭が痛いです。" },
+                    { speaker: "A", text: "אוי, שָׁתִיתָ מַיִם?", kana: "オイ、 シャティタ マイム？", jp: "あら、お水は飲みましたか？" },
+                    { speaker: "B", text: "עֲדַיִן לא. אֶשְׁתֶּה עַכְשָׁיו.", kana: "アダイン ロ。 エシュテ アフシャヴ。", jp: "まだです。今飲みます。" },
+                    { speaker: "A", text: "תָּנוּחַ קְצָת הַיּוֹם.", kana: "タヌアハ クツァト ハヨーム。", jp: "今日少し休んでください。" },
+                    { speaker: "B", text: "כֵּן, אֵלֵךְ לִישׁוֹן.", kana: "ケン、 エレフ リショーン。", jp: "はい、寝ることにします。" },
+                    { speaker: "A", text: "תִּהְיֶה בָּרִיא מְהֵרָה!", kana: "ティヒイェ バリー メヘラ！", jp: "早く良くなってくださいね！" },
+                    { speaker: "B", text: "תּוֹדָה עַל הַדְּאָגָה!", kana: "トダ アル ハドアガ！", jp: "心配してくれてありがとう！" }
+                ]
+            },
+            {
+                id: 11,
+                title: "11. 服の買い物 (Clothes Shopping)",
+                desc: "服のサイズや試着、色についての会話",
+                dialogue: [
+                    { speaker: "A", text: "אֲנִי מְחַפֵּשׂ חולְצָה.", kana: "アニー メハペス フルツァ。", jp: "シャツを探しています。" },
+                    { speaker: "B", text: "איזֶה צֶבַע אַתָּה רוֹצֶה?", kana: "イゼ ツェヴァ アタ ロツェ？", jp: "何色がよろしいですか？" },
+                    { speaker: "A", text: "כָּחֹל, בְּבָקָשָׁה.", kana: "カホル、 ベバカシャ。", jp: "青色をお願いします。" },
+                    { speaker: "B", text: "הִנֵּה. איזֶה מִידָה?", kana: "ヒネ。 イゼ ミダ？", jp: "こちらです。サイズは？" },
+                    { speaker: "A", text: "מִידָה בינונית, M.", kana: "ミダ ビノニット、 エム。", jp: "Mサイズです。" },
+                    { speaker: "B", text: "אֶפְשָׁר לִמְדֹד בַּתָּא.", kana: "エフシャル リムドッド バタ。", jp: "試着室で着てみてください。" },
+                    { speaker: "A", text: "זֶה מַתְאִים מְאֹד!", kana: "ゼ マタイム メオッド！", jp: "ピッタリ合います！" },
+                    { speaker: "B", text: "מעֻלֶּה, תִּתְחַדֵּשׁ!", kana: "メウレ、 ティトハデシュ！", jp: "素晴らしい、お似合いです！" }
+                ]
+            },
+            {
+                id: 12,
+                title: "12. 天気 (Weather)",
+                desc: "今日の天気や気温についての会話",
+                dialogue: [
+                    { speaker: "A", text: "איךְ הַמֶּזֶג אֲוָויר?", kana: "エイフ ハメゼグ アヴィル？", jp: "天気はどうですか？" },
+                    { speaker: "B", text: "חַם מְאֹד הַיּוֹם!", kana: "ハム メオッド ハヨーム！", jp: "今日はとても暑いです！" },
+                    { speaker: "A", text: "יֵשׁ שֶׁמֶשׁ בַּחוּץ?", kana: "イェシュ シェメシュ バフツ？", jp: "外は日差しが強いですか？" },
+                    { speaker: "B", text: "כֵּן, אֵין עֲנָנִים.", kana: "ケン、 エイン アナニーム。", jp: "はい、雲がありません。" },
+                    { speaker: "A", text: "אַתָּה אוֹהֵב קַיִץ?", kana: "アタ オヘヴ カイツ？", jp: "夏が好きですか？" },
+                    { speaker: "B", text: "אֲנִי מעְדִיף חֹרֶף.", kana: "アニー マアディフ ホレフ。", jp: "私は冬の方が好きです。" },
+                    { speaker: "A", text: "גַּם אֲנִי! חֹרֶף נָעִים.", kana: "ガム アニー！ ホレフ ナイーム。", jp: "私もです！冬は心地よいですね。" },
+                    { speaker: "B", text: "נָכוֹן, פָּחוֹת חַם.", kana: "ナホン、 パホット ハム。", jp: "そうですね、暑さが和らぎます。" }
+                ]
+            },
+            {
+                id: 13,
+                title: "13. ホテル (Hotel Check-in)",
+                desc: "ホテルのフロントでのチェックインのやり取り",
+                dialogue: [
+                    { speaker: "A", text: "שָׁלוֹם, יֵשׁ לִי הַזְמָנָה.", kana: "シャローム、 イェシュ リー ハズマナ。", jp: "こんにちは、予約があります。" },
+                    { speaker: "B", text: "מַה הַשֵּׁם, בְּבָקָשָׁה?", kana: "マー ハシェム、 ベバカシャ？", jp: "お名前をお願いします。" },
+                    { speaker: "A", text: "הַשֵּׁם שֶׁלִּי דָּוִד.", kana: "ハシェム シェリ ダヴィッド。", jp: "名前はダビデです。" },
+                    { speaker: "B", text: "נָכוֹן, חֶדֶר לִשְׁנֵי לֵילוֹת.", kana: "ナホン、 ヘデル リシュネイ レイロット。", jp: "はい、2泊のお部屋ですね。" },
+                    { speaker: "A", text: "איזֶה קוֹמָה הַחֶדֶר?", kana: "イゼ コマ ハヘデル？", jp: "部屋は何階ですか？" },
+                    { speaker: "B", text: "קוֹמָה שְׁלִישִׁית, חֶדֶר 304.", kana: "コマ シュリシート、 ヘデル 304。", jp: "3階の304号室です。" },
+                    { speaker: "A", text: "יֵשׁ אינְטֶרְנֵט בַּחֶדֶר?", kana: "イェシュ インターネット バヘデル？", jp: "部屋でインターネットは使えますか？" },
+                    { speaker: "B", text: "כֵּן, הנה הסִסְמָא.", kana: "ケン、 ヒネ ハシスマ。", jp: "はい、こちらがパスワードです。" }
+                ]
+            },
+            {
+                id: 14,
+                title: "14. 感謝とお別れ (Gratitude & Farewell)",
+                desc: "感謝を伝え合い、再会を約束して別れる会話",
+                dialogue: [
+                    { speaker: "A", text: "תּוֹדָה רַבָּה עַל הַכֹּל!", kana: "トダ ラバ アル ハコル！", jp: "いろいろと本当にありがとうございました！" },
+                    { speaker: "B", text: "אֵין עַל מַה! בְּשִׂמְחָה.", kana: "エイン アル マー！ ベシムハ。", jp: "どういたしまして！喜んで。" },
+                    { speaker: "A", text: "אֲנִי צָרִיךְ לָלֶכֶת עַכְשָׁיו.", kana: "アニー ツァリーチ ラレヘト アフシャヴ。", jp: "もう行かなければなりません。" },
+                    { speaker: "B", text: "נִדַּבֵּר בְּקָרוֹב!", kana: "ニダベル ベカロヴ！", jp: "また近いうちに話しましょう！" },
+                    { speaker: "A", text: "כֵּן, תִּשְׁלַח לִי הוֹדָעָה.", kana: "ケン、 ティシュラハ リー ホダア。", jp: "ええ、メッセージを送ってください。" },
+                    { speaker: "B", text: "בֶּטַח, אֶשְׁלַח מָחָר.", kana: "ベタハ、 エシュラハ マハル。", jp: "もちろんです、明日送ります。" },
+                    { speaker: "A", text: "נְסִיעָה טוֹבָה!", kana: "ネシア トヴァ！", jp: "道中お気をつけて！" },
+                    { speaker: "B", text: "תּוֹדָה! נִתְרָאֶה בְּקָרוֹב!", kana: "トダ！ ニトラエ ベカロヴ！", jp: "ありがとう！またすぐ会いましょう！" }
+                ]
+            }
+        ];
+
+        /* --- 状態管理 --- */
+        let currentSceneIndex = 0;
+        let currentStep = 0; // 現在の発話ステップ (0~7)
+        let mode = 'interactive'; // 'interactive', 'auto', 'quiz'
+        let playbackSpeed = 0.88;
+        let completedScenes = JSON.parse(localStorage.getItem('hebrew_completed_scenes_v2') || '[]');
+        let isAutoPlaying = false;
+        let synth = window.speechSynthesis;
+
+        /* --- 初期ロード --- */
+        window.onload = function() {
+            renderSceneList();
+            loadScene(0);
+        };
+
+        /* --- 左側シーン一覧のレンダリング --- */
+        function renderSceneList() {
+            const listEl = document.getElementById('sceneList');
+            listEl.innerHTML = '';
+
+            dialogueData.forEach((scene, index) => {
+                const isCompleted = completedScenes.includes(scene.id);
+                const isActive = index === currentSceneIndex;
+
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                    isActive 
+                        ? 'bg-amber-100/80 border-amber-400 font-bold text-amber-950 shadow-sm' 
+                        : 'bg-white border-amber-100 hover:bg-amber-50/60 text-slate-700'
+                }`;
+                item.onclick = () => selectScene(index);
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2.5 overflow-hidden">
+                        <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs ${isActive ? 'bg-amber-700 text-white' : 'bg-amber-100 text-amber-800'} font-bold flex-shrink-0">
+                            ${scene.id}
+                        </span>
+                        <div class="truncate text-xs md:text-sm">${scene.title.split('. ')[1]}</div>
+                    </div>
+                    ${isCompleted ? '<i class="fa-solid fa-circle-check text-emerald-600 text-sm flex-shrink-0"></i>' : ''}
+                `;
+                listEl.appendChild(item);
+            });
+
+            document.getElementById('overallProgress').innerText = `${completedScenes.length} / 14 シーン完了`;
+        }
+
+        /* --- シーン切り替え --- */
+        function selectScene(index) {
+            currentSceneIndex = index;
+            currentStep = 0;
+            isAutoPlaying = false;
+            synth.cancel();
+            renderSceneList();
+            loadScene(index);
+        }
+
+        /* --- シーン詳細のロード --- */
+        function loadScene(index) {
+            const scene = dialogueData[index];
+            document.getElementById('currentSceneTitle').innerText = scene.title;
+            document.getElementById('currentSceneDesc').innerText = scene.desc;
+
+            const isCompleted = completedScenes.includes(scene.id);
+            const btnComplete = document.getElementById('btnComplete');
+            if (isCompleted) {
+                btnComplete.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-sm";
+                btnComplete.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> 完了済み';
+            } else {
+                btnComplete.className = "px-3 py-1.5 rounded-xl text-xs font-bold border transition-all border-emerald-600 text-emerald-700 hover:bg-emerald-50";
+                btnComplete.innerHTML = '<i class="fa-regular fa-circle-check mr-1"></i> 完了にする';
+            }
+
+            renderChat();
+            updateActionButton();
+        }
+
+        /* --- 会話吹き出しの生成 --- */
+        function renderChat() {
+            const container = document.getElementById('chatContainer');
+            container.innerHTML = '';
+
+            const scene = dialogueData[currentSceneIndex];
+            const limit = currentStep;
+
+            for (let i = 0; i <= limit && i < scene.dialogue.length; i++) {
+                const item = scene.dialogue[i];
+                const isA = item.speaker === "A";
+                const isMasked = (mode === 'quiz' && i === currentStep && !isA);
+
+                // ヘブル語・カタカナ単語分解（単語辞書タップ対応）
+                const hebrewWordsHTML = item.text.split(' ').map(w => `<span class="hebrew-word" onclick="lookupWord('${w}')" dir="rtl">${w}</span>`).join(' ');
+                const kanaWordsHTML = item.kana.split(' ').map(k => `<span class="kana-word" onclick="lookupKana('${k}')">${k}</span>`).join(' ');
+
+                const bubble = document.createElement('div');
+                bubble.className = `flex flex-col ${isA ? 'items-start' : 'items-end'} mb-3`;
+
+                bubble.innerHTML = `
+                    <div class="text-[10px] font-bold text-amber-900/60 mb-1 px-1 flex items-center gap-1">
+                        <i class="fa-solid ${isA ? 'fa-user text-amber-700' : 'fa-user-gear text-amber-900'}"></i> パートナー ${item.speaker}
+                    </div>
+                    <div class="max-w-[88%] md:max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
+                        isA 
+                            ? 'bg-white border border-amber-200/80 text-slate-800 rounded-tl-none' 
+                            : 'bg-amber-800 text-white rounded-tr-none'
+                    }">
+                        <!-- ヘブル語 (RTL表示) -->
+                        <div class="hebrew-text text-xl md:text-2xl font-bold mb-1.5 tracking-wide ${isA ? 'text-amber-950' : 'text-amber-50'}" dir="rtl">
+                            ${isMasked ? '<span class="text-amber-200 text-base font-normal italic">??? (カタカナを聞いて答えてみよう)</span>' : hebrewWordsHTML}
+                        </div>
+
+                        <!-- カタカナ -->
+                        <div class="text-xs md:text-sm font-semibold mb-1 ${isA ? 'text-amber-700' : 'text-amber-200'}">
+                            ${kanaWordsHTML}
+                        </div>
+
+                        <!-- 日本語訳 -->
+                        <div class="text-xs ${isA ? 'text-slate-500' : 'text-amber-100/80'} border-t ${isA ? 'border-slate-100' : 'border-amber-700'} pt-1.5 mt-1.5">
+                            ${item.jp}
+                        </div>
+                    </div>
+                    <button onclick="playAudio('${item.kana}')" class="mt-1 text-amber-800/60 hover:text-amber-900 text-[11px] px-2 py-0.5 rounded-full hover:bg-amber-100/50 transition-colors">
+                        <i class="fa-solid fa-volume-high mr-1"></i>再生
+                    </button>
+                `;
+
+                container.appendChild(bubble);
+            }
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        /* --- 練習モード設定 --- */
+        function setMode(newMode) {
+            mode = newMode;
+            document.getElementById('btnModeInteractive').className = mode === 'interactive' ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all shadow-sm bg-amber-700 text-white' : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-amber-900 hover:text-amber-700';
+            document.getElementById('btnModeAuto').className = mode === 'auto' ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all shadow-sm bg-amber-700 text-white' : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-amber-900 hover:text-amber-700';
+            document.getElementById('btnModeQuiz').className = mode === 'quiz' ? 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all shadow-sm bg-amber-700 text-white' : 'flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-amber-900 hover:text-amber-700';
+
+            currentStep = 0;
+            isAutoPlaying = false;
+            synth.cancel();
+            renderChat();
+            updateActionButton();
+        }
+
+        /* --- 速度設定 --- */
+        function setSpeed(speed) {
+            playbackSpeed = speed;
+            document.getElementById('speedSlow').className = speed === 0.75 ? 'px-2 py-1 rounded-lg bg-amber-700 font-bold text-white shadow-sm' : 'px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900';
+            document.getElementById('speedNormal').className = speed === 0.88 ? 'px-2 py-1 rounded-lg bg-amber-700 font-bold text-white shadow-sm' : 'px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900';
+            document.getElementById('speedFast').className = speed === 1.05 ? 'px-2 py-1 rounded-lg bg-amber-700 font-bold text-white shadow-sm' : 'px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900';
+        }
+
+        /* --- アクションボタン処理 --- */
+        function handleMainAction() {
+            const scene = dialogueData[currentSceneIndex];
+
+            if (mode === 'interactive' || mode === 'quiz') {
+                if (currentStep < scene.dialogue.length) {
+                    const item = scene.dialogue[currentStep];
+                    playAudio(item.kana, () => {
+                        currentStep++;
+                        renderChat();
+                        updateActionButton();
+                    });
+                } else {
+                    currentStep = 0;
+                    renderChat();
+                    updateActionButton();
+                }
+            } else if (mode === 'auto') {
+                if (!isAutoPlaying) {
+                    isAutoPlaying = true;
+                    playAutoSequence();
+                } else {
+                    isAutoPlaying = false;
+                    synth.cancel();
+                    updateActionButton();
+                }
+            }
+        }
+
+        /* --- 自動再生ループ --- */
+        function playAutoSequence() {
+            const scene = dialogueData[currentSceneIndex];
+            if (!isAutoPlaying) return;
+
+            if (currentStep < scene.dialogue.length) {
+                renderChat();
+                const item = scene.dialogue[currentStep];
+                updateActionButton();
+
+                playAudio(item.kana, () => {
+                    currentStep++;
+                    setTimeout(() => {
+                        if (isAutoPlaying) playAutoSequence();
+                    }, 700);
+                });
+            } else {
+                isAutoPlaying = false;
+                currentStep = 0;
+                updateActionButton();
+            }
+        }
+
+        /* --- アクションボタン表示更新 --- */
+        function updateActionButton() {
+            const btn = document.getElementById('mainActionButton');
+            const scene = dialogueData[currentSceneIndex];
+
+            if (mode === 'auto') {
+                if (isAutoPlaying) {
+                    btn.innerHTML = '<i class="fa-solid fa-pause"></i> <span>一時停止</span>';
+                    btn.className = "flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3 px-4 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2";
+                } else {
+                    btn.innerHTML = '<i class="fa-solid fa-play"></i> <span>自動再生をスタート</span>';
+                    btn.className = "flex-1 bg-amber-700 hover:bg-amber-800 text-white py-3 px-4 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2";
+                }
+            } else {
+                if (currentStep === 0) {
+                    btn.innerHTML = '<i class="fa-solid fa-comments"></i> <span>会話をスタート</span>';
+                } else if (currentStep < scene.dialogue.length) {
+                    btn.innerHTML = `<i class="fa-solid fa-forward"></i> <span>つぎの発話へ (${currentStep + 1}/${scene.dialogue.length})</span>`;
+                } else {
+                    btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> <span>もう一度練習する</span>';
+                }
+                btn.className = "flex-1 bg-amber-700 hover:bg-amber-800 text-white py-3 px-4 rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2";
+            }
+        }
+
+        /* --- 音声読み上げ (ja-JP カタカナ・ポーズ挿入ロジック) --- */
+        function playAudio(kanaText, onEndCallback) {
+            synth.cancel();
+
+            // 単語や記号の間にポーズ（、）を挟み一語ずつ聞きやすく整形
+            const processedText = kanaText.split(' ').join('、、 ');
+
+            const utterance = new SpeechSynthesisUtterance(processedText);
+            utterance.lang = 'ja-JP';
+            utterance.rate = playbackSpeed;
+            utterance.pitch = 1.0;
+
+            if (onEndCallback) {
+                utterance.onend = onEndCallback;
+            }
+
+            synth.speak(utterance);
+        }
+
+        /* --- リセット --- */
+        function resetDialogue() {
+            synth.cancel();
+            isAutoPlaying = false;
+            currentStep = 0;
+            renderChat();
+            updateActionButton();
+        }
+
+        /* --- 単語辞書タップ（ヘブル語） --- */
+        function lookupWord(word) {
+            const cleanWord = word.replace(/[.,!?]/g, '');
+            const entry = dictionary[word] || dictionary[cleanWord];
+
+            if (entry) {
+                showModal(word, entry.kana, entry.meaning);
+            } else {
+                showModal(word, word, "ヘブル語単語");
+            }
+        }
+
+        /* --- 単語辞書タップ（カタカナ） --- */
+        function lookupKana(kana) {
+            const cleanKana = kana.replace(/[！？、。]/g, '');
+            for (let k in dictionary) {
+                if (dictionary[k].kana === cleanKana || dictionary[k].kana === kana) {
+                    showModal(k, dictionary[k].kana, dictionary[k].meaning);
+                    return;
+                }
+            }
+            showModal(kana, kana, "対話表現");
+        }
+
+        /* --- 辞書ポップアップ制御 --- */
+        function showModal(hebrew, kana, meaning) {
+            document.getElementById('modalHebrew').innerText = hebrew;
+            document.getElementById('modalKana').innerText = kana;
+            document.getElementById('modalMeaning').innerText = meaning;
+            document.getElementById('dictionaryModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('dictionaryModal').classList.add('hidden');
+        }
+
+        function playModalAudio() {
+            const kana = document.getElementById('modalKana').innerText;
+            playAudio(kana);
+        }
+
+        /* --- シーン完了記録（ローカルストレージ） --- */
+        function toggleComplete() {
+            const sceneId = dialogueData[currentSceneIndex].id;
+            const index = completedScenes.indexOf(sceneId);
+
+            if (index > -1) {
+                completedScenes.splice(index, 1);
+            } else {
+                completedScenes.push(sceneId);
+            }
+
+            localStorage.setItem('hebrew_completed_scenes_v2', JSON.stringify(completedScenes));
+            renderSceneList();
+            loadScene(currentSceneIndex);
+        }
+    </script>
+</body>
+</html>
