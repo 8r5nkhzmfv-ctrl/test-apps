@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>めぐる！おにぎりとうんちの大冒険 〜いのちのサイクル〜</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Picture-book Feel -->
+    <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@500;700&family=M+PLUS+Rounded+1c:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', 'Kiwi Maru', sans-serif;
+            background-color: #fdfbf7;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+
+        .handdrawn-box {
+            border: 4px solid #7c5c43;
+            border-radius: 24px 12px 28px 18px / 18px 24px 14px 28px;
+            box-shadow: 4px 6px 0px #7c5c43;
+            background-color: #fffdf9;
+        }
+
+        .btn-handdrawn {
+            border: 3px solid #5a3e2b;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 0px 5px 0px #5a3e2b;
+            transition: all 0.1s ease;
+        }
+
+        .btn-handdrawn:active {
+            transform: translateY(3px);
+            box-shadow: 0px 2px 0px #5a3e2b;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 20px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        @keyframes swirl {
+            0% { transform: rotate(0deg) scale(1); opacity: 1; }
+            80% { transform: rotate(720deg) scale(0.2); opacity: 0.8; }
+            100% { transform: rotate(900deg) scale(0); opacity: 0; }
+        }
+
+        .swirl-out {
+            animation: swirl 2s ease-in-out forwards;
+        }
+
+        #confettiCanvas {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col items-center justify-center p-2 sm:p-4 text-amber-950">
+
+    <!-- Game Outer Container -->
+    <div class="relative w-full max-w-2xl h-full max-h-[850px] flex flex-col justify-between items-center handdrawn-box p-3 sm:p-4 bg-[#fffdf5]">
+        
+        <!-- Header / Status Bar -->
+        <div id="headerBar" class="w-full flex justify-between items-center mb-1 px-1 z-10 text-xs sm:text-sm">
+            <div class="flex items-center gap-1 sm:gap-2">
+                <span id="stageBadge" class="bg-amber-200 text-amber-950 border-2 border-amber-800 px-2 sm:px-3 py-1 rounded-full font-bold">
+                    タイトル
+                </span>
+                <span id="cycleBadge" class="bg-emerald-200 text-emerald-950 border-2 border-emerald-800 px-2 sm:px-3 py-1 rounded-full font-black">
+                    🔄 巡り: <span id="cycleVal">1</span>周目
+                </span>
+            </div>
+            <div id="scoreDisplay" class="font-black text-amber-950 bg-amber-100 border-2 border-amber-800 px-3 py-1 rounded-full">
+                ✨ めぐりPt: <span id="scoreVal">0</span>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="relative w-full flex-1 flex justify-center items-center overflow-hidden my-1">
+            <canvas id="gameCanvas" class="w-full h-full bg-[#fcf8ed] border-4 border-amber-900/40"></canvas>
+            <canvas id="confettiCanvas"></canvas>
+
+            <!-- Overlay System -->
+            <div id="overlayScreen" class="absolute inset-0 flex flex-col items-center justify-center p-4 bg-amber-50/95 backdrop-blur-sm z-20 rounded-2xl text-center overflow-y-auto">
+                
+                <!-- Title Screen -->
+                <div id="titleContent" class="flex flex-col items-center gap-3">
+                    <h1 class="text-2xl sm:text-4xl font-black text-amber-900 leading-tight">
+                        めぐる！おにぎりとうんち<br>〜いのちのサイクル〜
+                    </h1>
+                    <p class="text-xs sm:text-sm font-bold text-emerald-700 bg-emerald-100 border border-emerald-400 px-3 py-1 rounded-full">
+                        ごはん → うんち → 土 → またごはん！命はめぐるよ！
+                    </p>
+
+                    <!-- Animated Character Preview -->
+                    <div class="flex items-center gap-4 my-2">
+                        <div class="w-20 h-20 text-5xl animate-bounce">🍙</div>
+                        <div class="text-2xl font-black text-amber-600">➔</div>
+                        <div class="w-20 h-20 text-5xl animate-bounce" style="animation-delay: 0.2s;">💩</div>
+                        <div class="text-2xl font-black text-amber-600">➔</div>
+                        <div class="w-20 h-20 text-5xl animate-bounce" style="animation-delay: 0.4s;">🌱</div>
+                    </div>
+
+                    <p class="text-xs font-bold text-amber-800 max-w-xs">
+                        何度も旅をして【めぐりPt】を貯めよう！スキン解放やパワーアップができるよ！
+                    </p>
+
+                    <div class="flex gap-3 mt-2">
+                        <button id="startBtn" class="btn-handdrawn bg-emerald-400 hover:bg-emerald-500 text-amber-950 font-black text-xl px-8 py-3">
+                            冒険をはじめる！ 🚀
+                        </button>
+                        <button id="shopBtn" class="btn-handdrawn bg-amber-300 hover:bg-amber-400 text-amber-950 font-black text-lg px-4 py-3">
+                            🛍️ ショップ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Shop Screen -->
+                <div id="shopContent" class="hidden flex-col items-center gap-3 w-full max-w-md">
+                    <h2 class="text-2xl font-black text-amber-900">🛍️ めぐりショップ</h2>
+                    <p class="text-xs font-bold text-amber-800">貯めたポイントでスキンを変えよう！</p>
+                    
+                    <div class="w-full flex flex-col gap-2 my-2 text-left">
+                        <div class="bg-amber-100 p-3 rounded-xl border-2 border-amber-400 flex justify-between items-center">
+                            <div>
+                                <span class="font-black text-base">✨ きんのおにぎりスキン</span>
+                                <p class="text-xs text-amber-700">ピカピカ黄金に輝くおにぎり！</p>
+                            </div>
+                            <button id="buyGoldBtn" class="btn-handdrawn bg-yellow-400 text-xs px-3 py-2 font-black">
+                                100 Pt
+                            </button>
+                        </div>
+                        <div class="bg-amber-100 p-3 rounded-xl border-2 border-amber-400 flex justify-between items-center">
+                            <div>
+                                <span class="font-black text-base">🌈 レインボーうんち</span>
+                                <p class="text-xs text-amber-700">虹色に光るスーパーうんち！</p>
+                            </div>
+                            <button id="buyRainbowBtn" class="btn-handdrawn bg-purple-400 text-xs text-white px-3 py-2 font-black">
+                                200 Pt
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="closeShopBtn" class="btn-handdrawn bg-stone-300 text-amber-950 font-black text-base px-6 py-2">
+                        もどる ↩️
+                    </button>
+                </div>
+
+                <!-- Stage Transition Screen -->
+                <div id="transitionContent" class="hidden flex-col items-center gap-3">
+                    <h2 id="transTitle" class="text-2xl sm:text-3xl font-black text-amber-900">ステージクリア！</h2>
+                    <p id="transDesc" class="text-sm font-bold text-amber-800 max-w-sm">次へ進むよ！</p>
+                    <div id="transIcon" class="w-20 h-20 text-5xl my-1 animate-bounce">🍙</div>
+                    <button id="nextStageBtn" class="btn-handdrawn bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-lg px-8 py-3">
+                        つぎへすすむ ➔
+                    </button>
+                </div>
+
+                <!-- Toilet Flush Screen -->
+                <div id="flushContent" class="hidden flex-col items-center gap-3">
+                    <h2 class="text-2xl font-black text-amber-900">便器（べんき）に到着！</h2>
+                    <p class="text-sm font-bold text-amber-800">ボタンを押して下水道へ流そう！</p>
+                    <button id="flushBtn" class="btn-handdrawn bg-sky-400 hover:bg-sky-500 text-white font-black text-2xl px-8 py-4 mt-2 animate-pulse">
+                        🌊 ながす！！
+                    </button>
+                </div>
+
+                <!-- Harvest & Cycle Completion Screen -->
+                <div id="cycleCompleteContent" class="hidden flex-col items-center gap-3">
+                    <h2 class="text-2xl sm:text-4xl font-black text-emerald-600 drop-shadow">🌾 命のサイクル大成功！</h2>
+                    <p class="text-xs sm:text-sm font-bold text-amber-900 max-w-md">
+                        土に還ったうんちくんのおかげで、ふかふかの畑からおいしいお米とお野菜が収穫できたよ！
+                    </p>
+                    <div class="bg-amber-100 border-2 border-amber-800 rounded-xl p-3 my-1">
+                        <p class="text-base font-black text-amber-900">獲得めぐりPt: <span id="cycleScoreBonus" class="text-xl text-emerald-600">+100</span></p>
+                        <p class="text-xs font-bold text-amber-700">現在の周回数: <span id="completedCyclesCount">1</span> 周完了！</p>
+                    </div>
+                    <button id="loopAgainBtn" class="btn-handdrawn bg-emerald-400 hover:bg-emerald-500 text-amber-950 font-black text-xl px-8 py-3">
+                        いただきます！(次の周へ) 🍙✨
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Footer -->
+        <div id="controlsFooter" class="w-full flex justify-between items-center gap-2 mt-1 pt-2 border-t-2 border-amber-200">
+            <div id="dirControls" class="flex gap-2">
+                <button id="leftBtn" class="btn-handdrawn bg-amber-200 active:bg-amber-300 text-amber-900 font-black text-xl w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-xl">◀</button>
+                <button id="rightBtn" class="btn-handdrawn bg-amber-200 active:bg-amber-300 text-amber-900 font-black text-xl w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-xl">▶</button>
+            </div>
+            <div id="actionControls" class="flex-1 flex justify-end">
+                <button id="actionBtn" class="btn-handdrawn bg-rose-400 active:bg-rose-500 text-white font-black text-base sm:text-lg px-6 h-12 sm:h-14 flex items-center justify-center rounded-xl w-full max-w-[200px]">
+                    アクション 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* --- Audio Synthesizer --- */
+        class SoundEffects {
+            constructor() { this.ctx = null; }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            playJump() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.15);
+            }
+            playCoin() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(523, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(659, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.25);
+            }
+            playFart() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(90, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(50, this.ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.4, this.ctx.currentTime); gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.2);
+            }
+            playFlush() {
+                if (!this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 2, buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+                const filter = this.ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 500;
+                const gain = this.ctx.createGain(); gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 2.0);
+                noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination); noise.start();
+            }
+        }
+        const sound = new SoundEffects();
+
+        /* --- Global Game Canvas & State --- */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const confettiCtx = confettiCanvas.getContext('2d');
+
+        let stage = 0; // 1-5: Body, 6-10: Sewer/Soil Cycle
+        let cycleCount = 1;
+        let score = 0;
+        let unlockedSkins = { gold: false, rainbow: false };
+        let currentSkin = 'default';
+
+        let keys = { left: false, right: false, action: false };
+        let animationFrameId = null;
+
+        const STAGE_NAMES = [
+            "タイトル",
+            "1. 口ゾーン (もぐもぐ)", "2. 胃プール (ドロドロ)", "3. 小腸 (栄養横取り)", "4. 大腸 (うんち変身)", "5. 肛門発射基地！",
+            "6. くらやみ下水道", "7. ぐるぐる沈殿池", "8. 微生物おそうじ池", "9. 脱水・発酵サウナ", "10. 畑にダイブ！"
+        ];
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            confettiCanvas.width = container.clientWidth;
+            confettiCanvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        /* --- Player Character Class --- */
+        class Player {
+            constructor() { this.reset(); }
+            reset() {
+                this.width = 40; this.height = 40;
+                this.x = canvas.width / 2 - 20; this.y = canvas.height - 90;
+                this.vx = 0; this.vy = 0;
+                this.isGrounded = false;
+                this.form = 'onigiri'; // onigiri, unchi, tsuchi
+            }
+            update(gravity = 0.5) {
+                this.x += this.vx; this.y += this.vy; this.vy += gravity;
+                if (this.x < 10) this.x = 10;
+                if (this.x + this.width > canvas.width - 10) this.x = canvas.width - 10 - this.width;
+                if (this.y + this.height >= canvas.height - 30) {
+                    this.y = canvas.height - 30 - this.height;
+                    this.vy = 0; this.isGrounded = true;
+                }
+            }
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+
+                if (this.form === 'onigiri') {
+                    // Onigiri Form
+                    ctx.beginPath();
+                    ctx.moveTo(0, -this.height/2);
+                    ctx.lineTo(this.width/2, this.height/2);
+                    ctx.lineTo(-this.width/2, this.height/2);
+                    ctx.closePath();
+                    ctx.fillStyle = unlockedSkins.gold ? '#facc15' : '#ffffff';
+                    ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#7c5c43'; ctx.stroke();
+                    // Nori
+                    ctx.fillStyle = '#333333'; ctx.fillRect(-10, 2, 20, 16);
+                } else if (this.form === 'unchi') {
+                    // Unchi Form
+                    ctx.fillStyle = unlockedSkins.rainbow ? `hsl(${(Date.now()/10)%360}, 80%, 60%)` : '#8B4513';
+                    ctx.strokeStyle = '#5a3e2b'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.ellipse(0, 10, 20, 9, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                    ctx.beginPath(); ctx.ellipse(0, 0, 14, 7, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                    ctx.beginPath(); ctx.arc(0, -10, 6, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                } else {
+                    // Soil / Tsuchi Form (Mud Ball)
+                    ctx.fillStyle = '#78350f'; ctx.strokeStyle = '#451a03'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.arc(0, 0, 18, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#4ade80'; // Sprout on top
+                    ctx.beginPath(); ctx.ellipse(0, -18, 4, 8, Math.PI/4, 0, Math.PI*2); ctx.fill();
+                }
+
+                // Eyes & Face
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(-5, -2, 2.5, 0, Math.PI*2); ctx.arc(5, -2, 2.5, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            }
+        }
+        const player = new Player();
+
+        /* --- Stage Objects & Variables --- */
+        let stageTimer = 0;
+        let objects = [];
+        let gaugeValue = 0;
+
+        function updateControlsForStage() {
+            document.getElementById('stageBadge').innerText = STAGE_NAMES[stage];
+            document.getElementById('cycleVal').innerText = cycleCount;
+            const dirControls = document.getElementById('dirControls');
+            const actionBtn = document.getElementById('actionBtn');
+
+            if ([1, 2, 6, 8].includes(stage)) {
+                dirControls.style.display = 'flex'; actionBtn.innerText = "ジャンプ 🚀";
+            } else if ([3, 7].includes(stage)) {
+                dirControls.style.display = 'flex'; actionBtn.innerText = "うえに移動 ⬆️";
+            } else if ([4, 9].includes(stage)) {
+                dirControls.style.display = 'none'; actionBtn.innerText = "連打バズーカ 💨";
+            } else if ([5, 10].includes(stage)) {
+                dirControls.style.display = 'none'; actionBtn.innerText = "パワー連打 💥";
+            }
+        }
+
+        /* --- Stage Logic Handlers --- */
+        function initCurrentStage() {
+            player.reset();
+            stageTimer = 0; objects = []; gaugeValue = 0;
+            if (stage <= 3) player.form = 'onigiri';
+            else if (stage <= 8) player.form = 'unchi';
+            else player.form = 'tsuchi';
+            updateControlsForStage();
+        }
+
+        function updateGame() {
+            stageTimer++;
+            if ([1, 2, 6, 8].includes(stage)) {
+                if (keys.left) player.vx = -5; else if (keys.right) player.vx = 5; else player.vx = 0;
+                if (keys.action && player.isGrounded) { player.vy = -11; player.isGrounded = false; sound.playJump(); keys.action = false; }
+                player.update();
+            } else if ([3, 7].includes(stage)) {
+                if (keys.left) player.vx = -4; else if (keys.right) player.vx = 4; else player.vx = 0;
+                if (keys.action) player.vy = -4; else player.vy = 2;
+                player.update(0);
+            } else if ([4, 9].includes(stage)) {
+                player.vx *= 0.9; player.update(0);
+                if (keys.action) { player.vx += 4; sound.playFart(); keys.action = false; }
+            } else if ([5, 10].includes(stage)) {
+                if (keys.action) { gaugeValue += 10; sound.playFart(); keys.action = false; }
+                gaugeValue = Math.max(0, gaugeValue - 0.4);
+            }
+
+            // Progression Timers / Triggers
+            if ([1, 2, 3, 6, 7, 8].includes(stage) && stageTimer > 400) {
+                showTransition("ステージクリア！", "次のステップへ進もう！");
+            } else if ([4, 9].includes(stage) && player.x > canvas.width - 60) {
+                showTransition("変身＆突破完了！", "次のエリアに到着！");
+            } else if (stage === 5 && gaugeValue >= 100) {
+                showFlushScreen();
+            } else if (stage === 10 && gaugeValue >= 100) {
+                showCycleCompleteScreen();
+            }
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dynamic Backgrounds based on Stage
+            if (stage <= 1) ctx.fillStyle = '#ffccd5'; // Mouth
+            else if (stage === 2) ctx.fillStyle = '#fef08a'; // Stomach
+            else if (stage === 3) ctx.fillStyle = '#fbcfe8'; // Small Intestine
+            else if (stage === 4) ctx.fillStyle = '#fed7aa'; // Large Intestine
+            else if (stage === 5) ctx.fillStyle = '#fecdd3'; // Anus
+            else if (stage === 6) ctx.fillStyle = '#334155'; // Sewer
+            else if (stage === 7) ctx.fillStyle = '#0284c7'; // Settling Tank
+            else if (stage === 8) ctx.fillStyle = '#bbf7d0'; // Microbe Pool
+            else if (stage === 9) ctx.fillStyle = '#f97316'; // Compost Sauna
+            else ctx.fillStyle = '#86efac'; // Farm Soil Field
+
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Gauge for Tap Stages
+            if ([5, 10].includes(stage)) {
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(canvas.width/2 - 80, 40, 160, 24);
+                ctx.fillStyle = '#ef4444'; ctx.fillRect(canvas.width/2 - 80, 40, gaugeValue * 1.6, 24);
+                ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.strokeRect(canvas.width/2 - 80, 40, 160, 24);
+            }
+
+            player.draw(ctx);
+        }
+
+        function gameLoop() {
+            if (stage > 0 && stage <= 10) {
+                updateGame(); drawGame();
+            }
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        /* --- UI Screen Navigation --- */
+        const overlayScreen = document.getElementById('overlayScreen');
+        const titleContent = document.getElementById('titleContent');
+        const shopContent = document.getElementById('shopContent');
+        const transitionContent = document.getElementById('transitionContent');
+        const flushContent = document.getElementById('flushContent');
+        const cycleCompleteContent = document.getElementById('cycleCompleteContent');
+
+        function hideAllOverlays() {
+            titleContent.classList.add('hidden');
+            shopContent.classList.add('hidden');
+            transitionContent.classList.add('hidden');
+            flushContent.classList.add('hidden');
+            cycleCompleteContent.classList.add('hidden');
+        }
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            sound.init(); stage = 1; overlayScreen.classList.add('hidden');
+            initCurrentStage(); if (!animationFrameId) gameLoop();
+        });
+
+        document.getElementById('shopBtn').addEventListener('click', () => {
+            hideAllOverlays(); shopContent.classList.remove('hidden');
+        });
+        document.getElementById('closeShopBtn').addEventListener('click', () => {
+            hideAllOverlays(); titleContent.classList.remove('hidden');
+        });
+
+        document.getElementById('buyGoldBtn').addEventListener('click', () => {
+            if (score >= 100) { score -= 100; unlockedSkins.gold = true; document.getElementById('scoreVal').innerText = score; alert("✨ きんのおにぎりをゲット！"); }
+            else alert("ポイントが足りないよ！周回して貯めよう！");
+        });
+        document.getElementById('buyRainbowBtn').addEventListener('click', () => {
+            if (score >= 200) { score -= 200; unlockedSkins.rainbow = true; document.getElementById('scoreVal').innerText = score; alert("🌈 レインボーうんちをゲット！"); }
+            else alert("ポイントが足りないよ！周回して貯めよう！");
+        });
+
+        function showTransition(title, desc) {
+            stage++; overlayScreen.classList.remove('hidden'); hideAllOverlays();
+            transitionContent.classList.remove('hidden');
+            document.getElementById('transTitle').innerText = title;
+            document.getElementById('transDesc').innerText = desc;
+        }
+
+        document.getElementById('nextStageBtn').addEventListener('click', () => {
+            overlayScreen.classList.add('hidden'); initCurrentStage();
+        });
+
+        function showFlushScreen() {
+            stage = 6; overlayScreen.classList.remove('hidden'); hideAllOverlays();
+            flushContent.classList.remove('hidden');
+        }
+
+        document.getElementById('flushBtn').addEventListener('click', () => {
+            sound.playFlush(); flushContent.classList.add('swirl-out');
+            setTimeout(() => {
+                flushContent.classList.remove('swirl-out'); overlayScreen.classList.add('hidden');
+                initCurrentStage();
+            }, 1800);
+        });
+
+        function showCycleCompleteScreen() {
+            stage = 0; score += 100;
+            document.getElementById('scoreVal').innerText = score;
+            document.getElementById('completedCyclesCount').innerText = cycleCount;
+            overlayScreen.classList.remove('hidden'); hideAllOverlays();
+            cycleCompleteContent.classList.remove('hidden');
+        }
+
+        document.getElementById('loopAgainBtn').addEventListener('click', () => {
+            cycleCount++; document.getElementById('cycleVal').innerText = cycleCount;
+            stage = 1; overlayScreen.classList.add('hidden'); initCurrentStage();
+        });
+
+        // Touch & Key Input Binds
+        const bindKey = (el, key) => {
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
+            el.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+            el.addEventListener('mousedown', () => { keys[key] = true; });
+            el.addEventListener('mouseup', () => { keys[key] = false; });
+        };
+        bindKey(document.getElementById('leftBtn'), 'left');
+        bindKey(document.getElementById('rightBtn'), 'right');
+        bindKey(document.getElementById('actionBtn'), 'action');
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = true;
+            if (e.key === 'ArrowRight') keys.right = true;
+            if (e.key === ' ' || e.key === 'ArrowUp') keys.action = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = false;
+            if (e.key === 'ArrowRight') keys.right = false;
+            if (e.key === ' ' || e.key === 'ArrowUp') keys.action = false;
+        });
+
+    </script>
+</body>
+</html>
