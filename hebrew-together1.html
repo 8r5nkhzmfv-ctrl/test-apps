@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヘブル語 パートナー対話練習</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700&family=Noto+Sans+JP:wght@300;400;500;700&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fffbf5',
+                            100: '#fef3e2',
+                            200: '#fce3c1',
+                            300: '#f9cc96',
+                            400: '#f4aa65',
+                            500: '#ee8338',
+                            600: '#df662b',
+                            700: '#b94c25',
+                            800: '#943e24',
+                            900: '#773521',
+                        },
+                        partnerA: {
+                            light: '#EBF5FF',
+                            border: '#93C5FD',
+                            text: '#1E40AF',
+                            badge: '#3B82F6'
+                        },
+                        partnerB: {
+                            light: '#FDF2F8',
+                            border: '#FBCFE8',
+                            text: '#9D174D',
+                            badge: '#EC4899'
+                        }
+                    },
+                    fontFamily: {
+                        hebrew: ['Frank Ruhl Libre', 'Rubik', 'serif'],
+                        sans: ['Noto Sans JP', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #fcf8f2;
+        }
+        .hebrew-text {
+            font-family: 'Frank Ruhl Libre', 'Rubik', serif;
+            direction: rtl;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- ヘッダー -->
+    <header class="bg-white border-b border-orange-100 shadow-sm sticky top-0 z-30">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-500 to-amber-400 flex items-center justify-center text-white shadow-md">
+                    <i class="fa-solid font-bold text-lg">ש</i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span>Hebrew Together</span>
+                        <span class="text-xs font-normal bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">パートナー対話</span>
+                    </h1>
+                    <p class="text-xs text-slate-500">英語発音読み上げ（en-US）対応版 • 全14場面</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- 進捗カウンター -->
+                <div class="hidden sm:flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-xs">
+                    <i class="fa-solid font-medium text-amber-600">🏆</i>
+                    <span>完了数: <strong id="completedCount" class="text-brand-600 font-bold">0</strong> / 14</span>
+                </div>
+                
+                <!-- 音声速度設定 -->
+                <button id="speedToggleBtn" onclick="toggleSpeed()" class="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition flex items-center gap-1.5" title="再生速度切替">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <span>速度: <strong id="speedLabel">1.0x</strong></span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 音声再生状態トースト/ノーティス -->
+    <div id="audioStatusToast" class="hidden fixed bottom-4 right-4 z-50 bg-slate-800 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 transition-all duration-300">
+        <i class="fa-solid fa-volume-high text-brand-400 animate-pulse" id="toastIcon"></i>
+        <span id="toastMessage">カタカナ音声（ja-JP）で読み上げ中...</span>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-5xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 md:grid-cols-12 gap-6">
+
+        <!-- 左カラム：シナリオ選択（14場面） -->
+        <aside class="md:col-span-4 flex flex-col gap-4">
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-orange-100/60">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-brand-500"></i>
+                        <span>会話シーン (14)</span>
+                    </h2>
+                    <span class="sm:hidden text-xs text-slate-500">完了: <span id="completedCountMobile">0</span>/14</span>
+                </div>
+
+                <!-- シナリオリスト -->
+                <div id="scenarioList" class="space-y-2 max-h-[calc(100vh-230px)] overflow-y-auto pr-1 custom-scrollbar">
+                    <!-- JavaScriptで動的生成 -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右カラム：会話練習メインエリア -->
+        <section class="md:col-span-8 flex flex-col gap-4">
+
+            <!-- シナリオヘッダー＆コントロール -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-orange-100/60 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span id="currentNumberBadge" class="text-xs font-bold bg-brand-500 text-white px-2 py-0.5 rounded-md">Scene 1</span>
+                            <h2 id="currentTitleJa" class="text-xl font-bold text-slate-800">挨拶と近況</h2>
+                        </div>
+                        <p id="currentTitleHe" class="text-lg text-brand-700 hebrew-text mt-0.5" dir="rtl">ברכות ומה נשמע</p>
+                    </div>
+
+                    <!-- 完了マーク切り替え -->
+                    <button id="toggleCompleteBtn" onclick="toggleCurrentScenarioComplete()" class="self-start sm:self-auto px-3 py-1.5 text-xs rounded-xl font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5">
+                        <i class="fa-regular fa-circle-check text-slate-400" id="completeIcon"></i>
+                        <span id="completeText">完了にする</span>
+                    </button>
+                </div>
+
+                <!-- 表示モード切り替えタブ -->
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-medium">
+                        <button onclick="setMode('roleplay')" id="modeBtn-roleplay" class="px-3 py-1.5 rounded-lg transition">
+                            <i class="fa-solid fa-users mr-1"></i>2人交互
+                        </button>
+                        <button onclick="setMode('autoplay')" id="modeBtn-autoplay" class="px-3 py-1.5 rounded-lg transition">
+                            <i class="fa-solid fa-circle-play mr-1"></i>自動再生
+                        </button>
+                        <button onclick="setMode('quiz')" id="modeBtn-quiz" class="px-3 py-1.5 rounded-lg transition">
+                            <i class="fa-solid fa-brain mr-1"></i>クイズ
+                        </button>
+                    </div>
+
+                    <!-- 表示トグルボタン群 -->
+                    <div class="flex items-center gap-1.5 text-xs">
+                        <label class="flex items-center gap-1 cursor-pointer bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100">
+                            <input type="checkbox" id="toggleHebrew" checked onchange="renderDialogue()" class="rounded text-brand-500 focus:ring-brand-400">
+                            <span>ヘブル語</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100">
+                            <input type="checkbox" id="toggleRomaji" checked onchange="renderDialogue()" class="rounded text-brand-500 focus:ring-brand-400">
+                            <span>英語読み</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100">
+                            <input type="checkbox" id="toggleKana" checked onchange="renderDialogue()" class="rounded text-brand-500 focus:ring-brand-400">
+                            <span>カナ</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100">
+                            <input type="checkbox" id="toggleTranslation" checked onchange="renderDialogue()" class="rounded text-brand-500 focus:ring-brand-400">
+                            <span>日本語</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 交互モードコントロール (2人交互時のみ表示) -->
+                <div id="roleplayControls" class="flex items-center justify-between bg-amber-50/80 p-3 rounded-xl border border-amber-200/70">
+                    <div class="flex items-center gap-2 text-xs font-medium text-amber-900">
+                        <span>現在のターン:</span>
+                        <span id="turnIndicator" class="px-2.5 py-1 rounded-full font-bold text-white bg-blue-500 shadow-sm">
+                            パートナー A
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button onclick="prevStep()" class="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 transition font-medium">
+                            <i class="fa-solid fa-chevron-left mr-1"></i>戻る
+                        </button>
+                        <button onclick="nextStep()" class="px-3 py-1.5 text-xs bg-brand-500 text-white rounded-lg shadow-sm hover:bg-brand-600 transition font-bold flex items-center gap-1">
+                            <span>次へ進む</span>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 自動再生コントロール (自動再生時のみ表示) -->
+                <div id="autoplayControls" class="hidden flex items-center justify-between bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                    <div class="text-xs font-medium text-emerald-800 flex items-center gap-2">
+                        <i class="fa-solid fa-volume-high animate-pulse text-emerald-600"></i>
+                        <span id="autoplayStatus">会話を全体再生できます</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="startAutoplayBtn" onclick="startAutoplay()" class="px-4 py-1.5 text-xs bg-emerald-600 text-white rounded-lg shadow-sm hover:bg-emerald-700 transition font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-play"></i> 全体再生
+                        </button>
+                        <button id="stopAutoplayBtn" onclick="stopAutoplay()" class="px-3 py-1.5 text-xs bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition font-medium hidden">
+                            <i class="fa-solid fa-pause"></i> 停止
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 対話吹き出しエリア (8発話) -->
+            <div id="dialogueContainer" class="space-y-4">
+                <!-- JavaScriptで吹き出し8個を動的生成 -->
+            </div>
+
+        </section>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-white border-t border-slate-100 py-4 mt-8">
+        <div class="max-w-5xl mx-auto px-4 text-center text-xs text-slate-400">
+            <p>Hebrew Daily Dialogue for Partners • 14 Conversations (4 Turns / 8 Speeches each)</p>
+        </div>
+    </footer>
+
+    <!-- アプリケーションデータ & ロジック -->
+    <script>
+        // 14の会話シナリオ（各4往復 / 合計8発話）
+        // 英語読み(ro)はen-US音声読み上げエンジン用に最適化
+        const scenarios = [
+            {
+                id: 1,
+                titleJa: "挨拶と近況",
+                titleHe: "ברכות ומה נשמע",
+                icon: "fa-comments",
+                dialogues: [
+                    { speaker: "A", he: "שָׁלוֹם! מַה שְׁלוֹמְךָ הַיּוֹם?", ro: "Shalom! Ma shlomkha hayom?", kana: "シャローム！マ シュロムハ ハヨム？", ja: "こんにちは！今日の調子はどう？" },
+                    { speaker: "B", he: "שָׁלוֹם! הַכֹּל טוֹב, תּוֹדָה. וּמַה שְׁלוֹמֵךְ?", ro: "Shalom! Hakol tov, toda. U-ma shlomekh?", kana: "シャローム！ハコル トヴ、トダ。ウ マ シュロメフ？", ja: "こんにちは！すべて順調だよ、ありがとう。君の調子は？" },
+                    { speaker: "A", he: "גַּם אֶצְלִי מְעֻלֶּה! אֵיךְ עָבַר הַיּוֹם שֶׁלְּךָ?", ro: "Gam etzli me'ule! Eikh avar hayom shelkha?", kana: "ガム エツリ メウレ！エイク アヴァル ハヨム シェルハ？", ja: "私も最高だよ！今日一日はどうだった？" },
+                    { speaker: "B", he: "הָיָה יוֹם עָמוּס, אָבָל טוֹב. וְאֵיךְ הָיָה שֶׁלָּךְ?", ro: "Haya yom amus, aval tov. Ve-eikh haya shelakh?", kana: "ハヤ ヨム アムス、アヴァル トヴ。ヴェ エイク ハヤ シェラフ？", ja: "忙しい一日だったけど良かったよ。君の一日は？" },
+                    { speaker: "A", he: "הָיָה נחְמָד מְאֹד. שָׂמַחְתִּי לַחֲזֹר הַבַּיְתָה.", ro: "Haya nekhmad me'od. Samakhti lakhazor habayta.", kana: "ハヤ ネフマド メオド。サマフティ ラハゾル ハバイタ。", ja: "とても良かったよ。家に帰れて嬉しいな。" },
+                    { speaker: "B", he: "גַּם אֲנִי שָׂמַחְתִּי לִרְאוֹת אוֹתָךְ!", ro: "Gam ani samakhti lir'ot otakh!", kana: "ガム アニ サマフティ リルオト オタフ！", ja: "僕も君に会えて嬉しいよ！" },
+                    { speaker: "A", he: "רוֹצֶה לִשְׁתּוֹת מַשָּׁהוּ יַחַד?", ro: "Rotze lishtot mashehu yakhad?", kana: "ロツェ リシュトト マシェフ ヤハド？", ja: "一緒に何か飲む？" },
+                    { speaker: "B", he: "כֵּן, בְּשִׂמְחָה! תֵּה אוֹ קָפֶה?", ro: "Ken, be-simkha! Te o kafe?", kana: "ケン、ベ シムハ！テー オ カフェ？", ja: "うん、喜んで！紅茶にする、それともコーヒー？" }
+                ]
+            },
+            {
+                id: 2,
+                titleJa: "カフェで注文",
+                titleHe: "הזמנה בבית קפה",
+                icon: "fa-mug-hot",
+                dialogues: [
+                    { speaker: "A", he: "שָׁלוֹם, אֶפְשָׁר לְהַזְמִין שְׁנֵי קָפֶה?", ro: "Shalom, efshar lehazmin shnei kafe?", kana: "シャローム、エフシャー レハズミン シュネイ カフェ？", ja: "こんにちは、コーヒーを2つ注文できますか？" },
+                    { speaker: "B", he: "בֶּטַח! אֵיזֶה קָפֶה תִּרְצוּ?", ro: "Betakh! Eize kafe tirtzu?", kana: "ベタフ！エイゼ カフェ ティルツ？", ja: "もちろんです！どのようなコーヒーにされますか？" },
+                    { speaker: "A", he: "אֶחָד קָפֶה הָפוּךְ וְאֶחָד אסְפְּרֶסוֹ, בְּבַקָּשָׁה.", ro: "Ekhad kafe hafukh ve-ekhad espresso, bevakasha.", kana: "エハド カフェ ハフフ ヴェ エハド エスプレッソ、ベヴァカシャー。", ja: "カプチーノを1つとエスプレッソを1つお願いします。" },
+                    { speaker: "B", he: "עִם חָלָב רָגִיל אוֹ חָלָב צִמְחִי?", ro: "Im khalav ragil o khalav tzmikhi?", kana: "イム ハラヴ ラギル オ ハラヴ ツミヒ？", ja: "普通の牛乳にしますか、それとも植物性ミルクにしますか？" },
+                    { speaker: "A", he: "חָלָב שְׁקֵדִים, בְּבַקָּשָׁה.", ro: "Khalav shkedim, bevakasha.", kana: "ハラヴ シュケイディム、ベヴァカシャー。", ja: "アーモンドミルクでお願いします。" },
+                    { speaker: "B", he: "מְעֻלֶּה. תִּרְצוּ גַּם מַשָּׁהוּ לֶאֱכֹל?", ro: "Me'ule. Tirtzu gam mashehu le'ekhol?", kana: "メウレ。ティルツ ガム マシェフ レエコル？", ja: "素晴らしいです。何か食べるものもいかがですか？" },
+                    { speaker: "A", he: "כֵּן, עֻגַּת שׁוֹקוֹלָד אַחַת, בְּבַקָּשָׁה.", ro: "Ken, ugat shokolad ekhat, bevakasha.", kana: "ケン、ウガト ショコラド エハト、ベヴァカシャー。", ja: "はい、チョコレートケーキを一つお願いします。" },
+                    { speaker: "B", he: "מְעֻלֶּה. זֶה יִהְיֶה מוּכָן עוֹד מְעַט.", ro: "Me'ule. Ze yihye mukhan od me'at.", kana: "メウレ。ゼ イヒイェ ムカン オド メアト。", ja: "素晴らしいです。すぐにご用意しますね。" }
+                ]
+            },
+            {
+                id: 3,
+                titleJa: "スーパーでお買い物",
+                titleHe: "קניות בסופרמרקט",
+                icon: "fa-cart-shopping",
+                dialogues: [
+                    { speaker: "A", he: "מה אֲנַחְנוּ צְרִיכִים לִקְנוֹת הַיּוֹם?", ro: "Ma anakhnu tzrikhim liknot hayom?", kana: "マ アナフヌ ツリヒム リクノト ハヨム？", ja: "今日私たちは何を買う必要がある？" },
+                    { speaker: "B", he: "אֲנַחְנוּ צְרִיכִים לֶחֶם, חָלָב וְיְרָקוֹת.", ro: "Anakhnu tzrikhim lekhem, khalav ve-yerakot.", kana: "アナフヌ ツリヒム レヘム、ハラヴ ヴェ イェラコト。", ja: "パン、牛乳、野菜が必要だよ。" },
+                    { speaker: "A", he: "איפֹה הַעַגְבָנִיּוֹת והַמְלָפְפונים?", ro: "Eifo ha-agvaniyot ve-ha-melafefonim?", kana: "エイフォ ハ アグヴァニヨト ヴェ ハ メラフェフォニム？", ja: "トマトときゅうりはどこにある？" },
+                    { speaker: "B", he: "הֵן שָׁם, בְּמַחְלֶקֶת הַיְרָקוֹת.", ro: "Hen sham, be-makhleket ha-yerakot.", kana: "ヘン シャム、ベ マフレケト ハ イェラコト。", ja: "あっちの青果コーナーにあるよ。" },
+                    { speaker: "A", he: "קָנִינוּ גַּם גְּבִינָה צְהֻבָּה?", ro: "Kaninu gam gvina tzehuba?", kana: "カニヌ ガム グヴィナ ツェフバ？", ja: "ハードチーズも買ったっけ？" },
+                    { speaker: "B", he: "עוֹד לֹא, אֲנִי אֶקַּח עַכְשָׁיו.", ro: "Od lo, ani ekakh akhshav.", kana: "オド ロ、アニ エカフ アフシャヴ。", ja: "まだだよ、今取ってくるね。" },
+                    { speaker: "A", he: "מְעֻלֶּה. מַשָּׁהוּ נוסָף?", ro: "Me'ule. Mashehu nosaf?", kana: "メウレ。マシェフ ノサフ？", ja: "完璧。他に何か必要なものは？" },
+                    { speaker: "B", he: "זֶוֹ הַכֹּל! בּוֹאי נֵלֵךְ לַקֻּפָּה.", ro: "Ze hakol! Bo'i nelekh la-kupa.", kana: "ゼ ハコル！ボイ ネレフ ラ クパ。", ja: "これで全部！レジに行こう。" }
+                ]
+            },
+            {
+                id: 4,
+                titleJa: "週末の計画",
+                titleHe: "תכניות לסוף השבוע",
+                icon: "fa-calendar-days",
+                dialogues: [
+                    { speaker: "A", he: "מַה נַּעֲשֶׂה בְּסוֹף הַשָּׁבוּעַ?", ro: "Ma na'ase be-sof ha-shavua?", kana: "マ ナアセ ベ ソフ ハ シャヴア？", ja: "今週末は何をしようか？" },
+                    { speaker: "B", he: "בָּא לָךְ לָלֶכֶת לַיָּם?", ro: "Ba lakh lalekhet la-yam?", kana: "バー ラフ ラレヘト ラ ヤム？", ja: "海に行きたい気分？" },
+                    { speaker: "A", he: "רַעְיוֹן נִפְלָא! בְּאֵיזוֹ שָׁעָה נֵלֵךְ?", ro: "Ra'ayon nifla! Be-eizo sha'a nelekh?", kana: "ラアイョン ニフラ！ベイゾ シャア ネレフ？", ja: "素敵なアイデア！何時に行こうか？" },
+                    { speaker: "B", he: "אֶפְשָׁר לָלֶכֶת בַּבֹּקֶר, בַּשָּׁעָה עֶשֶׂר.", ro: "Efshar lalekhet ba-boker, ba-sha'a eser.", kana: "エフシャー ラレヘト バ ボケル、バ シャア エセル。", ja: "朝の10時に行くのはどう？" },
+                    { speaker: "A", he: "מְעֻלֶּה. נָכִין אוֹכֶל לַפִּיקְנִיק?", ro: "Me'ule. Nakhin okhel la-piknik?", kana: "メウレ。ナキン オケル ラ ピクニク？", ja: "いいね。ピクニックのお弁当を作ろうか？" },
+                    { speaker: "B", he: "כֵּן, נָכִין כְּרִיכִים וּפֵרוֹת.", ro: "Ken, nakhin krichim u-ferot.", kana: "ケン、ナキン クリヒム ウ フェロト。", ja: "うん、サンドイッチとフルーツを用意しよう。" },
+                    { speaker: "A", he: "אֲנִי מַמָּשׁ מְצַפָּה לָזֶה!", ro: "Ani mamash metzapa la-ze!", kana: "アニ ママシュ メツァパ ラ ゼ！", ja: "本当に楽しみ！" },
+                    { speaker: "B", he: "גַּם אֲנִי! יִהְיֶה כֵּף חַמָּה.", ro: "Gam ani! Yihye kef kama.", kana: "ガム アニ！イヒイェ ケフ カマ。", ja: "僕も！きっとすごく楽しいよ。" }
+                ]
+            },
+            {
+                id: 5,
+                titleJa: "道を尋ねる",
+                titleHe: "לשאול על כיוונים",
+                icon: "fa-map-location-dot",
+                dialogues: [
+                    { speaker: "A", he: "סְלִיחָה, אֵיךְ מַגִּיעִים לַתַּחֲנָה המֶרְכָּזִית?", ro: "Slikha, eikh magi'im la-takhana ha-merkazit?", kana: "スリハ、エイク マギイム ラ タハナ ハ メルカジット？", ja: "すみません、中央駅にはどう行けばいいですか？" },
+                    { speaker: "B", he: "הוֹלְכִים יָשָׁר בָּרְחוֹב הַזֶּה.", ro: "Holkhim yashar ba-rekhov ha-ze.", kana: "ホルヒム ヤシャー バ レホヴ ハ ゼ。", ja: "この道をまっすぐ進みます。" },
+                    { speaker: "A", he: "וְאַחַר כָּךְ פּוֹנִים יְמִינָה אוֹ שְׂמֹאילָה?", ro: "Ve-akhar kakh ponim yamina o smola?", kana: "ヴェ アハル カフ ポニム ヤミナ オ スモラ？", ja: "それから右に曲がりますか、それとも左ですか？" },
+                    { speaker: "B", he: "פּוֹנִים שְׂמֹאילָה בַּרַמְזוֹר הָרִאשׁוֹן.", ro: "Ponim smola ba-ramzor ha-rishon.", kana: "ポニム スモラ バ ラムゾル ハ リショーン。", ja: "最初の信号を左に曲がります。" },
+                    { speaker: "A", he: "זֶה רָחוֹק מִפֹּה? אֶפְשָׁר לָלֶכֶת בְּרֶגֶל?", ro: "Ze rakhok mi-po? Efshar lalekhet be-regel?", kana: "ゼ ラホク ミ ポ？エフシャー ラレヘト ベ レゲル？", ja: "ここから遠いですか？歩いて行けますか？" },
+                    { speaker: "B", he: "זֶה קָרוֹב מְאֹד, בְּעֵרֶךְ חָמֵשׁ דַּקּוֹת.", ro: "Ze karov me'od, be'erekh khamesh dakot.", kana: "ゼ カロヴ メオド、ベエレフ ハメシュ ダコト。", ja: "とても近いですよ、およそ5分です。" },
+                    { speaker: "A", he: "תּוֹדָה רַבָּה עַל הָעֶזְרָה!", ro: "Toda raba al ha-ezra!", kana: "トダ ラバ アル ハ エズラ！", ja: "助けてくれて本当にありがとうございます！" },
+                    { speaker: "B", he: "בְּבַקָּשָׁה! יוֹם נָעִים!", ro: "Bevakasha! Yom na'im!", kana: "ベヴァカシャー！ヨム ナイム！", ja: "どういたしまして！良い一日を！" }
+                ]
+            },
+            {
+                id: 6,
+                titleJa: "趣味について話す",
+                titleHe: "שיחה על תחביבים",
+                icon: "fa-icons",
+                dialogues: [
+                    { speaker: "A", he: "מַה הַתַּחְבִּיב הָאַהוּב עָלֶיךָ?", ro: "Ma ha-takhbiv ha-ahuv alekha?", kana: "マ ハ タフビヴ ハ アフヴ アレイハ？", ja: "君の一番の趣味は何？" },
+                    { speaker: "B", he: "אֲנִי מְאֹד אוֹהֵב לִקְרֹא סְפָרִים וְלִשְׁמֹעַ מוּזִיקָה.", ro: "Ani me'od ohev likro sfarim ve-lishmo'a muzika.", kana: "アニ メオド オヘヴ リクロ スファリム ヴェ リシュモア ムジカ。", ja: "本を読むことと音楽を聴くことがすごく好きだよ。" },
+                    { speaker: "A", he: "אֵיזוֹ מוּזִיקָה אַתָּה אוֹהֵב לִשְׁמֹעַ?", ro: "Eizo muzika ata ohev lishmo'a?", kana: "エイゾ ムジカ アタ オヘヴ リシュモア？", ja: "どんな音楽を聴くのが好き？" },
+                    { speaker: "B", he: "אֲנִי אוֹהֵב מוּזִיקָה יִשְׂרְאֵלִית וְגָ'אז.", ro: "Ani ohev muzika yisre'elit ve-jazz.", kana: "アニ オヘヴ ムジカ イスラエリト ヴェ ジャズ。", ja: "イスラエル音楽とジャズが好きだな。" },
+                    { speaker: "A", he: "גַּם אֲנִי אוֹהֶבֶת מוּזִיקָה! אֲנִי מְנַגֶּנֶת בִּפְסַנְתֵּר.", ro: "Gam ani ohevet muzika! Ani menageneit bi-psanter.", kana: "ガム アニ オヘヴェト ムジカ！アニ メナゲネト ビ プサンテール。", ja: "私も音楽が好き！ピアノを弾くの。" },
+                    { speaker: "B", he: "בֶּאֱמֶת? כַּמָּה זְמַן אַתְּ מְנַגֶּנֶת?", ro: "Be'emet? Kama zman at menagenet?", kana: "ベエメト？カマ ズマン アト メナゲネト？", ja: "本当に？どのくらい弾いているの？" },
+                    { speaker: "A", he: "כְּבָר שָׁלֹשׁ שָׁנִים. זֶה מַרְגִּיעַ אוֹתִי.", ro: "Kvar shalosh shanim. Ze margi'a oti.", kana: "クヴァル シャロシュ シャニム。ゼ マルギア オティ。", ja: "もう3年になるよ。心が落ち着くの。" },
+                    { speaker: "B", he: "אֶשְׂמַח לִשְׁמֹעַ אוֹתָךְ מְנַגֶּנֶת מָחָר!", ro: "Esmakh lishmo'a otakh menagenet makhar!", kana: "エスフ リシュモア オタフ メナゲネト マハル！", ja: "明日、演奏を聴けたら嬉しいな！" }
+                ]
+            },
+            {
+                id: 7,
+                titleJa: "レストランで夕食",
+                titleHe: "ארוחת ערב במסעדה",
+                icon: "fa-utensils",
+                dialogues: [
+                    { speaker: "A", he: "הַמִּסְעָדָה הַזֹּאת נִרְאֵית מְעֻלָּה!", ro: "Ha-mis'ada ha-zot nir'et me'ula!", kana: "ハ ミスアダ ハ ゾト ニルエト メウラ！", ja: "このレストラン、すごく良さそうだね！" },
+                    { speaker: "B", he: "כֵּן, יֵשׁ לָהֶם אוֹכֶל טָעִים מְאֹד.", ro: "Ken, yesh lahem okhel ta'im me'od.", kana: "ケン、イェシュ ラヘム オケル タイム メオド。", ja: "うん、ここは料理がとても美味しいんだ。" },
+                    { speaker: "A", he: "מַה אַתָּה מַמְלִיץ לֶאֱכֹל?", ro: "Ma ata mamlitz le'ekhol?", kana: "マ アタ マムリツ レエコル？", ja: "何をおすすめする？" },
+                    { speaker: "B", he: "הַחוּמוּס וְהַפָּלָאפֶל שֶׁלָּהֶם מְעֻלִּים.", ro: "Ha-khumus ve-ha-falafel shelakhem me'ulim.", kana: "ハ フムス ヴェ ハ ファラフェル シェラヘム メウリム。", ja: "ここのフムスとファラフェルは最高だよ。" },
+                    { speaker: "A", he: "נַזְמִין מָנָה אַחַת לַחֲלֹק?", ro: "Nazmin mana ekhat lakhalok?", kana: "ナズミン マナ エハト ラハロク？", ja: "シェア用に一つ注文しようか？" },
+                    { speaker: "B", he: "רַעְיוֹן מְעֻלֶּה, וְגַם סָלָט יִשְׂרְאֵלִי.", ro: "Ra'ayon me'ule, ve-gam salat yisre'eli.", kana: "ラアイョン メウレ、ヴェ ガム サラト イスラエリ。", ja: "素晴らしい考えだね、イスラエルサラダも付けよう。" },
+                    { speaker: "A", he: "וּמָה נִשְׁתֶּה?", ro: "U-ma nishte?", kana: "ウ マ ニシュテ？", ja: "飲み物は何にする？" },
+                    { speaker: "B", he: "מַיִם עִם לִימוֹן וְנַנָּע, בְּבַקָּשָׁה.", ro: "Mayim im limon ve-nana, bevakasha.", kana: "マイム イム リモン ヴェ ナナ、ベヴァカシャー。", ja: "レモンとミント入りの水にしよう。" }
+                ]
+            },
+            {
+                id: 8,
+                titleJa: "家族についての話題",
+                titleHe: "שיחה על המשפחה",
+                icon: "fa-people-roof",
+                dialogues: [
+                    { speaker: "A", he: "כַּמָּה אַחִים וַאֲחָיוֹת יֵשׁ לְךָ?", ro: "Kama akhim ve-akhayot yesh lekha?", kana: "カマ アヒム ヴェ アハヨト イェシュ レハ？", ja: "兄弟姉妹は何人いるの？" },
+                    { speaker: "B", he: "יֵשׁ לִי אָח אֶחָד וְאָחוֹת אַחַת.", ro: "Yesh li akh ekhad ve-akhot ekhat.", kana: "イェシュ リ アフ エハド ヴェ アホト エハト。", ja: "兄弟が一人と、姉妹が一人いるよ。" },
+                    { speaker: "A", he: "הֵם גָּרִים קָרוֹב אֵלֶיךָ?", ro: "Hem garim karov elekha?", kana: "ヘム ガリム カロヴ エレイハ？", ja: "みんな近くに住んでいるの？" },
+                    { speaker: "B", he: "אָחִי גָּר בְּתֵל אָבִיב, וַאֲחוֹתִי בַּחֵיפָה.", ro: "Akhi gar be-Tel Aviv, ve-akhoti ba-Khaifa.", kana: "アヒ ガル ベ テルアビブ、ヴェ アホティ バ ハイファ。", ja: "兄はテルアビブに、妹はハイファに住んでいるよ。" },
+                    { speaker: "A", he: "אַתֶּם נִפְגָּשִׁים הַרְבֵּה?", ro: "Atem nifgashim harbe?", kana: "アテム ニフガシム ハルベ？", ja: "よく会うの？" },
+                    { speaker: "B", he: "כֵּן, אֲנַחְנוּ נִפְגָּשִׁים בְּכָל שִׁשִּׁי לַאֲרוּחַת שַׁבָּת.", ro: "Ken, anakhnu nifgashim be-khol shishi le-arukhat Shabbat.", kana: "ケン、アナフヌ ニフガシム ベ コル シシ レ アルカト シャバット。", ja: "うん、毎週金曜日のシャバットの夕食で会うんだ。" },
+                    { speaker: "A", he: "איזֶה יֹפִי! מִשְׁפָּחָה זֶה דָּבָר חָשׁוּב.", ro: "Eize yofi! Mishpakha ze davar khashuv.", kana: "エイゼ ヨフィ！ミシュパハ ゼ ダヴァル ハシュヴ。", ja: "なんて素晴らしいんだろう！家族は大切だね。" },
+                    { speaker: "B", he: "נָכוֹן מְאֹד. וּמָה עִם הַמִּשְׁפָּחָה שֶׁלָּךְ?", ro: "Nakhon me'od. U-ma im ha-mishpakha shelakh?", kana: "ナホン メオド。ウ マ イム ハ ミシュパハ シェラフ？", ja: "本当にその通り。君の家族はどう？" }
+                ]
+            },
+            {
+                id: 9,
+                titleJa: "日課・毎日のルーティン",
+                titleHe: "שגרת היומיום",
+                icon: "fa-clock",
+                dialogues: [
+                    { speaker: "A", he: "בְּאֵיזוֹ שָׁעָה אַתָּה קָם בַּבֹּקֶר?", ro: "Be-eizo sha'a ata kam ba-boker?", kana: "ベイゾ シャア アタ カム バ ボケル？", ja: "朝は何時に起きるの？" },
+                    { speaker: "B", he: "אֲנִי קָם בְּדֶרֶךְ כְּלָל בַּשָּׁעָה שֶׁבַע.", ro: "Ani kam be-derekh klal ba-sha'a sheva.", kana: "アニ カム ベ デレフ クラルフ バ シャア シェヴァ。", ja: "たいてい7時に起きるよ。" },
+                    { speaker: "A", he: "מָה אַתָּה עוֹשֶׂה אוֹתָהּ שָׁעָה?", ro: "Ma ata ose ota sha'a?", kana: "マ アタ オセ オタ シャア？", ja: "起きたら何をするの？" },
+                    { speaker: "B", he: "אֲנִי שׁוֹתֶה קָפֶה וְרוֹחֵץ פָּנִים.", ro: "Ani shote kafe ve-rokhetz panim.", kana: "アニ ショテ カフェ ヴェ ロヘツ パニム。", ja: "コーヒーを飲んで顔を洗うよ。" },
+                    { speaker: "A", he: "וּבְאֵיזוֹ שָׁעָה אַתָּה מַתְחִיל לַעֲבֹד?", ro: "U-be-eizo sha'a ata matkhil la'avod?", kana: "ウ ベイゾ シャア アタ マトキル ラアヴォド？", ja: "仕事は何時から始まるの？" },
+                    { speaker: "B", he: "אֲנִי מַתְחִיל לַעֲבֹד בַּשָּׁעָה תֵּשַׁע.", ro: "Ani matkhil la'avod ba-sha'a tesha.", kana: "アニ マトキル ラアヴォド バ シャア テシャ。", ja: "9時に仕事を始めるよ。" },
+                    { speaker: "A", he: "וּמָה אַתָּה עוֹשֶׂה בָּעֶרֶב?", ro: "U-ma ata ose ba-erev?", kana: "ウ マ アタ オセ バ エレヴ？", ja: "夜は何をしているの？" },
+                    { speaker: "B", he: "אֲנִי מְבַשֵּׁל אֲרוּחַת עֶרֶב וְנָח.", ro: "Ani mevashel arukhat erev ve-nakh.", kana: "アニ メヴァシェル アルカト エレヴ ヴェ ナフ。", ja: "夕食を作ってリラックスするよ。" }
+                ]
+            },
+            {
+                id: 10,
+                titleJa: "感情と気持ちの表現",
+                titleHe: "הבעת רגשות",
+                icon: "fa-heart",
+                dialogues: [
+                    { speaker: "A", he: "איךְ אַתָּה מרְגִּישׁ עַכְשָׁיו?", ro: "Eikh ata margish akhshav?", kana: "エイク アタ マルギシュ アフシャヴ？", ja: "今どんな気分？" },
+                    { speaker: "B", he: "אֲנִי מְאֹד שמֵחַ וְרָגוּעַ.", ro: "Ani me'od same'akh ve-ragua.", kana: "アニ メオド サメアフ ヴェ ラグア。", ja: "とても幸せで落ち着いているよ。" },
+                    { speaker: "A", he: "אֲנִי שְׂמֵחָה לִשְׁמֹעַ! מָה גּוֹרֵם לְךָ לִהְיוֹת שָׂמֵחַ?", ro: "Ani smekha lishmo'a! Ma gorem lekha lihyot same'akh?", kana: "アニ スメハ リシュモア！マ ゴレム レハ リヒヨト サメアフ？", ja: "それを聞けて嬉しい！何が君を幸せにしているの？" },
+                    { speaker: "B", he: "הַזְּמַן שֶׁאָנוּ מְבַלִּים יַחַד.", ro: "Ha-zman she-anu mevalim yakhad.", kana: "ハ ズマン シェ アヌ メヴァリム ヤハド。", ja: "一緒に過ごす時間だよ。" },
+                    { speaker: "A", he: "זֶה מַמָּשׁ מָתוֹק מִצִּדְךָ!", ro: "Ze mamash matok mi-tzidkha!", kana: "ゼ ママシュ マトク ミ ツィドハ！", ja: "それ、すごく優しいね！" },
+                    { speaker: "B", he: "אֲנִי תָּמִיד מַרְגִּישׁ טוֹב לְצִדֵּךְ.", ro: "Ani tamid margish tov le-tzidekh.", kana: "アニ タミド マルギシュ トヴ レ ツィデフ。", ja: "君のそばにいるといつも良い気分なんだ。" },
+                    { speaker: "A", he: "גַּם אֲנִי מַרְגִּישָׁה בְּדִיּוּק כָּכָה.", ro: "Gam ani margisha bediyuk kakha.", kana: "ガム アニ マルギシャ ベディユク カカ。", ja: "私もまったく同じ気持ちだよ。" },
+                    { speaker: "B", he: "אֲנִי אוֹהֵב אוֹתָךְ מְאֹד!", ro: "Ani ohev otakh me'od!", kana: "アニ オヘヴ オタフ メオド！", ja: "君のことが大好きだよ！" }
+                ]
+            },
+            {
+                id: 11,
+                titleJa: "服のお買い物",
+                titleHe: "קניות בגדים",
+                icon: "fa-shirt",
+                dialogues: [
+                    { speaker: "A", he: "הַחֻלְצָה הַזֹּאת יָפָה מְאֹד!", ro: "Ha-khultza ha-zot yafa me'od!", kana: "ハ フルツァ ハ ゾト ヤファ メオド！", ja: "このシャツ、すごく素敵だね！" },
+                    { speaker: "B", he: "כֵּן! רוֹצָה לִמְדֹד אוֹתָהּ?", ro: "Ken! Rotza limdod ota?", kana: "ケン！ロツァ リムドド オタ？", ja: "うん！試着してみる？" },
+                    { speaker: "A", he: "כֵּן, אֵיפֹה תַּא הַמְדִידָה?", ro: "Ken, eifo ta ha-medida?", kana: "ケン、エイフォ タ ハ メディダ？", ja: "うん、試着室はどこかな？" },
+                    { speaker: "B", he: "תַּא הַמְדִידָה שָׁם בַּפִּנָּה.", ro: "Ta ha-medida sham ba-pina.", kana: "タ ハ メディダ シャム バ ピナ。", ja: "試着室はあっちの角だよ。" },
+                    { speaker: "A", he: "אֵיךְ זֶה נִרְאֶה עָלַי?", ro: "Eikh ze nir'e alai?", kana: "エイク ゼ ニルエ アライ？", ja: "似合ってる？" },
+                    { speaker: "B", he: "זֶה נִרְאֶה עָלַיִךְ מְהַמֵּם!", ro: "Ze nir'e alayikh mehamem!", kana: "ゼ ニルエ アライフ メハメム！", ja: "ものすごく似合ってるよ！" },
+                    { speaker: "A", he: "כַּמָּה זֶה עוֹלֶה?", ro: "Kama ze ole?", kana: "カマ ゼ オレ？", ja: "いくらかな？" },
+                    { speaker: "B", he: "זֶה עוֹלֶה מֵאָה שְׁקָלִים. שָׁוֶה לִקְנוֹת!", ro: "Ze ole me'a shkalim. Shave liknot!", kana: "ゼ オレ メア シュカリム。シャヴェ リクノト！", ja: "100シェケルだよ。絶対買いだよ！" }
+                ]
+            },
+            {
+                id: 12,
+                titleJa: "天気と季節",
+                titleHe: "מזג אוויר ועונות",
+                icon: "fa-cloud-sun",
+                dialogues: [
+                    { speaker: "A", he: "מַה מֶזֶג הָאֲוִיר בַּחוּץ הַיּוֹם?", ro: "Ma mezeg ha-avir ba-khutz hayom?", kana: "マ メゼグ ハ アヴィル バ フツ ハヨム？", ja: "今日の外のお天気はどう？" },
+                    { speaker: "B", he: "חַם וְשִׁמְשִׁי מְאֹד הַיּוֹם.", ro: "Kham ve-shimshi me'od hayom.", kana: "ハム ヴェ シムシ メオド ハヨム。", ja: "今日はとても暑くて日差しが強いよ。" },
+                    { speaker: "A", he: "אַתָּה אוֹהֵב אֶת הַקַּיִץ?", ro: "Ata ohev et ha-kayitz?", kana: "アタ オヘヴ エト ハ カイツ？", ja: "夏は好き？" },
+                    { speaker: "B", he: "אֲנִי מעְדִּיף אֶת הַסְּתָיו, כְּשֶׁנָּעִים.", ro: "Ani ma'adif et ha-stav, kshe-na'im.", kana: "アニ マアディフ エト ハ スタイヴ、クセ ナイム。", ja: "心地よい秋の方が好きだな。" },
+                    { speaker: "A", he: "גַּם אֲנִי! הַסְּתָיו מָלֵא צְבָעִים יָפִים.", ro: "Gam ani! Ha-stav male tzva'im yafim.", kana: "ガム アニ！ハ スタイヴ マレ ツヴァイム ヤフィム。", ja: "私も！秋は綺麗ないろどりでいっぱいだもの。" },
+                    { speaker: "B", he: "מָחָר יִהְיֶה קְצָת קַר יוֹתֵר.", ro: "Makhar yihye ktzat kar yoter.", kana: "マハル イヒイェ クツァト カル ヨテール。", ja: "明日はもう少し寒くなるみたい。" },
+                    { speaker: "A", he: "אָז כְּדַאי לִלְבֹּשׁ סְוֶדֶר.", ro: "Az kedai lilbosh sweater.", kana: "アズ ケダイ リルボシュ スウェター。", ja: "じゃあセーターを着た方がよさそうだね。" },
+                    { speaker: "B", he: "נָכוֹן, נִלְבַּשׁ מַשָּׁהוּ חַם.", ro: "Nakhon, nilbash mashehu kham.", kana: "ナホン、ニルバシュ マシェフ ハム。", ja: "そうだね、暖かいものを着よう。" }
+                ]
+            },
+            {
+                id: 13,
+                titleJa: "旅行とホテルチェックイン",
+                titleHe: "נסיעות וצ'ק-אין במלון",
+                icon: "fa-plane-departure",
+                dialogues: [
+                    { speaker: "A", he: "שָׁלוֹם, יֵשׁ לָנוּ הַזְמָנָה עַל שֵׁם לֵוִי.", ro: "Shalom, yesh lanu hazmana al shem Levi.", kana: "シャローム、イェシュ ラヌ ハズマナ アル シェム レヴィ。", ja: "こんにちは、レビの名前で予約があります。" },
+                    { speaker: "B", he: "שָׁלוֹם! כֵּן, מָצָאתִי. חֶדֶר לִשְׁנֵי אֲנָשִׁים.", ro: "Shalom! Ken, matzati. Kheder lishnei anashim.", kana: "シャローム！ケン、マツァティ。ヘデル リシュネイ アナシム。", ja: "こんにちは！はい、見つかりました。2名様のお部屋ですね。" },
+                    { speaker: "A", he: "בְּאֵיזוֹ קוֹמָה הַחֶדֶר שֶׁלָּנוּ?", ro: "Be-eizo koma ha-kheder shelanu?", kana: "ベイゾ コマ ハ ヘデル シェラヌ？", ja: "私たちの部屋は何階ですか？" },
+                    { speaker: "B", he: "הַחֶדֶר בַּקּוֹמָה הַשְּׁלִישִׁית, מִסְפָּר שְׁלֹשׁ מֵאוֹת וְאֶחָד.", ro: "Ha-kheder ba-koma ha-shlishit, mispar shlosh me'ot ve-ekhad.", kana: "ハ ヘデル バ コマ ハ シュリシート、ミスパル シュロシュ メオト ヴェ エハド。", ja: "3階の301号室になります。" },
+                    { speaker: "A", he: "בְּאֵיזוֹ שָׁעָה אֲרוּחַת הַבֹּקֶר?", ro: "Be-eizo sha'a arukhat ha-boker?", kana: "ベイゾ シャア アルカト ハ ボケル？", ja: "朝食は何時ですか？" },
+                    { speaker: "B", he: "אֲרוּחַת הַבֹּקֶר מִשֶּׁבַע עַד עֶשֶׂר.", ro: "Arukhat ha-boker mi-sheva ad eser.", kana: "アルカト ハ ボケル ミ シェヴァ アド エセル。", ja: "朝食は7時から10時までです。" },
+                    { speaker: "A", he: "תּוֹדָה רַבָּה! אֵיפֹה הַמַּעֲלִית?", ro: "Toda raba! Eifo ha-ma'alit?", kana: "トダ ラバ！エイフォ ハ マアリート？", ja: "ありがとうございます！エレベーターはどこですか？" },
+                    { speaker: "B", he: "הַמַּעֲלִית מִמּוּלְכֶם מִיָּמִין. חֻפְשָׁה נְעִימָה!", ro: "Ha-ma'alit mimulkhem mi-yamin. Khufsha ne'ima!", kana: "ハ マアリート ミムルヘム ミ ヤミン。フフシャ ネイマ！", ja: "エレベーターは正面右手にございます。良いご滞在を！" }
+                ]
+            },
+            {
+                id: 14,
+                titleJa: "感謝とお別れ",
+                titleHe: "תודה ופרידה",
+                icon: "fa-heart-circle-check",
+                dialogues: [
+                    { speaker: "A", he: "תּוֹדָה רַבָּה עַל יוֹם נִפְלָא יַחַד!", ro: "Toda raba al yom nifla yakhad!", kana: "トダ ラバ アル ヨム ニフラ ヤハド！", ja: "一緒に素晴らしい一日を過ごしてくれて本当にありがとう！" },
+                    { speaker: "B", he: "תּוֹדָה גַּם לָךְ! נְהֵנֵיתִי מְאֹד.", ro: "Toda gam lakh! Neheneti me'od.", kana: "トダ ガム ラフ！ネヘネイティ メオド。", ja: "僕からもありがとう！すごく楽しかったよ。" },
+                    { speaker: "A", he: "הָיָה לִי כֵּף גָּדוֹל לְדַבֵּר אִתְּךָ הֶבְרֶאִית.", ro: "Haya li kef gadol ledaber itkha evrit.", kana: "ハヤ リ ケフ ガドル レダベル イツハ エヴリート。", ja: "あなたとヘブル語で話せてとても楽しかった。" },
+                    { speaker: "B", he: "גַּם לִי! אַתְּ מְדַבֶּרֶת מְעֻלֶּה.", ro: "Gam li! At medaberet me'ule.", kana: "ガム リ！アト メダベレト メウレ。", ja: "僕もだよ！君はとても上手に話せているよ。" },
+                    { speaker: "A", he: "תּוֹדָה עַל הַמַּחְמָאָה! נִתְאַמֵּן שׁוּב מָחָר?", ro: "Toda al ha-makhma'a! Nit'amen shuv makhar?", kana: "トダ アル ハ マフマー！ニトアメン シュヴ マハル？", ja: "褒めてくれてありがとう！明日もまた練習しようか？" },
+                    { speaker: "B", he: "בֶּטַח! אֶשְׂמַח מְאֹד לְהִתְאַמֵּן אִתָּךְ.", ro: "Betakh! Esmakh me'od lehit'amen itakh.", kana: "ベタフ！エスフ メオド レヒトアメン イタフ。", ja: "勿論！一緒に練習するのをすごく楽しみにしているよ。" },
+                    { speaker: "A", he: "לַיְלָה טוֹב וַחֲלוֹמוֹת מְתוُקִים!", ro: "Layla tov va-khalomot metukim!", kana: "ライラ トヴ ヴァ ハロモト メツキム！", ja: "おやすみなさい、良い夢を！" },
+                    { speaker: "B", he: "לַיְלָה טוֹב! נִתְרָאֶה מָחָר!", ro: "Layla tov! Nitra'e makhar!", kana: "ライラ トヴ！ニトラエ マハル！", ja: "おやすみ！また明日ね！" }
+                ]
+            }
+        ];
+
+        // 状態管理
+        let currentScenarioId = 1;
+        let currentStepIndex = 0; // 0~7
+        let currentMode = 'roleplay'; // 'roleplay', 'autoplay', 'quiz'
+        let speechRate = 1.0; // 0.8, 1.0, 1.2
+        let completedScenarios = new Set();
+        let isAutoplayRunning = false;
+        let autoplayTimeout = null;
+
+        // 初期化
+        window.onload = function() {
+            renderScenarioList();
+            loadScenario(1);
+            updateCompletedUI();
+        };
+
+        // シナリオ一覧のレンダリング
+        function renderScenarioList() {
+            const listEl = document.getElementById('scenarioList');
+            listEl.innerHTML = '';
+
+            scenarios.forEach(sc => {
+                const isSelected = sc.id === currentScenarioId;
+                const isDone = completedScenarios.has(sc.id);
+
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-xl border cursor-pointer transition flex items-center justify-between ${
+                    isSelected 
+                        ? 'bg-brand-50 border-brand-400 text-brand-900 shadow-sm' 
+                        : 'bg-white border-slate-100 hover:bg-slate-50 text-slate-700'
+                }`;
+                item.onclick = () => loadScenario(sc.id);
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg ${isSelected ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-500'} flex items-center justify-center text-sm">
+                            <i class="fa-solid ${sc.icon}"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-semibold flex items-center gap-1.5">
+                                <span>Scene ${sc.id}</span>
+                                <span class="font-bold text-slate-800">${sc.titleJa}</span>
+                            </div>
+                            <div class="text-xs text-slate-400 hebrew-text" dir="rtl">${sc.titleHe}</div>
+                        </div>
+                    </div>
+                    ${isDone ? '<i class="fa-solid fa-circle-check text-emerald-500 text-base"></i>' : ''}
+                `;
+
+                listEl.appendChild(item);
+            });
+        }
+
+        // シナリオ読み込み
+        function loadScenario(id) {
+            stopAutoplay();
+            currentScenarioId = id;
+            currentStepIndex = 0;
+
+            const sc = scenarios.find(s => s.id === id);
+            document.getElementById('currentNumberBadge').textContent = `Scene ${sc.id}`;
+            document.getElementById('currentTitleJa').textContent = sc.titleJa;
+            document.getElementById('currentTitleHe').textContent = sc.titleHe;
+
+            updateCompleteButtonUI();
+            renderScenarioList();
+            renderDialogue();
+            updateStepIndicator();
+        }
+
+        // モード変更
+        function setMode(mode) {
+            stopAutoplay();
+            currentMode = mode;
+
+            // ボタン表示更新
+            ['roleplay', 'autoplay', 'quiz'].forEach(m => {
+                const btn = document.getElementById(`modeBtn-${m}`);
+                if (m === mode) {
+                    btn.className = "px-3 py-1.5 rounded-lg transition bg-white text-brand-700 font-bold shadow-sm";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg transition text-slate-600 hover:text-slate-800";
+                }
+            });
+
+            // コントロールエリア表示切替
+            document.getElementById('roleplayControls').classList.toggle('hidden', mode !== 'roleplay');
+            document.getElementById('autoplayControls').classList.toggle('hidden', mode !== 'autoplay');
+
+            renderDialogue();
+        }
+
+        // 対話バブルの描画
+        function renderDialogue() {
+            const sc = scenarios.find(s => s.id === currentScenarioId);
+            const container = document.getElementById('dialogueContainer');
+            container.innerHTML = '';
+
+            const showHebrew = document.getElementById('toggleHebrew').checked;
+            const showRomaji = document.getElementById('toggleRomaji').checked;
+            const showKana = document.getElementById('toggleKana').checked;
+            const showTranslation = document.getElementById('toggleTranslation').checked;
+
+            sc.dialogues.forEach((dlg, idx) => {
+                const isPartnerA = dlg.speaker === 'A';
+                const isCurrentActiveStep = (currentMode === 'roleplay' && idx === currentStepIndex) || (currentMode === 'autoplay' && idx === currentStepIndex);
+
+                const bubble = document.createElement('div');
+                
+                let borderClass = isPartnerA ? 'border-partnerA-border bg-partnerA-light/40' : 'border-partnerB-border bg-partnerB-light/40';
+                let activeRing = isCurrentActiveStep ? 'ring-2 ring-brand-500 shadow-md scale-[1.01]' : 'opacity-90';
+
+                bubble.className = `p-4 rounded-2xl border transition-all duration-300 ${borderClass} ${activeRing}`;
+
+                const badgeBg = isPartnerA ? 'bg-partnerA-badge' : 'bg-partnerB-badge';
+                const partnerLabel = isPartnerA ? 'パートナー A' : 'パートナー B';
+
+                let hebrewDisplay = dlg.he;
+                let romajiDisplay = dlg.ro;
+                let kanaDisplay = dlg.kana;
+                let translationDisplay = dlg.ja;
+
+                if (currentMode === 'quiz') {
+                    if (idx % 2 === 1) { // 奇数番目を非表示にするクイズ
+                        hebrewDisplay = '<span class="bg-amber-200 text-amber-900 px-2 py-0.5 rounded cursor-pointer" onclick="this.textContent=\'' + dlg.he.replace(/'/g, "\\'") + '\'">タップして正解を表示</span>';
+                        translationDisplay = '<span class="text-slate-400 italic">（会話を推測してください）</span>';
+                    }
+                }
+
+                // JS文字エスケープ処理 (カタカナ読み用)
+                const safeKana = dlg.kana.replace(/'/g, "\\'");
+
+                bubble.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="${badgeBg} text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                ${partnerLabel}
+                            </span>
+                            <span class="text-xs text-slate-400 font-medium">Turn ${idx + 1}/8</span>
+                        </div>
+                        
+                        <!-- 音声再生ボタン (日本語 ja-JP エンジンでカタカナ発音を朗読) -->
+                        <button onclick="speakKatakana('${safeKana}')" class="w-8 h-8 rounded-full bg-white text-brand-600 hover:bg-brand-500 hover:text-white shadow-sm flex items-center justify-center transition" title="カタカナ発音再生 (ja-JP)">
+                            <i class="fa-solid fa-volume-high text-xs"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        ${showHebrew ? `<div class="text-xl md:text-2xl font-bold text-slate-900 hebrew-text leading-relaxed" dir="rtl">${hebrewDisplay}</div>` : ''}
+                        ${showKana ? `<div class="text-sm md:text-base font-bold text-brand-700 tracking-wide"><i class="fa-solid fa-volume-low text-xs mr-1.5 text-brand-500"></i>${kanaDisplay}</div>` : ''}
+                        ${showRomaji ? `<div class="text-xs md:text-sm font-medium text-slate-500">${romajiDisplay}</div>` : ''}
+                        ${showTranslation ? `<div class="text-xs md:text-sm text-slate-600 font-normal pt-1 border-t border-slate-200/50">${translationDisplay}</div>` : ''}
+                    </div>
+                `;
+
+                container.appendChild(bubble);
+            });
+        }
+
+        // 音声読み上げ：日本語音声エンジン(ja-JP)でカタカナ表記(kana)を朗読
+        function speakKatakana(katakanaText, callback) {
+            if (!('speechSynthesis' in window)) {
+                showToast("お使いのブラウザは音声再生に対応していません。", true);
+                if (callback) callback();
+                return;
+            }
+
+            window.speechSynthesis.cancel(); // 既存再生の即時クリア
+
+            // 音声用テキストの調整（記号などを除去してカタカナをクリアに発声）
+            const audioText = katakanaText
+                .replace(/[！!？?・,、]/g, " ")
+                .trim();
+
+            const utterance = new SpeechSynthesisUtterance(audioText);
+            
+            // 日本語(ja-JP)音声を指定
+            utterance.lang = 'ja-JP';
+            utterance.rate = speechRate;
+            utterance.pitch = 1.0;
+
+            // 利用可能なja-JPボイスの検索と適用
+            const voices = window.speechSynthesis.getVoices();
+            const japaneseVoice = voices.find(v => v.lang.startsWith('ja') || v.lang.includes('JP'));
+            if (japaneseVoice) {
+                utterance.voice = japaneseVoice;
+            }
+
+            showToast(`再生中: "${katakanaText}"`);
+
+            utterance.onend = () => {
+                hideToast();
+                if (callback) callback();
+            };
+
+            utterance.onerror = (e) => {
+                console.warn('Speech synthesis notice/error:', e);
+                hideToast();
+                if (callback) callback();
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // トースト通知表示
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('audioStatusToast');
+            const msgEl = document.getElementById('toastMessage');
+            const icon = document.getElementById('toastIcon');
+
+            msgEl.textContent = msg;
+            if (isError) {
+                icon.className = "fa-solid fa-triangle-exclamation text-amber-400";
+            } else {
+                icon.className = "fa-solid fa-volume-high text-brand-400 animate-pulse";
+            }
+            toast.classList.remove('hidden');
+        }
+
+        function hideToast() {
+            const toast = document.getElementById('audioStatusToast');
+            toast.classList.add('hidden');
+        }
+
+        // ステップナビゲーション
+        function nextStep() {
+            if (currentStepIndex < 7) {
+                currentStepIndex++;
+            } else {
+                currentStepIndex = 0; // ループ
+            }
+            updateStepIndicator();
+            renderDialogue();
+            playCurrentStepAudio();
+        }
+
+        function prevStep() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+            } else {
+                currentStepIndex = 7;
+            }
+            updateStepIndicator();
+            renderDialogue();
+        }
+
+        function updateStepIndicator() {
+            const isPartnerA = (currentStepIndex % 2 === 0);
+            const indicator = document.getElementById('turnIndicator');
+            if (isPartnerA) {
+                indicator.textContent = "パートナー A の順番";
+                indicator.className = "px-2.5 py-1 rounded-full font-bold text-white bg-blue-500 shadow-sm";
+            } else {
+                indicator.textContent = "パートナー B の順番";
+                indicator.className = "px-2.5 py-1 rounded-full font-bold text-white bg-pink-500 shadow-sm";
+            }
+        }
+
+        function playCurrentStepAudio() {
+            const sc = scenarios.find(s => s.id === currentScenarioId);
+            const currentLine = sc.dialogues[currentStepIndex];
+            speakKatakana(currentLine.kana);
+        }
+
+        // 自動再生ロジック
+        function startAutoplay() {
+            isAutoplayRunning = true;
+            document.getElementById('startAutoplayBtn').classList.add('hidden');
+            document.getElementById('stopAutoplayBtn').classList.remove('hidden');
+            document.getElementById('autoplayStatus').textContent = "会話全体を自動再生中...";
+
+            currentStepIndex = 0;
+            playAutoplayLoop();
+        }
+
+        function stopAutoplay() {
+            isAutoplayRunning = false;
+            if (autoplayTimeout) clearTimeout(autoplayTimeout);
+            window.speechSynthesis.cancel();
+
+            const startBtn = document.getElementById('startAutoplayBtn');
+            const stopBtn = document.getElementById('stopAutoplayBtn');
+            if (startBtn && stopBtn) {
+                startBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+                document.getElementById('autoplayStatus').textContent = "会話を全体再生できます";
+            }
+            hideToast();
+        }
+
+        function playAutoplayLoop() {
+            if (!isAutoplayRunning) return;
+
+            renderDialogue();
+            const sc = scenarios.find(s => s.id === currentScenarioId);
+            const currentLine = sc.dialogues[currentStepIndex];
+
+            speakKatakana(currentLine.kana, () => {
+                if (!isAutoplayRunning) return;
+
+                if (currentStepIndex < 7) {
+                    currentStepIndex++;
+                    autoplayTimeout = setTimeout(playAutoplayLoop, 1200); // 1.2秒ポーズ
+                } else {
+                    stopAutoplay();
+                    document.getElementById('autoplayStatus').textContent = "再生が完了しました！";
+                }
+            });
+        }
+
+        // 音声速度切替 (0.8x -> 1.0x -> 1.2x)
+        function toggleSpeed() {
+            if (speechRate === 1.0) {
+                speechRate = 0.8;
+            } else if (speechRate === 0.8) {
+                speechRate = 1.2;
+            } else {
+                speechRate = 1.0;
+            }
+            document.getElementById('speedLabel').textContent = `${speechRate}x`;
+        }
+
+        // 完了状態切り替え
+        function toggleCurrentScenarioComplete() {
+            if (completedScenarios.has(currentScenarioId)) {
+                completedScenarios.delete(currentScenarioId);
+            } else {
+                completedScenarios.add(currentScenarioId);
+            }
+            updateCompleteButtonUI();
+            updateCompletedUI();
+            renderScenarioList();
+        }
+
+        function updateCompleteButtonUI() {
+            const isDone = completedScenarios.has(currentScenarioId);
+            const btn = document.getElementById('toggleCompleteBtn');
+            const icon = document.getElementById('completeIcon');
+            const text = document.getElementById('completeText');
+
+            if (isDone) {
+                btn.className = "self-start sm:self-auto px-3 py-1.5 text-xs rounded-xl font-medium bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100 transition flex items-center gap-1.5";
+                icon.className = "fa-solid fa-circle-check text-emerald-600";
+                text.textContent = "学習完了!";
+            } else {
+                btn.className = "self-start sm:self-auto px-3 py-1.5 text-xs rounded-xl font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 transition flex items-center gap-1.5";
+                icon.className = "fa-regular fa-circle-check text-slate-400";
+                text.textContent = "完了にする";
+            }
+        }
+
+        function updateCompletedUI() {
+            const count = completedScenarios.size;
+            document.getElementById('completedCount').textContent = count;
+            document.getElementById('completedCountMobile').textContent = count;
+        }
+    </script>
+</body>
+</html>
