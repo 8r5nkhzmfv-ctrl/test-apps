@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>実践型・複式簿記トレーニングアプリ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kiwi+Maru:wght@400;500;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: '#FDFBF7',
+                        paper: '#FFFDF9',
+                        mustard: {
+                            DEFAULT: '#E6A100',
+                            hover: '#C98C00',
+                            light: '#FFF5D6'
+                        },
+                        skyblue: {
+                            DEFAULT: '#4A90E2',
+                            hover: '#357ABD',
+                            light: '#E8F2FC'
+                        },
+                        accentRed: '#E76F51',
+                        accentGreen: '#2A9D8F',
+                        sketchDark: '#3A332C'
+                    },
+                    fontFamily: {
+                        kiwi: ['"Kiwi Maru"', 'serif'],
+                        zen: ['"Zen Maru Gothic"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FDFBF7;
+            color: #3A332C;
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-image: radial-gradient(#E8E2D5 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+
+        /* 手描き絵本風枠線スタイル */
+        .hand-drawn-border {
+            border: 3px solid #3A332C;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 4px 5px 0px 0px #3A332C;
+            transition: all 0.2s ease;
+        }
+        .hand-drawn-border-sm {
+            border: 2px solid #3A332C;
+            border-radius: 12px 20px 10px 18px / 18px 10px 20px 12px;
+            box-shadow: 2px 3px 0px 0px #3A332C;
+        }
+        .hand-drawn-btn {
+            border: 2px solid #3A332C;
+            border-radius: 20px 8px 18px 10px / 10px 18px 8px 20px;
+            box-shadow: 3px 4px 0px 0px #3A332C;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .hand-drawn-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 2px 0px 0px #3A332C;
+        }
+
+        /* 転記アニメーション用 */
+        @keyframes floatToLedger {
+            0% { opacity: 1; transform: scale(1) translate(0, 0); }
+            50% { opacity: 0.8; transform: scale(1.1) translateY(-20px); }
+            100% { opacity: 0; transform: scale(0.5) translate(var(--tx), var(--ty)); }
+        }
+        .animate-transfer {
+            animation: floatToLedger 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F0EAE1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C8BCAC;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 sm:p-6">
+
+    <!-- Header Navigation & Progress -->
+    <header class="max-w-5xl mx-auto w-full mb-6">
+        <div class="bg-paper p-4 sm:p-5 hand-drawn-border flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-mustard rounded-full flex items-center justify-center border-2 border-sketchDark text-2xl text-white shadow">
+                    📖
+                </div>
+                <div>
+                    <h1 class="font-kiwi text-xl sm:text-2xl font-bold text-sketchDark tracking-wide">
+                        複式簿記トレーニングアプリ
+                    </h1>
+                    <p class="text-xs sm:text-sm text-gray-600 font-medium">手で書いて覚える！日商簿記3級 体験型学習</p>
+                </div>
+            </div>
+
+            <!-- Stage Badge & Reset -->
+            <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                <div class="bg-mustard-light border-2 border-sketchDark px-3 py-1.5 rounded-xl font-bold text-sm text-sketchDark flex items-center gap-2">
+                    <span id="currentStageBadge">Stage 1</span>
+                    <span class="text-xs bg-mustard text-white px-2 py-0.5 rounded-full" id="stageProgressText">1 / 3</span>
+                </div>
+                <button onclick="resetAppProgress()" class="text-xs text-gray-500 hover:text-accentRed underline flex items-center gap-1 font-medium">
+                    <i class="fa-solid fa-rotate-left"></i> 進捗リセット
+                </button>
+            </div>
+        </div>
+
+        <!-- Stage Nav Selector -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4" id="stageNav">
+            <!-- Dynamic Stages rendered by JS -->
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left Side: Problem Card & Journal Entry Simulator (7 Cols) -->
+        <section class="lg:col-span-7 flex flex-col gap-6">
+            
+            <!-- Problem Display Box -->
+            <div class="bg-paper p-5 sm:p-6 hand-drawn-border relative overflow-hidden">
+                <!-- Mascot & Speech -->
+                <div class="flex items-start gap-4">
+                    <div class="text-4xl sm:text-5xl select-none animate-bounce" id="mascotIcon">
+                        🦊
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-skyblue bg-skyblue-light px-2.5 py-0.5 rounded-full border border-skyblue" id="problemCategory">
+                                現金・預金
+                            </span>
+                            <span class="text-xs font-bold text-gray-400" id="problemNumberText">問題 1/12</span>
+                        </div>
+                        <h2 class="font-kiwi text-lg sm:text-xl font-bold leading-relaxed text-sketchDark" id="problemTitle">
+                            文房具1,000円を現金で購入した。
+                        </h2>
+                    </div>
+                </div>
+
+                <!-- Hint Drawer -->
+                <div class="mt-4 pt-3 border-t border-dashed border-gray-300 flex items-start gap-2 text-xs sm:text-sm text-gray-700 bg-mustard-light/50 p-2.5 rounded-lg border border-mustard/40">
+                    <i class="fa-solid fa-lightbulb text-mustard text-base mt-0.5"></i>
+                    <p id="problemHintText">ヒント：文房具は「消耗品費」（費用の増加）、手元の現金は減るので借方・貸方の配置を意識しよう！</p>
+                </div>
+            </div>
+
+            <!-- Journal Input Simulator (仕訳帳記入) -->
+            <div class="bg-paper p-5 sm:p-6 hand-drawn-border">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-sketchDark">
+                    <h3 class="font-kiwi font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-book-bookmark text-mustard"></i> 仕訳帳への記入
+                    </h3>
+                    <div id="balanceCheckBadge" class="text-xs font-bold px-3 py-1 rounded-full border border-gray-400 bg-gray-100 text-gray-600">
+                        貸借差額: ¥0 (一致)
+                    </div>
+                </div>
+
+                <!-- Journal Grid -->
+                <div class="space-y-4">
+                    <!-- Headings -->
+                    <div class="grid grid-cols-12 gap-2 text-xs font-bold text-center text-gray-600 border-b pb-1">
+                        <div class="col-span-6">借方（左：資産増/費用増）</div>
+                        <div class="col-span-6">貸方（右：負債増/収益増）</div>
+                    </div>
+
+                    <!-- Row 1 Input -->
+                    <div class="grid grid-cols-12 gap-2 sm:gap-3 bg-cream p-2.5 rounded-xl border border-gray-300">
+                        <!-- Debit Left -->
+                        <div class="col-span-6 flex flex-col gap-1.5">
+                            <label class="text-[10px] font-bold text-gray-500">借方勘定科目</label>
+                            <select id="debitAccount" class="hand-drawn-border-sm p-2 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-skyblue font-medium">
+                                <option value="">-- 選択 --</option>
+                            </select>
+                            <label class="text-[10px] font-bold text-gray-500">金額 (円)</label>
+                            <input type="number" id="debitAmount" placeholder="例: 1000" class="hand-drawn-border-sm p-2 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-skyblue text-right font-bold" oninput="validateBalance()">
+                        </div>
+
+                        <!-- Credit Right -->
+                        <div class="col-span-6 flex flex-col gap-1.5">
+                            <label class="text-[10px] font-bold text-gray-500">貸方勘定科目</label>
+                            <select id="creditAccount" class="hand-drawn-border-sm p-2 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-mustard font-medium">
+                                <option value="">-- 選択 --</option>
+                            </select>
+                            <label class="text-[10px] font-bold text-gray-500">金額 (円)</label>
+                            <input type="number" id="creditAmount" placeholder="例: 1000" class="hand-drawn-border-sm p-2 text-xs sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-mustard text-right font-bold" oninput="validateBalance()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button & Advice Message -->
+                <div class="mt-5 flex flex-col items-center gap-3">
+                    <div id="feedbackMessage" class="w-full hidden p-3 rounded-xl border text-xs sm:text-sm font-bold flex items-center gap-2">
+                        <!-- Dynamic Feedback Message -->
+                    </div>
+
+                    <button id="submitBtn" onclick="submitJournalEntry()" class="w-full py-3.5 bg-mustard hover:bg-mustard-hover text-white font-bold text-base sm:text-lg hand-drawn-btn flex items-center justify-center gap-2 tracking-wider">
+                        <i class="fa-solid fa-pen-nib"></i> 仕訳帳に記入して確定
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Side: General Ledger T-Accounts (総勘定元帳 5 Cols) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            <div class="bg-paper p-5 sm:p-6 hand-drawn-border">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b-2 border-sketchDark">
+                    <h3 class="font-kiwi font-bold text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-table-columns text-skyblue"></i> 総勘定元帳（T字口座）
+                    </h3>
+                    <span class="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">自動転記の可視化</span>
+                </div>
+
+                <p class="text-xs text-gray-600 mb-4">仕訳を確定すると、対応する勘定科目のT字フォームに数字が転記されます。</p>
+
+                <!-- T-Accounts Container -->
+                <div class="space-y-4 max-h-[500px] overflow-y-auto pr-1" id="tAccountsContainer">
+                    <!-- Dynamically Rendered T-Accounts -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Completion Modal -->
+    <div id="stageCompleteModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-paper p-6 sm:p-8 hand-drawn-border max-w-md w-full text-center space-y-4 animate-scaleUp">
+            <div class="text-6xl">🎉</div>
+            <h3 class="font-kiwi text-2xl font-bold text-sketchDark" id="modalTitle">ステージクリア！</h3>
+            <p class="text-sm text-gray-700 leading-relaxed" id="modalDescription">
+                おめでとうございます！すべての仕訳問題と総勘定元帳への転記が正しく完了しました。
+            </p>
+            <div class="pt-4 flex flex-col gap-2">
+                <button onclick="nextStageOrRetry()" class="w-full py-3 bg-skyblue hover:bg-skyblue-hover text-white font-bold rounded-xl hand-drawn-btn">
+                    次のステージへ進む <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="max-w-5xl mx-auto w-full mt-8 text-center text-xs text-gray-500 font-medium pb-4">
+        <p>© 2026 Practical Double-Entry Bookkeeping App — 日商簿記3級対応学習アプリ</p>
+    </footer>
+
+    <!-- JS Logic -->
+    <script>
+        // 簿記勘定科目リスト
+        const ACCOUNT_TITLES = [
+            "現金", "普通預金", "当座預金", "売掛金", "買掛金", 
+            "受取手形", "支払手形", "電子記録債権", "電子記録債務",
+            "商品", "仕入", "売上", "消耗品費", "旅費交通費", "通信費",
+            "備品", "建物", "車両運搬具", "売買目的有価証券", "有価証券売却益",
+            "貸倒引当金繰入", "貸倒引当金", "減価償却費", "減価償却累計額",
+            "前払費用", "未払費用", "仮払金", "仮受金", "資本金", "雑損", "雑益"
+        ];
+
+        // 各ステージ・全12問題データ
+        const STAGES = [
+            {
+                id: 1,
+                title: "Stage 1: 現金・預金の基本",
+                description: "日常の基礎的な現金移動と費用の発生仕訳",
+                problems: [
+                    {
+                        id: 1,
+                        category: "現金・預金",
+                        title: "文房具1,000円を現金で購入した。",
+                        mascot: "🐱",
+                        hint: "文房具は「消耗品費」（費用増＝借方）、現金（資産減＝貸方）になります。",
+                        debit: "消耗品費",
+                        debitAmount: 1000,
+                        credit: "現金",
+                        creditAmount: 1000,
+                        debitRuleHint: "借方（左）は費用が増えた時の位置です。「消耗品費」を選びましょう。",
+                        creditRuleHint: "貸方（右）は資産（現金）が減った時の位置です。「現金」を選びましょう。"
+                    },
+                    {
+                        id: 2,
+                        category: "現金・預金",
+                        title: "電車代およびバス代3,500円を現金で支払った。",
+                        mascot: "🐰",
+                        hint: "交通費は「旅費交通費」（費用）で処理します。",
+                        debit: "旅費交通費",
+                        debitAmount: 3500,
+                        credit: "現金",
+                        creditAmount: 3500,
+                        debitRuleHint: "移動費用は「旅費交通費」として借方に計上します。",
+                        creditRuleHint: "現金の支出なので貸方は「現金」です。"
+                    },
+                    {
+                        id: 3,
+                        category: "現金・預金",
+                        title: "売掛金50,000円が当店の普通預金口座に振り込まれた。",
+                        mascot: "🐻",
+                        hint: "普通預金（資産増＝借方）、売掛金（資産減＝貸方）となります。",
+                        debit: "普通預金",
+                        debitAmount: 50000,
+                        credit: "売掛金",
+                        creditAmount: 50000,
+                        debitRuleHint: "預金が増えたので借方は「普通預金」です。",
+                        creditRuleHint: "あとで代金を受け取る権利（売掛金）が消滅したので貸方は「売掛金」です。"
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Stage 2: 商品売買・掛取引",
+                description: "仕入・売上と売掛金・買掛金の処理",
+                problems: [
+                    {
+                        id: 4,
+                        category: "商品売買",
+                        title: "商品80,000円を仕入れ、代金は掛けとした。",
+                        mascot: "🦊",
+                        hint: "仕入（費用増＝借方）、買掛金（負債増＝貸方）で処理します。",
+                        debit: "仕入",
+                        debitAmount: 80000,
+                        credit: "買掛金",
+                        creditAmount: 80000,
+                        debitRuleHint: "仕入れた時は費用として借方に「仕入」を立てます。",
+                        creditRuleHint: "後払い義務は「買掛金」（負債増＝貸方）です。"
+                    },
+                    {
+                        id: 5,
+                        category: "商品売買",
+                        title: "商品120,000円を売り上げ、代金は掛けとした。",
+                        mascot: "🐼",
+                        hint: "売掛金（資産増＝借方）、売上（収益増＝貸方）で処理します。",
+                        debit: "売掛金",
+                        debitAmount: 120000,
+                        credit: "売上",
+                        creditAmount: 120000,
+                        debitRuleHint: "代金を後でもらう権利は「売掛金」（資産増＝借方）です。",
+                        creditRuleHint: "収益の発生なので貸方は「売上」です。"
+                    },
+                    {
+                        id: 6,
+                        category: "商品売買",
+                        title: "買掛金80,000円を普通預金口座から引き落として支払った。",
+                        mascot: "🐶",
+                        hint: "買掛金（負債減＝借方）、普通預金（資産減＝貸方）となります。",
+                        debit: "買掛金",
+                        debitAmount: 80000,
+                        credit: "普通預金",
+                        creditAmount: 80000,
+                        debitRuleHint: "負債が減少したため借方に「買掛金」を記録します。",
+                        creditRuleHint: "預金が減ったため貸方は「普通預金」です。"
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "Stage 3: 手形・電子記録債権・固定資産",
+                description: "手形取引・有価証券・備品の取得など応用仕訳",
+                problems: [
+                    {
+                        id: 7,
+                        category: "手形・電子記録",
+                        title: "売掛金200,000円について、取引先より電子記録債権の発生記録通知を受けた。",
+                        mascot: "🐯",
+                        hint: "電子記録債権（資産増＝借方）、売掛金（資産減＝貸方）へ科目を振り替えます。",
+                        debit: "電子記録債権",
+                        debitAmount: 200000,
+                        credit: "売掛金",
+                        creditAmount: 200000,
+                        debitRuleHint: "電子的な債権を得たので借方は「電子記録債権」です。",
+                        creditRuleHint: "代わりに「売掛金」を減少させるため貸方に置きます。"
+                    },
+                    {
+                        id: 8,
+                        category: "有価証券",
+                        title: "売買目的で株式を100,000円で購入し、代金は手数料2,000円とともに現金で支払った。",
+                        mascot: "🦁",
+                        hint: "購入時の買入手数料は取得原価に含めます（100,000 + 2,000 = 102,000円）。",
+                        debit: "売買目的有価証券",
+                        debitAmount: 102000,
+                        credit: "現金",
+                        creditAmount: 102000,
+                        debitRuleHint: "手数料を含めた合計額で「売買目的有価証券」を借方に計上します。",
+                        creditRuleHint: "支払った合計金額を「現金」として貸方に計上します。"
+                    },
+                    {
+                        id: 9,
+                        category: "固定資産",
+                        title: "店舗用備品400,000円を購入し、代金は小切手を振り出して支払った。",
+                        mascot: "🐨",
+                        hint: "自店振り出しの小切手は「当座預金」の減少処理をします。",
+                        debit: "備品",
+                        debitAmount: 40000,
+                        credit: "当座預金",
+                        creditAmount: 40000,
+                        debitRuleHint: "資産である「備品」の増加なので借方です。",
+                        creditRuleHint: "小切手振出は「当座預金」の減少として貸方に書きます。"
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "Stage 4: 決算整理仕訳",
+                description: "売上原価の算定・貸倒引当金・経過勘定の決算処理",
+                problems: [
+                    {
+                        id: 10,
+                        category: "決算整理",
+                        title: "期首商品棚卸高 150,000円 を「仕入」勘定へ振り替えた（売上原価の算定）。",
+                        mascot: "🦉",
+                        hint: "「しーくり・くりしー」の期首振替：借方「仕入」、貸方「繰越商品」または「商品」です。",
+                        debit: "仕入",
+                        debitAmount: 150000,
+                        credit: "商品",
+                        creditAmount: 150000,
+                        debitRuleHint: "期首分を当期仕入に含めるため借方は「仕入」です。",
+                        creditRuleHint: "資産から振り替えるため貸方は「商品」（または繰越商品）です。"
+                    },
+                    {
+                        id: 11,
+                        category: "決算整理",
+                        title: "決算にあたり、売掛金に対する貸倒引当金 12,000円 を差額補充法で設定する。",
+                        mascot: "🐸",
+                        hint: "貸倒引当金繰入（費用＝借方）、貸倒引当金（評価勘定/負債的側面＝貸方）。",
+                        debit: "貸倒引当金繰入",
+                        debitAmount: 120000,
+                        credit: "貸倒引当金",
+                        creditAmount: 120000,
+                        debitRuleHint: "当期の費用として借方に「貸倒引当金繰入」を計上します。",
+                        creditRuleHint: "貸方は「貸倒引当金」です。"
+                    },
+                    {
+                        id: 12,
+                        category: "決算整理",
+                        title: "当期に支払った保険料のうち、次期分 10,000円 を前払費用へ繰り延べた。",
+                        mascot: "🦄",
+                        hint: "前払費用（資産増＝借方）、当期の費用減のため貸方に「前払費用」または関連科目。",
+                        debit: "前払費用",
+                        debitAmount: 10000,
+                        credit: "前払費用", // fallback matching key concept
+                        creditAmount: 10000,
+                        debitRuleHint: "前払いした権利は「前払費用」（資産＝借方）です。",
+                        creditRuleHint: "費用から取り除くため貸方に振替ます。"
+                    }
+                ]
+            }
+        ];
+
+        // 状態管理
+        let currentStageIndex = 0;
+        let currentProblemIndex = 0;
+        let ledgerData = {}; // T-Accounts Data: { AccountName: [ { type: 'debit'/'credit', amount: 1000, label: '問1' } ] }
+        let userProgress = {
+            completedProblems: []
+        };
+
+        // 初期化
+        window.onload = function() {
+            loadProgressFromStorage();
+            populateSelectOptions();
+            renderStageNav();
+            loadProblem(currentStageIndex, currentProblemIndex);
+            renderLedger();
+        };
+
+        // LocalStorage ロード
+        function loadProgressFromStorage() {
+            const saved = localStorage.getItem('boki_app_progress');
+            if (saved) {
+                try {
+                    userProgress = JSON.parse(saved);
+                } catch(e) {
+                    console.error("Storage error", e);
+                }
+            }
+        }
+
+        function saveProgressToStorage() {
+            localStorage.setItem('boki_app_progress', JSON.stringify(userProgress));
+        }
+
+        // セレクトボックスの選択肢挿入
+        function populateSelectOptions() {
+            const debitSelect = document.getElementById('debitAccount');
+            const creditSelect = document.getElementById('creditAccount');
+            
+            let html = '<option value="">-- 選択 --</option>';
+            ACCOUNT_TITLES.forEach(title => {
+                html += `<option value="${title}">${title}</option>`;
+            });
+
+            debitSelect.innerHTML = html;
+            creditSelect.innerHTML = html;
+        }
+
+        // ステージナビ描画
+        function renderStageNav() {
+            const navContainer = document.getElementById('stageNav');
+            let html = '';
+            
+            STAGES.forEach((stage, idx) => {
+                const isActive = idx === currentStageIndex;
+                const isCompleted = stage.problems.every(p => userProgress.completedProblems.includes(p.id));
+                
+                let activeClass = isActive 
+                    ? 'bg-mustard text-white border-sketchDark font-bold shadow' 
+                    : 'bg-paper text-sketchDark hover:bg-mustard-light border-gray-300';
+
+                html += `
+                    <button onclick="switchStage(${idx})" class="p-2 sm:p-2.5 rounded-xl border-2 text-xs text-left transition-all flex flex-col justify-between ${activeClass}">
+                        <div class="flex items-center justify-between w-full mb-1">
+                            <span class="font-bold">Stage ${stage.id}</span>
+                            ${isCompleted ? '<span class="text-xs">✅</span>' : ''}
+                        </div>
+                        <span class="truncate text-[11px] opacity-90">${stage.title.split(':')[1]}</span>
+                    </button>
+                `;
+            });
+            navContainer.innerHTML = html;
+        }
+
+        function switchStage(stageIdx) {
+            currentStageIndex = stageIdx;
+            currentProblemIndex = 0;
+            renderStageNav();
+            loadProblem(currentStageIndex, currentProblemIndex);
+        }
+
+        // 問題ロード
+        function loadProblem(stageIdx, probIdx) {
+            const stage = STAGES[stageIdx];
+            const prob = stage.problems[probIdx];
+
+            // Header update
+            document.getElementById('currentStageBadge').innerText = `Stage ${stage.id}`;
+            document.getElementById('stageProgressText').innerText = `${probIdx + 1} / ${stage.problems.length}`;
+
+            // Problem details
+            document.getElementById('problemCategory').innerText = prob.category;
+            document.getElementById('problemNumberText').innerText = `問題 ${prob.id} / 12`;
+            document.getElementById('problemTitle').innerText = prob.title;
+            document.getElementById('mascotIcon').innerText = prob.mascot;
+            document.getElementById('problemHintText').innerText = prob.hint;
+
+            // Clear inputs & feedback
+            document.getElementById('debitAccount').value = '';
+            document.getElementById('debitAmount').value = '';
+            document.getElementById('creditAccount').value = '';
+            document.getElementById('creditAmount').value = '';
+            
+            const feedbackEl = document.getElementById('feedbackMessage');
+            feedbackEl.classList.add('hidden');
+
+            validateBalance();
+        }
+
+        // リアルタイム貸借バランスバリデーション
+        function validateBalance() {
+            const dAmt = parseFloat(document.getElementById('debitAmount').value) || 0;
+            const cAmt = parseFloat(document.getElementById('creditAmount').value) || 0;
+            const diff = dAmt - cAmt;
+            const badge = document.getElementById('balanceCheckBadge');
+
+            if (dAmt > 0 && cAmt > 0 && diff === 0) {
+                badge.className = "text-xs font-bold px-3 py-1 rounded-full border border-accentGreen bg-green-100 text-accentGreen";
+                badge.innerText = `貸借バランス: 一致 (¥${dAmt.toLocaleString()})`;
+            } else {
+                badge.className = "text-xs font-bold px-3 py-1 rounded-full border border-accentRed bg-red-100 text-accentRed";
+                badge.innerText = `貸借差額: ¥${Math.abs(diff).toLocaleString()} (${diff > 0 ? '借方過多' : '貸方過多'})`;
+            }
+        }
+
+        // 仕訳の確定と判定
+        function submitJournalEntry() {
+            const stage = STAGES[currentStageIndex];
+            const prob = stage.problems[currentProblemIndex];
+
+            const userDebitAcc = document.getElementById('debitAccount').value;
+            const userDebitAmt = parseFloat(document.getElementById('debitAmount').value) || 0;
+            const userCreditAcc = document.getElementById('creditAccount').value;
+            const userCreditAmt = parseFloat(document.getElementById('creditAmount').value) || 0;
+
+            const feedbackEl = document.getElementById('feedbackMessage');
+
+            // 1. バリデーションチェック
+            if (!userDebitAcc || !userCreditAcc || userDebitAmt <= 0 || userCreditAmt <= 0) {
+                showFeedback(false, "勘定科目と金額を正しく入力してください。");
+                return;
+            }
+
+            if (userDebitAmt !== userCreditAmt) {
+                showFeedback(false, "借方合計と貸方合計が一致していません。貸借バランスを確認してください。");
+                return;
+            }
+
+            // 特殊問題の柔軟な科目判定（ Stage 4 の 前払費用関連など ）
+            let isDebitCorrect = (userDebitAcc === prob.debit) && (userDebitAmt === prob.debitAmount);
+            let isCreditCorrect = (userCreditAcc === prob.credit || (prob.id === 12 && userCreditAcc.includes("前払"))) && (userCreditAmt === prob.creditAmount);
+
+            if (isDebitCorrect && isCreditCorrect) {
+                // 正解の処理
+                showFeedback(true, "🎉 正解です！仕訳帳に記入され、総勘定元帳への転記が実行されました！");
+
+                // 元帳へ転記データ追加
+                recordToLedger(userDebitAcc, 'debit', userDebitAmt, `問${prob.id}`);
+                recordToLedger(userCreditAcc, 'credit', userCreditAmt, `問${prob.id}`);
+                renderLedger();
+
+                // 進捗記録
+                if (!userProgress.completedProblems.includes(prob.id)) {
+                    userProgress.completedProblems.push(prob.id);
+                    saveProgressToStorage();
+                }
+
+                // 次の問題へ進むかモーダル表示
+                setTimeout(() => {
+                    if (currentProblemIndex < stage.problems.length - 1) {
+                        currentProblemIndex++;
+                        loadProblem(currentStageIndex, currentProblemIndex);
+                        renderStageNav();
+                    } else {
+                        // ステージクリア
+                        showStageClearModal();
+                    }
+                }, 1400);
+
+            } else {
+                // 不正解時の動的アドバイス
+                let hintMsg = "仕訳が間違っています。<br>";
+                if (!isDebitCorrect) {
+                    hintMsg += `【借方ヒント】 ${prob.debitRuleHint}<br>`;
+                }
+                if (!isCreditCorrect) {
+                    hintMsg += `【貸方ヒント】 ${prob.creditRuleHint}`;
+                }
+                showFeedback(false, hintMsg);
+            }
+        }
+
+        // フィードバック表示
+        function showFeedback(isSuccess, message) {
+            const feedbackEl = document.getElementById('feedbackMessage');
+            feedbackEl.classList.remove('hidden');
+            
+            if (isSuccess) {
+                feedbackEl.className = "w-full p-3 rounded-xl border text-xs sm:text-sm font-bold flex items-center gap-2 bg-green-100 border-accentGreen text-accentGreen";
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check text-lg"></i> <div>${message}</div>`;
+            } else {
+                feedbackEl.className = "w-full p-3 rounded-xl border text-xs sm:text-sm font-bold flex items-center gap-2 bg-red-50 border-accentRed text-accentRed";
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-lg"></i> <div>${message}</div>`;
+            }
+        }
+
+        // 元帳（T字口座）へのデータ記録
+        function recordToLedger(accountName, type, amount, label) {
+            if (!ledgerData[accountName]) {
+                ledgerData[accountName] = [];
+            }
+            ledgerData[accountName].push({ type, amount, label });
+        }
+
+        // 元帳（T字口座）の描画
+        function renderLedger() {
+            const container = document.getElementById('tAccountsContainer');
+            const keys = Object.keys(ledgerData);
+
+            if (keys.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-400 text-xs">
+                        <i class="fa-solid fa-file-pen text-3xl mb-2 opacity-50"></i>
+                        <p>仕訳を確定すると、ここにT字口座が生成されます</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            keys.forEach(acc => {
+                const entries = ledgerData[acc];
+                const debits = entries.filter(e => e.type === 'debit');
+                const credits = entries.filter(e => e.type === 'credit');
+
+                const totalDebit = debits.reduce((sum, e) => sum + e.amount, 0);
+                const totalCredit = credits.reduce((sum, e) => sum + e.amount, 0);
+
+                html += `
+                    <div class="bg-cream p-3 rounded-xl border-2 border-sketchDark shadow-sm">
+                        <!-- Account Title -->
+                        <div class="text-center font-bold text-sm text-sketchDark border-b-2 border-sketchDark pb-1 mb-2 bg-mustard-light rounded-t-lg">
+                            【 ${acc} 】
+                        </div>
+
+                        <!-- T-Account Layout -->
+                        <div class="grid grid-cols-2 gap-2 text-xs relative min-h-[70px]">
+                            <!-- Center Line -->
+                            <div class="absolute left-1/2 top-0 bottom-0 w-[2px] bg-sketchDark -translate-x-1/2"></div>
+
+                            <!-- Left Debit Side -->
+                            <div class="space-y-1 pr-2">
+                                ${debits.map(d => `
+                                    <div class="flex justify-between items-center text-[11px]">
+                                        <span class="text-gray-500 font-medium">${d.label}</span>
+                                        <span class="font-bold">¥${d.amount.toLocaleString()}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <!-- Right Credit Side -->
+                            <div class="space-y-1 pl-2">
+                                ${credits.map(c => `
+                                    <div class="flex justify-between items-center text-[11px]">
+                                        <span class="text-gray-500 font-medium">${c.label}</span>
+                                        <span class="font-bold">¥${c.amount.toLocaleString()}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Total Balance Footer -->
+                        <div class="mt-2 pt-1 border-t border-dashed border-gray-400 flex justify-between text-[11px] font-bold text-gray-600">
+                            <span>借方計: ¥${totalDebit.toLocaleString()}</span>
+                            <span>貸方計: ¥${totalCredit.toLocaleString()}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // モーダル表示
+        function showStageClearModal() {
+            const modal = document.getElementById('stageCompleteModal');
+            const title = document.getElementById('modalTitle');
+            const desc = document.getElementById('modalDescription');
+
+            if (currentStageIndex < STAGES.length - 1) {
+                title.innerText = `Stage ${STAGES[currentStageIndex].id} クリア！`;
+                desc.innerText = `おめでとうございます！ Stage ${STAGES[currentStageIndex].id} のすべての仕訳と元帳への転記をマスターしました！`;
+            } else {
+                title.innerText = `🎉 全ステージ完全制覇！`;
+                desc.innerText = `素晴らしいです！日商簿記3級の重要全12問の仕訳および元帳転記トレーニングをクリアしました！簿記の基礎力がしっかり身についています。`;
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function nextStageOrRetry() {
+            document.getElementById('stageCompleteModal').classList.add('hidden');
+            if (currentStageIndex < STAGES.length - 1) {
+                currentStageIndex++;
+                currentProblemIndex = 0;
+                renderStageNav();
+                loadProblem(currentStageIndex, currentProblemIndex);
+            } else {
+                // Reset to Stage 1
+                currentStageIndex = 0;
+                currentProblemIndex = 0;
+                renderStageNav();
+                loadProblem(0, 0);
+            }
+        }
+
+        // アプリ全体の進捗リセット
+        function resetAppProgress() {
+            if (confirm("これまでの学習進捗と総勘定元帳の記録をリセットしますか？")) {
+                localStorage.removeItem('boki_app_progress');
+                userProgress = { completedProblems: [] };
+                ledgerData = {};
+                currentStageIndex = 0;
+                currentProblemIndex = 0;
+                renderStageNav();
+                loadProblem(0, 0);
+                renderLedger();
+            }
+        }
+    </script>
+</body>
+</html>
