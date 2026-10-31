@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>コンビニ簿記チャレンジ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: '#FDFBF7',
+                        mustard: '#E6A100',
+                        mustardDark: '#C78B00',
+                        storeBlue: '#4A90E2',
+                        storeGreen: '#41B883',
+                        textDark: '#332C27',
+                        panelBorder: '#E8DFD1'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            background-color: #FDFBF7;
+            color: #332C27;
+            font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: popIn 0.15s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between select-none">
+
+    <!-- 1. 極小ヘッダー (高さ約40px) -->
+    <header class="h-10 bg-white border-b border-panelBorder px-3 flex items-center justify-between shrink-0 shadow-sm z-10">
+        <div class="flex items-center gap-2">
+            <span class="bg-mustard text-white text-xs font-black px-1.5 py-0.5 rounded">簿記</span>
+            <h1 class="text-xs font-bold text-textDark">
+                まちかどマート <span id="chapter-title" class="text-[10px] text-gray-400 font-normal ml-1">第1章</span>
+            </h1>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="openModal('rule-modal')" class="text-[11px] bg-blue-50 text-storeBlue hover:bg-blue-100 font-bold px-2 py-1 rounded border border-blue-200 transition">
+                💡 基本ルール
+            </button>
+            <div class="flex items-center gap-1 text-[11px] font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                <span id="progress-text">1/7</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. 中央密接メインエリア（スクロール完全不要） -->
+    <main class="flex-grow flex flex-col justify-center max-w-xl mx-auto w-full px-3 py-1 gap-2">
+
+        <!-- 問題・取引文カード -->
+        <div class="bg-white rounded-xl p-2.5 border-2 border-panelBorder shadow-sm flex flex-col gap-1.5">
+            <div class="flex items-center justify-between">
+                <span id="scenario-name" class="text-[11px] font-bold text-mustardDark">シナリオ1</span>
+                <span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1.5 py-0.5 rounded" id="speaker-badge">👩‍🍳 ミナ</span>
+            </div>
+            <p id="dialogue-text" class="text-xs text-gray-600 italic bg-amber-50/60 p-1.5 rounded border border-amber-100">
+                「商品が売れて、現金10,000円を受け取りました！」
+            </p>
+            <div class="bg-white p-2 rounded-lg border-2 border-mustard/30 text-center">
+                <span class="text-[10px] font-bold text-gray-400 block mb-0.5">【 取引の内容 】</span>
+                <p id="transaction-text" class="text-sm font-bold text-textDark">
+                    商品が売れ、現金10,000円を受け取った。
+                </p>
+            </div>
+        </div>
+
+        <!-- 仕訳入力フォーム（問題のすぐ真下に配置） -->
+        <div class="bg-white rounded-xl p-2.5 border-2 border-panelBorder shadow-md flex flex-col gap-2">
+            
+            <div class="flex items-center justify-between border-b pb-1">
+                <span class="text-xs font-bold text-textDark flex items-center gap-1">
+                    ✏️ 帳簿入力
+                </span>
+                <label class="inline-flex items-center gap-1 cursor-pointer text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-2 py-0.5 rounded transition">
+                    <input type="checkbox" id="no-entry-checkbox" onchange="toggleNoEntry()" class="rounded text-mustard w-3 h-3">
+                    <span>仕訳なし（記入不要）</span>
+                </label>
+            </div>
+
+            <div id="entry-fields" class="grid grid-cols-2 gap-2">
+                <!-- 借方 (左) -->
+                <div class="bg-blue-50/80 border border-blue-200 rounded-lg p-1.5">
+                    <div class="text-[10px] font-bold text-storeBlue mb-1">借方 (左)</div>
+                    <div class="space-y-1">
+                        <select id="debit-subject" class="w-full bg-white border border-gray-300 rounded px-1.5 py-1 text-xs font-bold text-textDark focus:outline-none focus:border-storeBlue">
+                            <option value="">-- 科目 --</option>
+                        </select>
+                        <input type="number" id="debit-amount" placeholder="金額 (円)" class="w-full bg-white border border-gray-300 rounded px-1.5 py-1 text-xs font-bold text-right text-textDark focus:outline-none focus:border-storeBlue">
+                    </div>
+                </div>
+
+                <!-- 貸方 (右) -->
+                <div class="bg-emerald-50/80 border border-emerald-200 rounded-lg p-1.5">
+                    <div class="text-[10px] font-bold text-storeGreen mb-1">貸方 (右)</div>
+                    <div class="space-y-1">
+                        <select id="credit-subject" class="w-full bg-white border border-gray-300 rounded px-1.5 py-1 text-xs font-bold text-textDark focus:outline-none focus:border-storeGreen">
+                            <option value="">-- 科目 --</option>
+                        </select>
+                        <input type="number" id="credit-amount" placeholder="金額 (円)" class="w-full bg-white border border-gray-300 rounded px-1.5 py-1 text-xs font-bold text-right text-textDark focus:outline-none focus:border-storeGreen">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ボタンエリア -->
+            <div class="grid grid-cols-3 gap-1.5 pt-0.5">
+                <button onclick="openHintModal()" class="bg-amber-100 hover:bg-amber-200 text-mustardDark font-bold py-2 rounded-lg text-xs transition border border-amber-300">
+                    🤔 ヒント
+                </button>
+                <button onclick="checkAnswer()" class="col-span-2 bg-mustard hover:bg-mustardDark text-white font-bold py-2 rounded-lg shadow transition text-xs flex items-center justify-center gap-1">
+                    <span>仕訳を確認する</span> ➔
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="text-center py-1 text-[10px] text-gray-400 bg-white border-t border-panelBorder shrink-0">
+        コンビニ簿記チャレンジ - ノンスクロールプロトタイプ
+    </footer>
+
+    <!-- ================= モーダル群 ================= -->
+
+    <!-- ① 基本ルールモーダル -->
+    <div id="rule-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-xl border-2 border-panelBorder animate-pop flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b pb-1.5">
+                <h3 class="font-bold text-xs text-textDark">💡 仕訳の基本ルール</h3>
+                <button onclick="closeModal('rule-modal')" class="text-gray-400 font-bold px-1 text-sm">✕</button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div class="bg-blue-50 border border-blue-200 p-2 rounded-lg">
+                    <div class="font-bold text-storeBlue mb-0.5">借方 (左がわ)</div>
+                    <ul class="text-gray-600 space-y-0.5">
+                        <li>・資産・費用が増えた</li>
+                        <li>・負債・収益が減った</li>
+                    </ul>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 p-2 rounded-lg">
+                    <div class="font-bold text-storeGreen mb-0.5">貸方 (右がわ)</div>
+                    <ul class="text-gray-600 space-y-0.5">
+                        <li>・負債・収益が増えた</li>
+                        <li>・資産・費用が減った</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button onclick="closeModal('rule-modal')" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-1.5 rounded-lg text-xs transition">
+                閉じる
+            </button>
+        </div>
+    </div>
+
+    <!-- ② ヒントモーダル -->
+    <div id="hint-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-xl border-2 border-amber-300 animate-pop flex flex-col gap-3">
+            <div class="flex items-center justify-between border-b pb-1.5">
+                <div class="flex items-center gap-1.5">
+                    <h3 class="font-bold text-xs text-textDark">🤔 段階的ヒント</h3>
+                    <span id="hint-level-badge" class="bg-mustard text-white text-[9px] px-1.5 py-0.2 rounded font-bold">Lv.1</span>
+                </div>
+                <button onclick="closeModal('hint-modal')" class="text-gray-400 font-bold px-1 text-sm">✕</button>
+            </div>
+
+            <div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-textDark leading-relaxed min-h-[60px] flex items-center" id="hint-text">
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="nextHintStep()" class="flex-1 bg-amber-100 hover:bg-amber-200 text-mustardDark font-bold py-1.5 rounded-lg text-xs transition">
+                    次のヒント ➔
+                </button>
+                <button onclick="closeModal('hint-modal')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded-lg text-xs transition">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ③ 結果・解説モーダル -->
+    <div id="result-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-2xl border-4 border-mustard animate-pop flex flex-col gap-3">
+            <div class="flex items-center gap-2 border-b pb-2">
+                <div id="modal-icon" class="text-2xl">🎉</div>
+                <div>
+                    <h3 id="modal-title" class="text-sm font-bold text-textDark">正解！</h3>
+                    <p id="modal-subtitle" class="text-[10px] text-gray-500">帳簿に正しく記録されました</p>
+                </div>
+            </div>
+
+            <div id="modal-body" class="text-xs text-gray-700 leading-relaxed flex flex-col gap-2">
+            </div>
+
+            <div class="flex gap-2 pt-1">
+                <button id="modal-retry-btn" onclick="closeModal('result-modal')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 rounded-lg text-xs transition hidden">
+                    もう一度挑戦
+                </button>
+                <button id="modal-next-btn" onclick="nextScenario()" class="flex-1 bg-mustard hover:bg-mustardDark text-white font-bold py-2 rounded-lg text-xs shadow transition">
+                    次の取引へ ➔
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ④ 7問終了・ミニ決算モーダル -->
+    <div id="summary-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-2xl border-4 border-mustard animate-pop flex flex-col gap-3">
+            <div class="text-center border-b pb-2">
+                <span class="bg-mustard/10 text-mustardDark text-[9px] font-bold px-2 py-0.5 rounded">1周目クリア</span>
+                <h2 class="text-sm font-bold text-textDark mt-0.5">📊 1週間のミニ決算</h2>
+            </div>
+
+            <div class="bg-amber-50 p-2 rounded-lg border border-amber-200 text-[11px] text-textDark">
+                👨‍💼 <strong>佐藤さん:</strong> 「全7問お疲れ様！仕訳が集計されて利益と財産の状況がハッキリ分かったね。」
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div class="bg-orange-50 border border-orange-200 p-2 rounded-lg">
+                    <div class="font-bold text-orange-900 mb-1 border-b pb-0.5">損益 (PL)</div>
+                    <div>売上: 10,000円</div>
+                    <div>給料: 3,000円</div>
+                    <div>仕入: 4,000円</div>
+                    <div class="font-bold text-mustardDark border-t mt-1 pt-0.5">利益: +3,000円</div>
+                </div>
+                <div class="bg-blue-50 border border-blue-200 p-2 rounded-lg">
+                    <div class="font-bold text-blue-900 mb-1 border-b pb-0.5">残高 (BS)</div>
+                    <div>現金: 0円</div>
+                    <div>備品: 5,000円</div>
+                    <div>買掛金: 4,000円</div>
+                    <div class="text-red-600">借入金: 3,000円</div>
+                </div>
+            </div>
+
+            <button onclick="resetGame()" class="w-full bg-mustard hover:bg-mustardDark text-white font-bold py-2 rounded-lg text-xs transition shadow">
+                🎓 最初からプレイする
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript ロジック -->
+    <script>
+        const ACCOUNT_SUBJECTS = [
+            { name: "現金", category: "資産" },
+            { name: "備品", category: "資産" },
+            { name: "売掛金", category: "資産" },
+            { name: "売上", category: "収益" },
+            { name: "給料", category: "費用" },
+            { name: "仕入", category: "費用" },
+            { name: "地代家賃", category: "費用" },
+            { name: "水道光熱費", category: "費用" },
+            { name: "借入金", category: "負債" },
+            { name: "買掛金", category: "負債" },
+            { name: "未払金", category: "負債" }
+        ];
+
+        const SCENARIOS = [
+            {
+                chapter: "第1章：開店初日",
+                name: "第1話：現金販売",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「商品が売れて、現金10,000円を受け取りました！」",
+                transaction: "商品が売れ、現金10,000円を受け取った。",
+                isNoEntry: false,
+                correct: { debit: "現金", debitAmount: 10000, credit: "売上", creditAmount: 10000 },
+                hints: [
+                    "『現金』が増え、『売上』が発生しました。",
+                    "現金は『資産』、売上は『収益』です。",
+                    "資産増加は『借方(左)』、収益発生は『貸方(右)』！"
+                ],
+                explanation: "現金（資産）が増えたので左（借方）に10,000円、売上（収益）が発生したので右（貸方）に10,000円と記録します。"
+            },
+            {
+                chapter: "第1章：開店初日",
+                name: "第2話：給与支払",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「給料3,000円を現金で受け取りました！」",
+                transaction: "従業員に給与3,000円を現金で支払った。",
+                isNoEntry: false,
+                correct: { debit: "給料", debitAmount: 3000, credit: "現金", creditAmount: 3000 },
+                hints: [
+                    "手元の『現金』が減り、『給料』という費用が発生しました。",
+                    "給料は『費用』、現金は『資産』です。",
+                    "費用発生は『借方(左)』、資産減少は『貸方(右)』！"
+                ],
+                explanation: "給料（費用）が増えたので左（借方）に3,000円、現金（資産）が減ったので右（貸方）に3,000円を記録します。"
+            },
+            {
+                chapter: "第1章：開店初日",
+                name: "第3話：家賃支払い",
+                speaker: "👨‍💼 佐藤さん",
+                dialogue: "「今月分の店舗家賃5,000円を現金で支払ったよ。」",
+                transaction: "店舗の家賃5,000円を現金で支払った。",
+                isNoEntry: false,
+                correct: { debit: "地代家賃", debitAmount: 5000, credit: "現金", creditAmount: 5000 },
+                hints: [
+                    "『地代家賃』という費用が発生し、手元の『現金』が減りました。",
+                    "地代家賃は『費用』、現金は『資産』です。",
+                    "費用発生は『借方(左)』、資産減少は『貸方(右)』！"
+                ],
+                explanation: "店舗維持のためにかかった費用（地代家賃）を左（借方）に、払った現金（資産の減少）を右（貸方）に記録します。"
+            },
+            {
+                chapter: "第2章：借入金と設備",
+                name: "第4話：借入返済",
+                speaker: "👨‍💼 佐藤さん",
+                dialogue: "「借入金の元金2,000円を現金で返済したよ。」",
+                transaction: "借入金の元金2,000円を現金で返済した。",
+                isNoEntry: false,
+                correct: { debit: "借入金", debitAmount: 2000, credit: "現金", creditAmount: 2000 },
+                hints: [
+                    "『現金』が減り、返済義務『借入金』も減りました。",
+                    "借入金は『負債』、現金は『資産』です。",
+                    "負債減少は『借方(左)』、資産減少は『貸方(右)』！"
+                ],
+                explanation: "借入金（負債）が減ったので左（借方）に2,000円、現金（資産）が減ったので右（貸方）に2,000円です。費用ではない点に注意！"
+            },
+            {
+                chapter: "第2章：借入金と設備",
+                name: "第5話：現金機材購入",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「レジ機材を現金5,000円で購入しました！」",
+                transaction: "レジ機材を現金5,000円で購入した。",
+                isNoEntry: false,
+                correct: { debit: "備品", debitAmount: 5000, credit: "現金", creditAmount: 5000 },
+                hints: [
+                    "『備品』が増え、手元の『現金』が減りました。",
+                    "備品も現金も『資産』グループです。",
+                    "増えた資産（備品）を『借方』、減った資産（現金）を『貸方』へ！"
+                ],
+                explanation: "備品（資産）が増えたので左（借方）に5,000円、現金（資産）が減ったので右（貸方）に5,000円です。"
+            },
+            {
+                chapter: "第2章：借入金と設備",
+                name: "第6話：借入機材購入",
+                speaker: "👨‍💼 佐藤さん",
+                dialogue: "「機材5,000円を銀行借入金で購入したよ。」",
+                transaction: "機材5,000円を購入し、代金は銀行から借りたお金で支払った。",
+                isNoEntry: false,
+                correct: { debit: "備品", debitAmount: 5000, credit: "借入金", creditAmount: 5000 },
+                hints: [
+                    "『備品』が増え、返済義務『借入金』が増えました。",
+                    "備品は『資産』、借入金は『負債』です。",
+                    "資産増加は『借方』、負債増加は『貸方』！"
+                ],
+                explanation: "備品（資産）が増えたので左（借方）に5,000円、借入金（負債）が増えたので右（貸方）に5,000円です。"
+            },
+            {
+                chapter: "第2章：借入金と設備",
+                name: "第7話：看板の後払い",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「看板(備品)8,000円を設置し、代金は来月払いにしました！」",
+                transaction: "看板（備品）8,000円を設置し、代金は後払い（未払金）とした。",
+                isNoEntry: false,
+                correct: { debit: "備品", debitAmount: 8000, credit: "未払金", creditAmount: 8000 },
+                hints: [
+                    "『備品』が増え、後払い義務『未払金』が増えました。",
+                    "商品以外の後払いは『買掛金』ではなく『未払金』を使います。",
+                    "資産増加は『借方』、負債増加は『貸方』！"
+                ],
+                explanation: "備品（資産）が増えたので左（借方）に、商品以外のツケである未払金（負債）が増えたので右（貸方）に記録します。"
+            },
+            {
+                chapter: "第3章：仕入れと発注",
+                name: "第8話：発注のみ",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「商品を4,000円分発注しました！（未着・未払）」",
+                transaction: "商品4,000円分を発注した。商品はまだ届かず代金も払っていない。",
+                isNoEntry: true,
+                correct: { isNoEntry: true },
+                hints: [
+                    "発注段階では商品も届かず、支払義務も未確定です。",
+                    "権利・義務がまだ移動していません。",
+                    "取引未発生のため『仕訳なし』が正解！"
+                ],
+                explanation: "発注段階ではまだ取引が成立していないため『仕訳なし』となります。"
+            },
+            {
+                chapter: "第3章：仕入れと発注",
+                name: "第9話：見積書の受取",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「防犯カメラ設置の見積書10,000円を受け取りました！」",
+                transaction: "防犯カメラの見積書10,000円を受け取った。",
+                isNoEntry: true,
+                correct: { isNoEntry: true },
+                hints: [
+                    "見積書をもらった段階では、まだ契約もお金の移動も発生していません。",
+                    "見積書・カタログ受取は簿記の取引にはなりません。",
+                    "『仕訳なし』が正解です！"
+                ],
+                explanation: "見積書を受け取っただけでは財産の増減がないため、仕訳は不要（仕訳なし）です。"
+            },
+            {
+                chapter: "第3章：仕入れと発注",
+                name: "第10話：商品到着(掛け仕入)",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「注文品4,000円分が届きました！代金は後払いです。」",
+                transaction: "注文していた商品4,000円分が届いた。代金は後払いにした。",
+                isNoEntry: false,
+                correct: { debit: "仕入", debitAmount: 4000, credit: "買掛金", creditAmount: 4000 },
+                hints: [
+                    "『仕入』という費用が発生し、後払い義務『買掛金』が増えました。",
+                    "仕入は『費用』、買掛金は『負債』です。",
+                    "費用発生は『借方』、負債増加は『貸方』！"
+                ],
+                explanation: "仕入（費用）が増えたので左（借方）に4,000円、買掛金（負債）が増えたので右（貸方）に4,000円です。"
+            },
+            {
+                chapter: "第3章：仕入れと発注",
+                name: "第11話：お弁当のツケ販売",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「イベント用お弁当3,000円分を配達し、代金は後払いにしました！」",
+                transaction: "商品3,000円を販売し、代金は後払い（売掛金）とした。",
+                isNoEntry: false,
+                correct: { debit: "売掛金", debitAmount: 3000, credit: "売上", creditAmount: 3000 },
+                hints: [
+                    "後で代金を受け取る権利『売掛金』が増え、『売上』が発生しました。",
+                    "売掛金は『資産』、売上は『収益』です。",
+                    "資産増加は『借方』、収益発生は『貸方』！"
+                ],
+                explanation: "代金をもらう権利である売掛金（資産）を左（借方）に、売上（収益）を右（貸方）に記録します。"
+            },
+            {
+                chapter: "第3章：仕入れと発注",
+                name: "第12話：買掛金の支払い",
+                speaker: "👨‍💼 佐藤さん",
+                dialogue: "「以前ツケにしていた商品代金（買掛金）4,000円を現金で払ったよ。」",
+                transaction: "買掛金4,000円を現金で支払った。",
+                isNoEntry: false,
+                correct: { debit: "買掛金", debitAmount: 4000, credit: "現金", creditAmount: 4000 },
+                hints: [
+                    "支払義務『買掛金』がなくなり、手元の『現金』が減りました。",
+                    "買掛金は『負債』、現金は『資産』です。",
+                    "負債減少は『借方』、資産減少は『貸方』！"
+                ],
+                explanation: "後払いの義務（買掛金）が減ったので左（借方）に、現金（資産の減少）を右（貸方）に記録します。"
+            },
+            {
+                chapter: "第3章：仕入れと発注",
+                name: "第13話：売掛金の回収",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「先日ツケにしていたお弁当代3,000円を現金で受け取りました！」",
+                transaction: "売掛金3,000円を現金で回収した。",
+                isNoEntry: false,
+                correct: { debit: "現金", debitAmount: 3000, credit: "売掛金", creditAmount: 3000 },
+                hints: [
+                    "『現金』が増え、代金をもらう権利『売掛金』が消滅しました。",
+                    "現金も売掛金も『資産』です。",
+                    "増えた資産(現金)を『借方』、減った資産(売掛金)を『貸方』へ！"
+                ],
+                explanation: "現金（資産）が増えたので左（借方）に、受け取る権利（売掛金）が消えたので右（貸方）に記録します。"
+            },
+            {
+                chapter: "第3章：仕入れと発注",
+                name: "第14話：電気代の支払い",
+                speaker: "👩‍🍳 ミナ",
+                dialogue: "「お店の電気代1,500円を現金で支払いました！」",
+                transaction: "電気代1,500円を現金で支払った。",
+                isNoEntry: false,
+                correct: { debit: "水道光熱費", debitAmount: 1500, credit: "現金", creditAmount: 1500 },
+                hints: [
+                    "『水道光熱費』という費用が発生し、手元の『現金』が減りました。",
+                    "水道光熱費は『費用』、現金は『資産』です。",
+                    "費用発生は『借方』、資産減少は『貸方』！"
+                ],
+                explanation: "電気代などの費用（水道光熱費）を左（借方）に、払った現金（資産の減少）を右（貸方）に記録します。"
+            }
+        ];
+
+        let currentIndex = 0;
+        let currentHintLevel = 0;
+
+        window.onload = function() {
+            populateDropdowns();
+            loadScenario(0);
+        };
+
+        function populateDropdowns() {
+            const debSel = document.getElementById('debit-subject');
+            const creSel = document.getElementById('credit-subject');
+            ACCOUNT_SUBJECTS.forEach(sub => {
+                debSel.add(new Option(`${sub.name} (${sub.category})`, sub.name));
+                creSel.add(new Option(`${sub.name} (${sub.category})`, sub.name));
+            });
+        }
+
+        function loadScenario(index) {
+            if (index >= SCENARIOS.length) {
+                openModal('summary-modal');
+                return;
+            }
+
+            const sc = SCENARIOS[index];
+            currentIndex = index;
+            currentHintLevel = 0;
+
+            document.getElementById('chapter-title').textContent = sc.chapter;
+            document.getElementById('progress-text').textContent = `${index + 1}/${SCENARIOS.length}`;
+            document.getElementById('speaker-badge').textContent = sc.speaker;
+            document.getElementById('dialogue-text').textContent = sc.dialogue;
+            document.getElementById('scenario-name').textContent = sc.name;
+            document.getElementById('transaction-text').textContent = sc.transaction;
+
+            document.getElementById('no-entry-checkbox').checked = false;
+            toggleNoEntry();
+
+            document.getElementById('debit-subject').value = "";
+            document.getElementById('debit-amount').value = "";
+            document.getElementById('credit-subject').value = "";
+            document.getElementById('credit-amount').value = "";
+        }
+
+        function toggleNoEntry() {
+            const isChecked = document.getElementById('no-entry-checkbox').checked;
+            const fields = document.getElementById('entry-fields');
+            if (isChecked) {
+                fields.classList.add('opacity-30', 'pointer-events-none');
+            } else {
+                fields.classList.remove('opacity-30', 'pointer-events-none');
+            }
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function openHintModal() {
+            updateHintText();
+            openModal('hint-modal');
+        }
+
+        function updateHintText() {
+            const sc = SCENARIOS[currentIndex];
+            document.getElementById('hint-text').textContent = sc.hints[currentHintLevel];
+            document.getElementById('hint-level-badge').textContent = `Lv.${currentHintLevel + 1}`;
+        }
+
+        function nextHintStep() {
+            const sc = SCENARIOS[currentIndex];
+            currentHintLevel = (currentHintLevel + 1) % sc.hints.length;
+            updateHintText();
+        }
+
+        function checkAnswer() {
+            const sc = SCENARIOS[currentIndex];
+            const isNoEntryChecked = document.getElementById('no-entry-checkbox').checked;
+
+            const icon = document.getElementById('modal-icon');
+            const title = document.getElementById('modal-title');
+            const subtitle = document.getElementById('modal-subtitle');
+            const body = document.getElementById('modal-body');
+            const retryBtn = document.getElementById('modal-retry-btn');
+            const nextBtn = document.getElementById('modal-next-btn');
+
+            let isCorrect = false;
+
+            if (sc.isNoEntry) {
+                if (isNoEntryChecked) isCorrect = true;
+            } else {
+                if (!isNoEntryChecked) {
+                    const debSub = document.getElementById('debit-subject').value;
+                    const debAmt = parseInt(document.getElementById('debit-amount').value) || 0;
+                    const creSub = document.getElementById('credit-subject').value;
+                    const creAmt = parseInt(document.getElementById('credit-amount').value) || 0;
+
+                    if (debSub === sc.correct.debit && creSub === sc.correct.credit && debAmt === sc.correct.debitAmount && creAmt === sc.correct.creditAmount) {
+                        isCorrect = true;
+                    }
+                }
+            }
+
+            openModal('result-modal');
+
+            if (isCorrect) {
+                icon.textContent = "🎉";
+                title.textContent = "正解です！";
+                subtitle.textContent = "帳簿に正しく記録されました";
+                body.innerHTML = `
+                    <div class="bg-emerald-50 border border-emerald-200 p-2 rounded-lg font-bold text-[11px] text-emerald-900">
+                        ${sc.isNoEntry ? '【正解】 仕訳なし' : `借方: ${sc.correct.debit} ${sc.correct.debitAmount.toLocaleString()}円 / 貸方: ${sc.correct.credit} ${sc.correct.creditAmount.toLocaleString()}円`}
+                    </div>
+                    <p class="text-[11px] leading-relaxed text-gray-700">${sc.explanation}</p>
+                `;
+                retryBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+            } else {
+                icon.textContent = "🤔";
+                title.textContent = "もう一度考えてみよう";
+                subtitle.textContent = "どこかが違っているようです";
+                body.innerHTML = `
+                    <p class="text-[11px] leading-relaxed text-amber-900 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                        科目選択・金額・左右の位置を再確認しましょう。「ヒント」ボタンから解き方の順番もチェックできます。
+                    </p>
+                `;
+                retryBtn.classList.remove('hidden');
+                nextBtn.classList.add('hidden');
+            }
+        }
+
+        function nextScenario() {
+            closeModal('result-modal');
+            loadScenario(currentIndex + 1);
+        }
+
+        function resetGame() {
+            closeModal('summary-modal');
+            loadScenario(0);
+        }
+    </script>
+</body>
+</html>
