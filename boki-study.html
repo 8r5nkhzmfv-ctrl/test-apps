@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簿記初心者向け学習図解</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+        /* A4 印刷・表示用コンテナ */
+        .a4-container {
+            width: 100%;
+            max-width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: #ffffff;
+            box-sizing: border-box;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        /* クリック可能な専門用語のスタイル */
+        .term-clickable {
+            cursor: pointer;
+            border-bottom: 2px dashed #0284c7;
+            color: #0369a1;
+            font-weight: 700;
+            padding: 0 2px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .term-clickable:hover {
+            background-color: #e0f2fe;
+            border-radius: 4px;
+        }
+        .term-clickable::after {
+            content: '💬';
+            font-size: 0.75em;
+            opacity: 0.8;
+        }
+        @media print {
+            body {
+                background: none;
+                padding: 0;
+            }
+            .a4-container {
+                box-shadow: none;
+                width: 100%;
+                max-width: none;
+                padding: 10mm !important;
+            }
+            .term-clickable {
+                border-bottom: none;
+                color: inherit;
+            }
+            .term-clickable::after {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body class="py-6 px-2 sm:px-4">
+
+    <div class="a4-container p-4 sm:p-8 rounded-lg flex flex-col justify-between space-y-4">
+        
+        <!-- ヘッダー -->
+        <div>
+            <div class="text-center border-b-2 border-slate-700 pb-3 mb-3">
+                <span class="text-xs font-bold text-slate-500 tracking-widest uppercase">Bookkeeping Beginner Interactive Guide</span>
+                <h1 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight mt-0.5">簿記初心者向け 学習図解チャート</h1>
+                <p class="text-xs text-slate-500 mt-1">下線付きの<span class="term-clickable" onclick="openModal('専門用語解説', '点線下線がついた青い単語をタップすると、初心者向けの詳細な意味や解説をいつでも確認できます！')">専門用語</span>をタップすると、詳しい解説が見られます。</p>
+            </div>
+
+            <!-- 最上部：借方・貸方の基本方位 -->
+            <div class="grid grid-cols-2 gap-3 mb-4 text-center font-black text-base sm:text-lg">
+                <div class="bg-blue-50 border-2 border-blue-600 text-blue-900 py-2 rounded-md shadow-sm">
+                    <span class="term-clickable" onclick="openModal('借方（かりかた）', '【左側】のこと。『借りた』という意味ではなく、単に「左側のポジション」を表す名前です。資産や費用の増加を記録します。')">借方</span>（かりかた） ＝ 左側 👈
+                </div>
+                <div class="bg-orange-50 border-2 border-orange-600 text-orange-900 py-2 rounded-md shadow-sm">
+                    👉 <span class="term-clickable" onclick="openModal('貸方（かしかた）', '【右側】のこと。『貸した』という意味ではなく、単に「右側のポジション」を表す名前です。負債・純資産・収益の増加を記録します。')">貸方</span>（かしかた） ＝ 右側
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. 5つの勘定科目 -->
+        <div>
+            <h2 class="text-sm font-bold text-slate-700 border-l-4 border-teal-600 pl-2 mb-2 flex items-center justify-between">
+                <span>1. 5つの<span class="term-clickable" onclick="openModal('勘定科目（かんじょうかもく）', '簿記で取引を記録するときに使う「分類の見出し（タイトル）」のことです。例えば、現金、売上、地代家賃などの名前を指します。')">勘定科目</span>（要素）</span>
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                <!-- 資産 -->
+                <div class="bg-slate-50 border border-blue-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div>
+                        <div class="bg-blue-700 text-white font-bold text-center text-sm py-0.5 rounded mb-1.5">資産</div>
+                        <p class="text-xs text-slate-700 leading-tight mb-2">持っている財産、または将来お金を受け取る権利</p>
+                    </div>
+                    <div class="text-[11px] bg-white border border-blue-100 p-1.5 rounded text-slate-600">
+                        <span class="font-bold text-blue-800">例:</span> 現金、預金、商品、備品、<span class="term-clickable" onclick="openModal('売掛金（うりかけきん）', '【資産】商品を売ったが、代金は後で受け取る約束になっている場合の「後でお金をもらう権利」のことです。')">売掛金</span>
+                    </div>
+                </div>
+
+                <!-- 負債 -->
+                <div class="bg-slate-50 border border-orange-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div>
+                        <div class="bg-orange-700 text-white font-bold text-center text-sm py-0.5 rounded mb-1.5">負債</div>
+                        <p class="text-xs text-slate-700 leading-tight mb-2">将来お金を支払う義務</p>
+                    </div>
+                    <div class="text-[11px] bg-white border border-orange-100 p-1.5 rounded text-slate-600">
+                        <span class="font-bold text-orange-800">例:</span> 借入金、<span class="term-clickable" onclick="openModal('未払金（みばらいきん）', '【負債】商品以外のサービスや物（家賃や備品など）を購入し、まだ代金を払っていない場合の「後でお金を払う義務」のことです。')">未払金</span>、<span class="term-clickable" onclick="openModal('買掛金（かいかけきん）', '【負債】商品を仕入れたが、代金は後で支払う約束になっている場合の「後でお金を払う義務」のことです。')">買掛金</span>
+                    </div>
+                </div>
+
+                <!-- 純資産 -->
+                <div class="bg-slate-50 border border-emerald-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div>
+                        <div class="bg-emerald-700 text-white font-bold text-center text-sm py-0.5 rounded mb-1.5">純資産</div>
+                        <p class="text-xs text-slate-700 leading-tight mb-1">資産から負債を引いた正味の財産</p>
+                        <div class="text-[10px] bg-emerald-100 text-emerald-900 font-bold px-1 py-0.5 rounded text-center mb-2">
+                            純資産 ＝ 資産 − 負債
+                        </div>
+                    </div>
+                    <div class="text-[11px] bg-white border border-emerald-100 p-1.5 rounded text-slate-600">
+                        <span class="font-bold text-emerald-800">例:</span> 資本金、<span class="term-clickable" onclick="openModal('元入金（もといれきん）', '【純資産】個人事業主が事業を始めるために出資した元手資金のことです。（会社の場合は「資本金」にあたります）')">元入金</span>
+                    </div>
+                </div>
+
+                <!-- 収益 -->
+                <div class="bg-slate-50 border border-purple-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div>
+                        <div class="bg-purple-700 text-white font-bold text-center text-sm py-0.5 rounded mb-1.5">収益</div>
+                        <p class="text-xs text-slate-700 leading-tight mb-2">一定期間に得た、利益のもと</p>
+                    </div>
+                    <div class="text-[11px] bg-white border border-purple-100 p-1.5 rounded text-slate-600">
+                        <span class="font-bold text-purple-800">例:</span> 売上、受取利息
+                    </div>
+                </div>
+
+                <!-- 費用 -->
+                <div class="bg-slate-50 border border-red-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div>
+                        <div class="bg-red-700 text-white font-bold text-center text-sm py-0.5 rounded mb-1.5">費用</div>
+                        <p class="text-xs text-slate-700 leading-tight mb-2">収益を得るために使ったもの</p>
+                    </div>
+                    <div class="text-[11px] bg-white border border-red-100 p-1.5 rounded text-slate-600">
+                        <span class="font-bold text-red-800">例:</span> 仕入、家賃、交通費
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 借方・貸方の増減ルール & 増減一覧表 -->
+        <div>
+            <h2 class="text-sm font-bold text-slate-700 border-l-4 border-teal-600 pl-2 mb-2">
+                2. 借方・貸方の増減ルール
+            </h2>
+            <div class="grid grid-cols-2 gap-3 mb-2.5">
+                <div class="border-2 border-blue-500 rounded-lg overflow-hidden">
+                    <div class="bg-blue-600 text-white text-center font-bold text-xs sm:text-sm py-1">
+                        <span class="term-clickable text-white border-white" onclick="openModal('借方（左）で増える', '資産や費用が増加したときは、必ず「借方（左側）」に金額を記入します。')">借方（左）で増える</span>ポジション
+                    </div>
+                    <div class="bg-blue-50/50 p-2 text-center">
+                        <span class="text-base sm:text-lg font-black text-blue-900 tracking-wide">資産 ・ 費用</span>
+                    </div>
+                </div>
+
+                <div class="border-2 border-orange-500 rounded-lg overflow-hidden">
+                    <div class="bg-orange-600 text-white text-center font-bold text-xs sm:text-sm py-1">
+                        <span class="term-clickable text-white border-white" onclick="openModal('貸方（右）で増える', '負債・純資産・収益が増加したときは、必ず「貸方（右側）」に金額を記入します。')">貸方（右）で増える</span>ポジション
+                    </div>
+                    <div class="bg-orange-50/50 p-2 text-center">
+                        <span class="text-base sm:text-lg font-black text-orange-900 tracking-wide">負債 ・ 純資産 ・ 収益</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 追加：5分類の増減一覧表 -->
+            <div class="overflow-x-auto mb-2">
+                <table class="w-full text-xs text-center border-collapse border border-slate-300 bg-white rounded-lg overflow-hidden">
+                    <thead>
+                        <tr class="bg-slate-200 text-slate-800 font-bold border-b border-slate-300">
+                            <th class="py-1.5 px-2 border-r border-slate-300 w-1/3">分類</th>
+                            <th class="py-1.5 px-2 border-r border-slate-300 text-blue-800 bg-blue-50/50 w-1/3">増えたとき（ホームポジション）</th>
+                            <th class="py-1.5 px-2 text-orange-800 bg-orange-50/50 w-1/3">減ったとき（反対側）</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 text-slate-700">
+                        <tr>
+                            <td class="py-1 px-2 font-bold bg-slate-50 border-r border-slate-300">資産</td>
+                            <td class="py-1 px-2 font-bold text-blue-700 bg-blue-50/20 border-r border-slate-300">借方（左）</td>
+                            <td class="py-1 px-2 text-slate-600">貸方（右）</td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 px-2 font-bold bg-slate-50 border-r border-slate-300">負債</td>
+                            <td class="py-1 px-2 font-bold text-orange-700 bg-orange-50/20 border-r border-slate-300">貸方（右）</td>
+                            <td class="py-1 px-2 text-slate-600">借方（左）</td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 px-2 font-bold bg-slate-50 border-r border-slate-300">純資産</td>
+                            <td class="py-1 px-2 font-bold text-orange-700 bg-orange-50/20 border-r border-slate-300">貸方（右）</td>
+                            <td class="py-1 px-2 text-slate-600">借方（左）</td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 px-2 font-bold bg-slate-50 border-r border-slate-300">収益</td>
+                            <td class="py-1 px-2 font-bold text-orange-700 bg-orange-50/20 border-r border-slate-300">貸方（右）</td>
+                            <td class="py-1 px-2 text-slate-600">借方（左）</td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 px-2 font-bold bg-slate-50 border-r border-slate-300">費用</td>
+                            <td class="py-1 px-2 font-bold text-blue-700 bg-blue-50/20 border-r border-slate-300">借方（左）</td>
+                            <td class="py-1 px-2 text-slate-600">貸方（右）</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <p class="text-[11px] text-slate-500 text-center">
+                ※減るときは、それぞれ反対側に記録します。<br>
+                <span class="italic">「借方・貸方は左右の名前であり、『借りた』『貸した』という意味で覚える必要はありません」</span>
+            </p>
+
+            <div class="mt-1.5 bg-amber-50 border border-amber-300 rounded-md p-1.5 text-center text-xs sm:text-sm font-bold text-amber-900 shadow-sm">
+                💡 覚え方： 「資産・費用は借方（左）で増える。 負債・純資産・収益は貸方（右）で増える。」
+            </div>
+        </div>
+
+        <!-- 3. 簿記の基本式 -->
+        <div>
+            <h2 class="text-sm font-bold text-slate-700 border-l-4 border-teal-600 pl-2 mb-2">
+                3. 簿記の基本式
+            </h2>
+            <div class="bg-emerald-50 border border-emerald-300 rounded-lg p-2.5 text-center">
+                <div class="text-lg sm:text-xl font-black text-emerald-900 tracking-wider">
+                    資産 ＝ 負債 ＋ 純資産
+                </div>
+                <div class="text-xs text-emerald-800 font-medium mt-0.5">
+                    「資産は左側、負債と純資産は右側」
+                </div>
+                <div class="text-[11px] text-emerald-700 border-t border-emerald-200 mt-1 pt-1">
+                    収益は利益を通じて純資産を増やし、費用は利益を減らします。
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 具体例 -->
+        <div>
+            <h2 class="text-sm font-bold text-slate-700 border-l-4 border-teal-600 pl-2 mb-2">
+                4. 具体的な<span class="term-clickable" onclick="openModal('仕訳（しわけ）', '取引を「借方（左）」と「貸方（右）」に分類して、どの勘定科目がいくら増減したかを正確に記録する作業のことです。')">仕訳</span>の例
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <!-- 例1 -->
+                <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 flex flex-col justify-between">
+                    <div>
+                        <div class="font-bold text-xs text-teal-800 border-b pb-1 mb-1">具体例1：掛けで商品を売る</div>
+                        <p class="text-[11px] text-slate-600 leading-tight mb-2">
+                            商品を10,000円で<span class="term-clickable" onclick="openModal('掛け（かけ）売り', '後日代金を受け取る取引方法のこと。「ツケ」で販売するイメージです。後でお金をもらう権利（売掛金）が発生します。')">掛け</span>売りした。<br>
+                            <span class="text-[10px] text-slate-500">※売掛金は「後でお金を受け取る権利（資産）」。売上は収益。</span>
+                        </p>
+                    </div>
+                    <div class="bg-white border border-slate-300 rounded p-1.5 text-xs text-center font-mono font-bold">
+                        （借）売掛金 10,000 / （貸）売　上 10,000
+                    </div>
+                </div>
+
+                <!-- 例2 -->
+                <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 flex flex-col justify-between">
+                    <div>
+                        <div class="font-bold text-xs text-teal-800 border-b pb-1 mb-1">具体例2：家賃を後払いにする</div>
+                        <p class="text-[11px] text-slate-600 leading-tight mb-2">
+                            家賃50,000円を後払いにした。<br>
+                            <span class="text-[10px] text-slate-500">※家賃は費用。未払金は「後でお金を支払う義務（負債）」。</span>
+                        </p>
+                    </div>
+                    <div class="bg-white border border-slate-300 rounded p-1.5 text-xs text-center font-mono font-bold">
+                        （借）地代家賃 50,000 / （貸）未払金 50,000
+                    </div>
+                </div>
+
+                <!-- 例3 -->
+                <div class="border border-slate-200 rounded-lg p-2.5 bg-slate-50/50 flex flex-col justify-between">
+                    <div>
+                        <div class="font-bold text-xs text-teal-800 border-b pb-1 mb-1">具体例3：未払い家賃を支払う</div>
+                        <p class="text-[11px] text-slate-600 leading-tight mb-2">
+                            未払いだった家賃50,000円を現金で支払った。<br>
+                            <span class="text-[10px] text-slate-500">※負債（未払金）が減少して左側に。現金（資産）も減少して右側に。費用は計上済みのため再度計上しない。</span>
+                        </p>
+                    </div>
+                    <div class="bg-white border border-slate-300 rounded p-1.5 text-xs text-center font-mono font-bold">
+                        （借）未払金 50,000 / （貸）現　金 50,000
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 特に重要な注意 -->
+        <div class="bg-rose-50 border border-rose-200 rounded-lg p-2 text-xs text-rose-900 leading-relaxed">
+            <span class="font-bold text-rose-700">【特に重要な注意】</span><br>
+            借方に記録されると負債は減り、費用も貸方に記録されると減ります。ただし、これらは別々の勘定科目の増減であり、必ず同時に起こるわけではありません。
+        </div>
+
+        <!-- フッター -->
+        <div class="border-t border-slate-200 pt-1.5 text-center text-[10px] text-slate-400">
+            簿記学習シート — 借方（左）/ 貸方（右）の基本ルール
+        </div>
+
+    </div>
+
+    <!-- 用語解説モーダルポップアップ -->
+    <div id="termModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50 transition-opacity duration-200" onclick="closeModal()">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-5 border border-slate-100 transform transition-transform duration-200 scale-95" id="modalCard" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-start mb-3 border-b border-slate-100 pb-2">
+                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-1.5" id="modalTitle">
+                    <span class="text-blue-600">💡</span> 用語解説
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold leading-none p-1">
+                    &times;
+                </button>
+            </div>
+            <p class="text-sm text-slate-600 leading-relaxed mb-4" id="modalBody">
+                ここに説明が表示されます。
+            </p>
+            <div class="text-right">
+                <button onclick="closeModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-colors">
+                    とじる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(title, text) {
+            const modal = document.getElementById('termModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            
+            modalTitle.innerHTML = `<span class="text-blue-600">💡</span> ${title}`;
+            modalBody.innerText = text;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('termModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // ESCキーでモーダルを閉じる
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
