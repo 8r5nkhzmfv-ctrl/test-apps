@@ -33,6 +33,7 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(226, 232, 240, 0.8);
         }
+        #ai-modal.hidden{display:none !important}
         /* ===== 出題画面(全画面) ===== */
         .qs{position:fixed;inset:0;z-index:100;background:#f1f5f9;display:flex;flex-direction:column;height:100vh;height:100dvh;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);font-family:'Inter','Noto Sans JP',sans-serif;color:#0f172a}
         .qs.hidden{display:none}
@@ -431,7 +432,7 @@
     </main>
 
     <!-- AI PROMPT MODAL -->
-    <div id="ai-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div id="ai-modal" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:300" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
             <div class="p-5 bg-gradient-to-r from-purple-700 to-indigo-700 text-white flex justify-between items-center">
                 <div class="flex items-center gap-2">
@@ -684,7 +685,11 @@
         }
 
         function isValidEvent(e) {
-            return e && typeof e === 'object' && typeof e.i === 'string' && e.i.length > 0 && typeof e.k === 'string' && typeof e.t === 'number' && isFinite(e.t);
+            if (!e || typeof e !== 'object' || typeof e.i !== 'string' || e.i.length === 0 || e.i.length > 64) return false;
+            if (['a', 'w', 'm', 'sc', 'mk'].indexOf(e.k) < 0) return false;
+            if (typeof e.t !== 'number' || !isFinite(e.t) || e.t < 1.4e12 || e.t > 4.1e12) return false;
+            try { if (JSON.stringify(e).length > 1500) return false; } catch (x) { return false; }
+            return true;
         }
 
         // 既に持つIDは追加しない(冪等)。追加した件数を返す
@@ -853,6 +858,10 @@
 
         // ---- 書込 ----
         function writeRecentMirror() {
+            try { // 他のタブが書いた分を失わないよう、書込み前に取り込む
+                const raw = localStorage.getItem(QP.LS_EVENTS);
+                if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) addEventsInternal(arr); }
+            } catch (e) { /* 壊れていても上書きで復旧 */ }
             try {
                 localStorage.setItem(QP.LS_EVENTS, JSON.stringify(store.events.slice(-QP.LS_RECENT_MAX)));
                 store.status.ls = 'ok';
@@ -875,6 +884,7 @@
 
         function appendEvent(ev) {
             ev.i = ev.i || newEventId(ev.t);
+            if (!ev.d) ev.d = localDateStr(ev.t);
             addEventsInternal([ev]);
             writeRecentMirror();
             if (store.idb) {
@@ -927,22 +937,22 @@
             const days = new Set();
             const mins = new Map();
             const addMin = (t, ex, v) => {
-                const ds = localDateStr(t);
+                const ds = typeof t === 'string' ? t : localDateStr(t);
                 let r = mins.get(ds);
                 if (!r) { r = { fe: 0, toeic: 0, boki: 0, hisho: 0 }; mins.set(ds, r); }
                 if (ex in r && v > 0) r[ex] += v;
             };
             for (const e of store.events) {
                 if (e.k === 'a') {
-                    addMin(e.t, e.e, Math.min(e.ms == null ? 60000 : e.ms, String(e.q || '').startsWith('feB') ? 300000 : 180000) / 60000);
+                    addMin(e.d || e.t, e.e, Math.min(e.ms == null ? (String(e.i).indexOf('v1-') === 0 ? 0 : 60000) : e.ms, String(e.q || '').startsWith('feB') ? 300000 : 180000) / 60000);
                     if (e.o) weak.delete(e.q); else weak.add(e.q);
                     logs.push({ id: e.i, examId: e.e, questionId: e.q, isCorrect: !!e.o, t: e.t, mode: e.m });
-                    days.add(localDateStr(e.t));
+                    days.add(e.d || localDateStr(e.t));
                 } else if (e.k === 'w') {
                     if (e.q) weak.delete(e.q); else weak.clear();
                 } else if (e.k === 'm') {
-                    days.add(localDateStr(e.t));
-                    addMin(e.t, e.e, Math.min(+e.min || 0, 240));
+                    days.add(e.d || localDateStr(e.t));
+                    addMin(e.d || e.t, e.e, Math.min(+e.min || 0, 240));
                 }
             }
             logs.reverse();
@@ -1102,6 +1112,10 @@
         }
 
         function markBackupDone() {
+            if (store.status.idb !== 'ok' && store.events.length >= QP.LS_RECENT_MAX) {
+                showToast('端末内DBが使えず、このバックアップは直近' + QP.LS_RECENT_MAX + '件のみの可能性があります。「済」にしません。ページを再読込して再度お試しください。', true);
+                return;
+            }
             store.settings.lastBackupAt = Date.now();
             store.settings.lastBackupN = store.events.length;
             saveSettings();
@@ -1159,10 +1173,20 @@
             try { body = JSON.parse(text); } catch (e) { throw new Error('JSONとして読めません。ファイルが壊れているか、別のファイルです。'); }
             if (!body || body.format !== 'quadpass-backup' || !Array.isArray(body.events)) throw new Error('QuadPassのバックアップ形式ではありません。');
             if (body.schema > 2) throw new Error('新しい形式のバックアップです。アプリを更新してから取り込んでください。');
+            body._warn = '';
             if (body.hash) {
-                const h = await sha256Hex(JSON.stringify(body.events));
-                if (h !== body.hash) throw new Error('ファイルが改変または破損しています(整合性チェック不一致)。取込を中止しました。');
-            }
+                const text = JSON.stringify(body.events);
+                if (String(body.hash).indexOf('fnv:') === 0) {
+                    let x = 2166136261;
+                    for (let i = 0; i < text.length; i++) { x ^= text.charCodeAt(i); x = Math.imul(x, 16777619); }
+                    if ('fnv:' + (x >>> 0).toString(16) !== body.hash) throw new Error('ファイルが改変または破損しています(整合性チェック不一致)。取込を中止しました。');
+                    body._warn = '簡易ハッシュ(fnv)のため、改ざん検出は弱めです。';
+                } else {
+                    const hh = await sha256Hex(text);
+                    if (hh.indexOf('sha256:') !== 0) body._warn = 'この環境では整合性を検証できませんでした(件数と内容を確認してください)。';
+                    else if (hh !== body.hash) throw new Error('ファイルが改変または破損しています(整合性チェック不一致)。取込を中止しました。');
+                }
+            } else body._warn = '整合性情報(ハッシュ)のないファイルです。内容を確認してください。';
             return body;
         }
 
@@ -1170,13 +1194,16 @@
             const out = document.getElementById('import-preview');
             try {
                 const body = await parseBackupText(text);
-                const valid = body.events.filter(isValidEvent);
+                const lim = Date.now() + 172800000;
+                const valid = body.events.filter(e => isValidEvent(e) && e.t <= lim);
                 const fresh = valid.filter(e => !store.byId.has(e.i));
                 _pendingImport = { body, fresh };
                 out.className = 'text-xs rounded-xl p-3 border bg-slate-50 border-slate-200 space-y-2';
                 out.innerHTML = `<div>ファイル内: <b>${valid.length}</b> 件(出力日時 ${esc(body.exportedAt || '不明')})</div>
                     <div>新しく追加される記録: <b class="text-emerald-700">${fresh.length}</b> 件 / 既にある記録(重複): ${valid.length - fresh.length} 件</div>
                     <div class="text-slate-500">取込は「追加のみ」です。今ある記録は消えません。</div>
+                    ${body._warn ? `<div class="text-amber-700 font-bold">${esc(body._warn)}</div>` : ''}
+                    ${body.events.length - valid.length > 0 ? `<div class="text-amber-700">形式が不正、または未来日付のため除外: ${body.events.length - valid.length} 件</div>` : ''}
                     <button onclick="applyImport()" class="bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-lg" ${fresh.length === 0 ? 'disabled style="opacity:.4"' : ''}>この内容を取り込む</button>`;
             } catch (e) {
                 _pendingImport = null;
@@ -1191,8 +1218,9 @@
             _pendingImport = null;
             const added = addEventsInternal(fresh);
             writeRecentMirror();
+            let idbFail = !store.idb;
             if (store.idb) {
-                try { await idbDo('events', 'readwrite', os => { fresh.forEach(e => os.put(e)); }); } catch (e) { store.status.idb = 'error'; noteError(e); }
+                try { await idbDo('events', 'readwrite', os => { fresh.forEach(e => os.put(e)); }); } catch (e) { idbFail = true; store.status.idb = 'error'; noteError(e); }
             }
             if (body.settings && (body.settings.updatedAt || 0) > (store.settings.updatedAt || 0)) {
                 const keep = { lastBackupAt: store.settings.lastBackupAt, lastBackupN: store.settings.lastBackupN };
@@ -1202,7 +1230,9 @@
             recompute();
             updateHeaderAndAnalytics();
             renderProgressCards();
-            showToast(`${added} 件を取り込みました。`);
+            if (idbFail && store.events.length > QP.LS_RECENT_MAX) showToast(`${added} 件を取り込みましたが、端末内DBへの保存に失敗しました。古い記録が再読込で消える恐れがあります。今すぐバックアップを書き出してください。`, true);
+            else showToast(`${added} 件を取り込みました。`);
+            updateStorageBadge();
             renderDataTab();
         }
 
@@ -1231,7 +1261,10 @@
                 const fresh = (data.events || []).filter(e => isValidEvent(e) && !store.byId.has(e.i));
                 const added = addEventsInternal(fresh);
                 writeRecentMirror();
-                if (added && store.idb) await idbDo('events', 'readwrite', os => { fresh.forEach(e => os.put(e)); });
+                if (added && store.idb) {
+                    try { await idbDo('events', 'readwrite', os => { fresh.forEach(e => os.put(e)); }); }
+                    catch (e) { store.status.idb = 'error'; noteError(e); showToast('端末内DBへの保存に失敗しました。今すぐバックアップを書き出してください。', true); }
+                }
                 recompute(); updateHeaderAndAnalytics(); renderProgressCards();
                 showToast(`${day} のスナップショットから ${added} 件を復元しました。`);
                 renderDataTab();
@@ -1719,7 +1752,31 @@
                 if (!s) { localStorage.removeItem(SESSION_KEY); return; }
                 const out = Object.assign({}, s, { activeMs: sessionActiveMs() });
                 localStorage.setItem(SESSION_KEY, JSON.stringify(out));
-            } catch (e) { /* 保存できなくても出題は続行 */ }
+                state.sessionSaveFailed = false;
+            } catch (e) {
+                if (!state.sessionSaveFailed) { state.sessionSaveFailed = true; showToast('途中経過を保存できません(容量不足の可能性)。中断すると続きから再開できない場合があります。', true); }
+            }
+        }
+        // 再開時に、記録済みの解答(イベント)と照合して二重解答・二重記録を防ぐ
+        function reconcileSession(s) {
+            const last = {};
+            store.events.forEach(e => { if (e.k === 'a' && e.t >= (s.startedAt || 0)) last[e.q] = e; });
+            s.done = s.done || {};
+            s.ids.forEach((id, i) => { if (!s.done[i] && last[id]) s.done[i] = [typeof last[id].s === 'number' ? last[id].s : -1, last[id].o ? 1 : 0, last[id].i]; });
+            if (s.kind === 'mock') {
+                const bank = getBankMap(); s.correct = 0; s.wrong = []; s.cats = {};
+                Object.keys(s.done).forEach(i => {
+                    const q = bank.get(s.ids[i]); if (!q) return;
+                    s.cats[q.category] = s.cats[q.category] || { c: 0, n: 0 }; s.cats[q.category].n++;
+                    if (s.done[i][1]) { s.correct++; s.cats[q.category].c++; } else s.wrong.push(q.id);
+                });
+                if (store.events.some(e => e.k === 'mk' && e.kind === s.mockKind && e.t >= (s.startedAt || 0))) s.recorded = true;
+            }
+            const savedIdx = s.idx || 0;
+            let ni = -1;
+            for (let i = 0; i < s.ids.length; i++) { if (!s.done[i]) { ni = i; break; } }
+            if (ni < 0) s.idx = s.ids.length - 1;
+            else s.idx = (ni > 0 && ni - 1 >= savedIdx) ? ni - 1 : ni; // 解答直後に中断した場合は、解答済み画面(解説ボタンあり)から再開
         }
         function loadSession() {
             try {
@@ -1737,6 +1794,7 @@
                 if (ni < 0) return; // 最後まで進んだセッションは復元しない
                 s.ids = keep; s.done = done; s.idx = ni;
                 s.sel = null;
+                reconcileSession(s);
                 state.session = s;
             } catch (e) { /* 壊れていれば無視 */ }
         }
@@ -2474,18 +2532,18 @@ ${itemsText}
 
         function copyAIPrompt() {
             const textarea = document.getElementById('ai-prompt-textarea');
-            textarea.select();
-            document.execCommand('copy');
-
-            const btn = document.getElementById('copy-prompt-btn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = `<i class="fa-solid fa-check"></i> コピー完了！`;
-            btn.classList.replace('bg-purple-600', 'bg-emerald-600');
-
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.classList.replace('bg-emerald-600', 'bg-purple-600');
-            }, 2000);
+            const done = ok => {
+                const btn = document.getElementById('copy-prompt-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = ok ? `<i class="fa-solid fa-check"></i> コピー完了！` : '長押しで全選択してコピーしてください';
+                setTimeout(() => { btn.innerHTML = originalText; }, 2500);
+            };
+            const legacy = () => {
+                try { textarea.focus(); textarea.select(); textarea.setSelectionRange(0, textarea.value.length); return document.execCommand('copy'); } catch (e) { return false; }
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textarea.value).then(() => done(true), () => done(legacy()));
+            } else done(legacy());
         }
 
         // --- 7. HISTORY ANALYTICS & LOGS VIEW ---
