@@ -1557,7 +1557,7 @@
             if (it.exam === 'toeic' && !hasQ('toeic')) {
                 b += `<span class="text-[10px] text-blue-200">アプリ内のTOEIC問題は準備中。外部教材で学習し、下のボタンで時間を記録</span>`;
             } else {
-                b += `<button onclick="startQuizForExam('${it.exam}')" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold text-xs px-3 py-1.5 rounded-lg shadow">解く</button>`;
+                b += `<button onclick="startQuizForExam('${it.exam}',${it.minutes})" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold text-xs px-3 py-1.5 rounded-lg shadow">解く</button>`;
             }
             return b;
         }
@@ -1610,7 +1610,7 @@
                 });
                 const hasMix = s.items.length > 1 && s.items.every(i => i.exam === 'boki' || i.exam === 'hisho');
                 card.innerHTML = `<div class="flex items-center justify-between"><span class="text-xs font-bold text-yellow-200">${s.name}</span>
-                    ${hasMix ? `<button onclick="startQuizForExam('mix')" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold text-[11px] px-3 py-1 rounded-lg">気晴らしミックスで解く</button>` : ''}</div>${rows}`;
+                    ${hasMix ? `<button onclick="startQuizForExam('mix',${s.items.reduce((a, i) => a + i.minutes, 0)})" class="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold text-[11px] px-3 py-1 rounded-lg">気晴らしミックスで解く</button>` : ''}</div>${rows}`;
                 if (rows) c.appendChild(card);
             });
 
@@ -1831,10 +1831,21 @@
             openStage();
         }
 
-        function startQuizForExam(examId) {
+        // 1回の出題は「分数」に応じた問題数で区切る(全問を一度に出さない)
+        const AVG_SEC = { fe: 100, toeic: 50, boki: 60, hisho: 45, mix: 50 };
+        function limitUnits(qs, count) {
+            const out = []; let n = 0, lastG = null;
+            for (const q of qs) {
+                if (n >= count && !(q.group && q.group === lastG)) break; // 大問は途中で切らない
+                out.push(q); n++; lastG = q.group || null;
+            }
+            return out;
+        }
+        function startQuizForExam(examId, minutes) {
             const mode = (document.getElementById('quiz-filter-mode') || {}).value || state.quizFilterMode || 'all';
             state.quizFilterMode = mode;
-            startSession('quiz', examId, ordered(examId, mode));
+            const m = minutes || 30, count = Math.max(5, Math.round(m * 60 / (AVG_SEC[examId] || 60)));
+            startSession('quiz', examId, limitUnits(ordered(examId, mode), count), { minutes: m });
         }
         function applyQuizFilter() { state.quizFilterMode = document.getElementById('quiz-filter-mode').value; }
         function reviewSingleQuestion(qId) {
@@ -2066,7 +2077,8 @@
                 main.innerHTML = `<div class="qs-res" style="margin:auto"><div class="qs-h" style="text-align:center">おつかれさまでした</div>
                     <div class="qs-score ${correct / n >= 0.6 ? 'ok' : 'ng'}">${correct} / ${n}</div>
                     <div style="text-align:center;color:#64748b;font-size:13px">間違えた問題は弱点ノートに入っています。</div></div>`;
-                bar.innerHTML = `<button class="qs-btn main" onclick="endSession()">閉じる</button>`;
+                const cont = s.kind === 'quiz' && s.examId ? `<button class="qs-btn sub" onclick="endSession();startQuizForExam('${s.examId}',${s.minutes || 30})">続けて解く</button>` : '';
+                bar.innerHTML = `${cont}<button class="qs-btn main" onclick="endSession()">閉じる</button>`;
             }
             document.getElementById('qs-top').innerHTML = `<button class="qs-x" onclick="endSession()">✕ 閉じる</button><span class="qs-chip">${esc(EXAM_SPECS[s.examId].title)}</span><span class="qs-count">終了</span><span id="qs-time" class="qs-time"></span>`;
             closeSheet();
