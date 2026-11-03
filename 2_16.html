@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2進数・16進数 対応関係暗記マスター</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.25s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="w-full bg-slate-900 border-b border-slate-800 py-3.5 px-4 sm:px-6 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-2 sm:space-x-3 min-w-0">
+            <span class="bg-indigo-600 text-white font-bold px-2 py-1 rounded-md text-sm sm:text-base mono-font shrink-0">0b</span>
+            <h1 class="text-base sm:text-lg font-bold tracking-wide truncate">2/16進数</h1>
+        </div>
+        <button onclick="app.openCheatSheet()" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 font-semibold px-3 py-1.5 rounded-lg text-xs sm:text-sm transition flex items-center space-x-1 sm:space-x-1.5 border border-slate-700 cursor-pointer shrink-0 ml-2">
+            <span>📚 早見表</span>
+        </button>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-xl">
+
+            <!-- Mode Selection Screen -->
+            <div id="screen-menu" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl">
+                <h2 class="text-2xl font-bold mb-2 text-center">トレーニングモードを選んでください</h2>
+                <p class="text-slate-400 text-center mb-6 text-sm">2進数・8進数・10進数・16進数の相互変換を完全マスター！</p>
+
+                <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                    <!-- 16進数 -->
+                    <div>
+                        <div class="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-2 pl-1">🔷 2進数 ⇔ 16進数</div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="app.startQuiz('binToHex')" class="bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-indigo-300">2進 ➔ 16進 (4択)</div>
+                            </button>
+                            <button onclick="app.startQuiz('hexToBin')" class="bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-indigo-300">16進 ➔ 2進 (4択)</div>
+                            </button>
+                            <button onclick="app.startQuiz('inputBinToHex')" class="bg-amber-950/30 hover:bg-amber-900/50 border border-amber-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-amber-300">2進 ➔ 16進 [入力]</div>
+                            </button>
+                            <button onclick="app.startQuiz('inputHexToBin')" class="bg-amber-950/30 hover:bg-amber-900/50 border border-amber-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-amber-300">16進 ➔ 2進 [入力]</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 8進数 -->
+                    <div>
+                        <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2 pl-1">🟢 2進数 ⇔ 8進数</div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="app.startQuiz('binToOct')" class="bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-emerald-300">2進 ➔ 8進 (4択)</div>
+                            </button>
+                            <button onclick="app.startQuiz('octToBin')" class="bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-emerald-300">8進 ➔ 2進 (4択)</div>
+                            </button>
+                            <button onclick="app.startQuiz('inputBinToOct')" class="bg-amber-950/30 hover:bg-amber-900/50 border border-amber-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-amber-300">2進 ➔ 8進 [入力]</div>
+                            </button>
+                            <button onclick="app.startQuiz('inputOctToBin')" class="bg-amber-950/30 hover:bg-amber-900/50 border border-amber-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-amber-300">8進 ➔ 2進 [入力]</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 10進数 -->
+                    <div>
+                        <div class="text-xs font-semibold text-sky-400 uppercase tracking-wider mb-2 pl-1">🔵 2進数 ⇔ 10進数</div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="app.startQuiz('binToDec')" class="bg-sky-950/40 hover:bg-sky-900/60 border border-sky-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-sky-300">2進 ➔ 10進 (4択)</div>
+                            </button>
+                            <button onclick="app.startQuiz('decToBin')" class="bg-sky-950/40 hover:bg-sky-900/60 border border-sky-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-sky-300">10進 ➔ 2進 (4択)</div>
+                            </button>
+                            <button onclick="app.startQuiz('inputBinToDec')" class="bg-amber-950/30 hover:bg-amber-900/50 border border-amber-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-amber-300">2進 ➔ 10進 [入力]</div>
+                            </button>
+                            <button onclick="app.startQuiz('inputDecToBin')" class="bg-amber-950/30 hover:bg-amber-900/50 border border-amber-800/60 text-white font-bold p-3 rounded-xl transition text-left cursor-pointer">
+                                <div class="text-sm text-amber-300">10進 ➔ 2進 [入力]</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="app.startQuiz('random')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold py-3 px-6 rounded-xl transition flex items-center justify-between group cursor-pointer mt-2">
+                        <div class="text-left">
+                            <div class="text-base">全基数・全形式ランダム (16問)</div>
+                            <div class="text-xs text-slate-400 font-normal">2・8・10・16進数の総合テスト</div>
+                        </div>
+                        <span class="text-xl group-hover:translate-x-1 transition-transform">➡️</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="screen-quiz" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-2xl relative">
+                <!-- Progress & Score -->
+                <div class="flex justify-between items-center mb-3 text-xs sm:text-sm text-slate-400 border-b border-slate-800 pb-2.5">
+                    <span id="quiz-progress" class="font-semibold text-slate-200">問題 1 / 10</span>
+                    <span id="quiz-score" class="text-emerald-400 font-semibold">正解数: 0</span>
+                </div>
+
+                <!-- Question Prompt -->
+                <div class="text-center mb-3">
+                    <p class="text-xs uppercase tracking-widest text-indigo-400 font-semibold mb-1" id="question-label">次の2進数に対応する16進数は？</p>
+                    <div id="question-value" class="mono-font text-3xl sm:text-4xl font-extrabold tracking-wider bg-slate-950 py-2.5 rounded-xl border border-slate-800 text-indigo-200 shadow-inner">
+                        1010
+                    </div>
+                </div>
+
+                <!-- Inline Compact Feedback / Status Area -->
+                <div id="feedback-area" class="h-8 mb-3 flex items-center justify-center text-xs sm:text-sm font-bold rounded-lg transition-all"></div>
+
+                <!-- Answer Choices (4択モード用) -->
+                <div id="choices-container" class="grid grid-cols-2 gap-3 mb-3">
+                    <!-- Dynamically injected choices -->
+                </div>
+
+                <!-- Input Answer Area (直接入力モード用) -->
+                <div id="input-container" class="hidden space-y-2.5 mb-3">
+                    <!-- Answer display box -->
+                    <div id="user-input-display" class="mono-font text-2xl font-extrabold text-center py-2 bg-slate-950 border border-indigo-500/50 text-amber-300 rounded-lg h-12 flex items-center justify-center tracking-widest shadow-inner">
+                        <span class="animate-pulse text-slate-600 font-normal text-sm">回答を入力...</span>
+                    </div>
+
+                    <!-- Custom On-Screen Keypad -->
+                    <div id="keypad" class="grid gap-1.5">
+                        <!-- Keypad buttons injected by JS -->
+                    </div>
+
+                    <!-- Submit & Clear Controls -->
+                    <div class="flex space-x-2 pt-1">
+                        <button onclick="app.clearInput()" class="w-1/3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 text-sm rounded-lg transition border border-slate-700 cursor-pointer">
+                            クリア
+                        </button>
+                        <button onclick="app.submitInputAnswer()" class="w-2/3 bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 text-sm rounded-lg transition shadow-md shadow-amber-900/30 cursor-pointer">
+                            決定 ↵
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Next Button -->
+                <button id="next-btn" onclick="app.nextQuestion()" class="hidden w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 text-sm rounded-xl transition shadow-lg shadow-emerald-900/30 cursor-pointer text-center">
+                    次の問題へ ➡️
+                </button>
+            </div>
+
+            <!-- Result Screen -->
+            <div id="screen-result" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 text-center shadow-2xl">
+                <div class="text-6xl mb-4">🏆</div>
+                <h2 class="text-2xl font-bold mb-2">トレーニング完了！</h2>
+                <p id="result-message" class="text-slate-400 mb-6 text-sm">よく頑張りました！</p>
+                
+                <div class="bg-slate-950 p-6 rounded-xl border border-slate-800 mb-8 max-w-xs mx-auto">
+                    <div class="text-xs text-slate-400 uppercase tracking-widest mb-1">正解スコア</div>
+                    <div id="final-score" class="text-4xl font-extrabold text-indigo-400 mono-font">10 / 10</div>
+                </div>
+
+                <div class="flex space-x-4">
+                    <button onclick="app.returnToMenu()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition border border-slate-700 cursor-pointer">
+                        メニューに戻る
+                    </button>
+                    <button onclick="app.restartQuiz()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-indigo-900/30 cursor-pointer">
+                        もう一度挑戦
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Cheat Sheet Modal -->
+    <div id="modal-cheatsheet" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold flex items-center space-x-2">
+                    <span>📖</span>
+                    <span>基数変換 早見表 (0〜15)</span>
+                </h3>
+                <button onclick="app.closeCheatSheet()" class="text-slate-400 hover:text-white font-bold text-xl px-2 cursor-pointer">&times;</button>
+            </div>
+            
+            <div class="overflow-y-auto flex-grow pr-2">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400">
+                            <th class="py-2 px-3">10進数</th>
+                            <th class="py-2 px-3">2進数 (4bit)</th>
+                            <th class="py-2 px-3">8進数</th>
+                            <th class="py-2 px-3">16進数</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cheatsheet-tbody" class="divide-y divide-slate-800/50 mono-font">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-800 text-center">
+                <button onclick="app.closeCheatSheet()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-2 rounded-xl text-sm transition cursor-pointer">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-900">
+        Binary & Hexadecimal Memorization Trainer &copy; 2026
+    </footer>
+
+    <!-- Application Logic -->
+    <script>
+        // Data definition for 0-15 (2進数, 8進数, 10進数, 16進数)
+        const tableData = [
+            { dec: "0", bin: "0000", oct: "0", hex: "0" },
+            { dec: "1", bin: "0001", oct: "1", hex: "1" },
+            { dec: "2", bin: "0010", oct: "2", hex: "2" },
+            { dec: "3", bin: "0011", oct: "3", hex: "3" },
+            { dec: "4", bin: "0100", oct: "4", hex: "4" },
+            { dec: "5", bin: "0101", oct: "5", hex: "5" },
+            { dec: "6", bin: "0110", oct: "6", hex: "6" },
+            { dec: "7", bin: "0111", oct: "7", hex: "7" },
+            { dec: "8", bin: "1000", oct: "10", hex: "8" },
+            { dec: "9", bin: "1001", oct: "11", hex: "9" },
+            { dec: "10", bin: "1010", oct: "12", hex: "A" },
+            { dec: "11", bin: "1011", oct: "13", hex: "B" },
+            { dec: "12", bin: "1100", oct: "14", hex: "C" },
+            { dec: "13", bin: "1101", oct: "15", hex: "D" },
+            { dec: "14", bin: "1110", oct: "16", hex: "E" },
+            { dec: "15", bin: "1111", oct: "17", hex: "F" }
+        ];
+
+        class QuizApp {
+            constructor() {
+                this.currentMode = 'binToHex';
+                this.questions = [];
+                this.currentIndex = 0;
+                this.score = 0;
+                this.isAnswered = false;
+                this.userInput = "";
+                
+                this.initCheatSheet();
+                this.initKeyboardListener();
+            }
+
+            initCheatSheet() {
+                const tbody = document.getElementById('cheatsheet-tbody');
+                tbody.innerHTML = tableData.map(item => `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="py-2 px-3 text-sky-400 font-bold">${item.dec}</td>
+                        <td class="py-2 px-3 text-indigo-300 font-bold">${item.bin}</td>
+                        <td class="py-2 px-3 text-emerald-400 font-bold">${item.oct}</td>
+                        <td class="py-2 px-3 text-amber-400 font-bold">${item.hex}</td>
+                    </tr>
+                `).join('');
+            }
+
+            initKeyboardListener() {
+                window.addEventListener('keydown', (e) => {
+                    if (this.isAnswered || document.getElementById('screen-quiz').classList.contains('hidden')) return;
+                    
+                    const q = this.questions[this.currentIndex];
+                    if (!q.isInputMode) return;
+
+                    if (e.key === 'Enter') {
+                        this.submitInputAnswer();
+                    } else if (e.key === 'Backspace') {
+                        this.popInput();
+                    } else if (e.key === 'Escape') {
+                        this.clearInput();
+                    } else {
+                        const char = e.key.toUpperCase();
+                        const allowedKeys = this.getAllowedKeys(q.type);
+                        if (allowedKeys.includes(char) && char.length === 1) {
+                            this.appendInput(char);
+                        }
+                    }
+                });
+            }
+
+            getAllowedKeys(type) {
+                if (type.endsWith('ToBin')) return ["0", "1"];
+                if (type.endsWith('ToOct')) return ["0", "1", "2", "3", "4", "5", "6", "7"];
+                if (type.endsWith('ToDec')) return ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+                if (type.endsWith('ToHex')) return ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"];
+                return [];
+            }
+
+            getMaxLen(type) {
+                if (type.endsWith('ToBin')) return 4;
+                if (type.endsWith('ToOct') || type.endsWith('ToDec')) return 2;
+                return 1;
+            }
+
+            startQuiz(mode) {
+                this.currentMode = mode;
+                this.currentIndex = 0;
+                this.score = 0;
+                
+                let length = (mode === 'random') ? 16 : 10;
+                let pool = [...tableData];
+                pool.sort(() => Math.random() - 0.5);
+                
+                const allTypes = [
+                    'binToHex', 'hexToBin', 'inputBinToHex', 'inputHexToBin',
+                    'binToOct', 'octToBin', 'inputBinToOct', 'inputOctToBin',
+                    'binToDec', 'decToBin', 'inputBinToDec', 'inputDecToBin'
+                ];
+                
+                this.questions = pool.slice(0, length).map(item => {
+                    let type = mode;
+                    if (mode === 'random') {
+                        type = allTypes[Math.floor(Math.random() * allTypes.length)];
+                    }
+                    return {
+                        target: item,
+                        type: type,
+                        isInputMode: type.startsWith('input')
+                    };
+                });
+
+                document.getElementById('screen-menu').classList.add('hidden');
+                document.getElementById('screen-result').classList.add('hidden');
+                document.getElementById('screen-quiz').classList.remove('hidden');
+                
+                this.loadQuestion();
+            }
+
+            loadQuestion() {
+                this.isAnswered = false;
+                this.userInput = "";
+                
+                const q = this.questions[this.currentIndex];
+                const total = this.questions.length;
+                
+                document.getElementById('quiz-progress').innerText = `問題 ${this.currentIndex + 1} / ${total}`;
+                document.getElementById('quiz-score').innerText = `正解数: ${this.score}`;
+                
+                const labelEl = document.getElementById('question-label');
+                const valueEl = document.getElementById('question-value');
+                const choicesContainer = document.getElementById('choices-container');
+                const inputContainer = document.getElementById('input-container');
+                
+                let srcVal = "", targetVal = "", srcName = "", targetName = "";
+
+                if (q.type.includes('BinToHex')) { srcVal = q.target.bin; targetVal = q.target.hex; srcName = "2進数"; targetName = "16進数"; }
+                else if (q.type.includes('HexToBin')) { srcVal = q.target.hex; targetVal = q.target.bin; srcName = "16進数"; targetName = "2進数"; }
+                else if (q.type.includes('BinToOct')) { srcVal = q.target.bin; targetVal = q.target.oct; srcName = "2進数"; targetName = "8進数"; }
+                else if (q.type.includes('OctToBin')) { srcVal = q.target.oct; targetVal = q.target.bin; srcName = "8進数"; targetName = "2進数"; }
+                else if (q.type.includes('BinToDec')) { srcVal = q.target.bin; targetVal = q.target.dec; srcName = "2進数"; targetName = "10進数"; }
+                else if (q.type.includes('DecToBin')) { srcVal = q.target.dec; targetVal = q.target.bin; srcName = "10進数"; targetName = "2進数"; }
+
+                labelEl.innerText = q.isInputMode ? `【直接入力】この${srcName}を${targetName}に変換：` : `次の${srcName}に対応する${targetName}は？`;
+                valueEl.innerText = srcVal;
+
+                if (q.isInputMode) {
+                    choicesContainer.classList.add('hidden');
+                    inputContainer.classList.remove('hidden');
+                    this.setupKeypad(q.type);
+                    this.updateInputDisplay();
+                } else {
+                    inputContainer.classList.add('hidden');
+                    choicesContainer.classList.remove('hidden');
+                    this.setupChoices(q, targetVal);
+                }
+
+                const feedback = document.getElementById('feedback-area');
+                feedback.className = "h-8 mb-3 flex items-center justify-center text-xs sm:text-sm font-bold rounded-lg text-slate-500 bg-slate-950/40 border border-slate-800/50";
+                feedback.innerText = q.isInputMode ? "入力して「決定」を押してください" : "選択肢を選んでください";
+
+                document.getElementById('next-btn').classList.add('hidden');
+            }
+
+            setupChoices(q, correctAnswer) {
+                let choices = [correctAnswer];
+                let propName = 'hex';
+                if (q.type.endsWith('ToBin')) propName = 'bin';
+                if (q.type.endsWith('ToOct')) propName = 'oct';
+                if (q.type.endsWith('ToDec')) propName = 'dec';
+
+                while (choices.length < 4) {
+                    let randomItem = tableData[Math.floor(Math.random() * tableData.length)];
+                    let candidate = randomItem[propName];
+                    if (!choices.includes(candidate)) {
+                        choices.push(candidate);
+                    }
+                }
+                
+                choices.sort(() => Math.random() - 0.5);
+
+                const container = document.getElementById('choices-container');
+                container.innerHTML = '';
+                
+                choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = "mono-font bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xl font-bold py-4 rounded-xl transition text-center shadow-md focus:outline-none cursor-pointer";
+                    btn.innerText = choice;
+                    btn.onclick = () => this.handleAnswer(choice, correctAnswer, btn);
+                    container.appendChild(btn);
+                });
+            }
+
+            setupKeypad(type) {
+                const keypad = document.getElementById('keypad');
+                keypad.innerHTML = '';
+                const keys = this.getAllowedKeys(type);
+
+                keypad.className = `grid grid-cols-${Math.min(keys.length, 8)} gap-1 sm:gap-1.5`;
+                keys.forEach(k => {
+                    const btn = document.createElement('button');
+                    btn.className = "mono-font text-sm sm:text-base font-bold py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-emerald-400 transition cursor-pointer flex items-center justify-center";
+                    btn.innerText = k;
+                    btn.onclick = () => this.appendInput(k);
+                    keypad.appendChild(btn);
+                });
+            }
+
+            appendInput(char) {
+                if (this.isAnswered) return;
+                const q = this.questions[this.currentIndex];
+                const maxLen = this.getMaxLen(q.type);
+                if (this.userInput.length < maxLen) {
+                    this.userInput += char;
+                    this.updateInputDisplay();
+                }
+            }
+
+            popInput() {
+                if (this.isAnswered) return;
+                this.userInput = this.userInput.slice(0, -1);
+                this.updateInputDisplay();
+            }
+
+            clearInput() {
+                if (this.isAnswered) return;
+                this.userInput = "";
+                this.updateInputDisplay();
+            }
+
+            updateInputDisplay() {
+                const display = document.getElementById('user-input-display');
+                if (this.userInput === "") {
+                    display.innerHTML = `<span class="animate-pulse text-slate-600 font-normal text-sm">解答を入力...</span>`;
+                } else {
+                    display.innerText = this.userInput;
+                }
+            }
+
+            submitInputAnswer() {
+                if (this.isAnswered) return;
+                if (this.userInput === "") return;
+                
+                const q = this.questions[this.currentIndex];
+                let correctAnswer = "";
+                if (q.type.endsWith('ToBin')) correctAnswer = q.target.bin;
+                else if (q.type.endsWith('ToOct')) correctAnswer = q.target.oct;
+                else if (q.type.endsWith('ToDec')) correctAnswer = q.target.dec;
+                else if (q.type.endsWith('ToHex')) correctAnswer = q.target.hex;
+                
+                this.handleAnswer(this.userInput, correctAnswer, null);
+            }
+
+            handleAnswer(selected, correct, btnElement) {
+                if (this.isAnswered) return;
+                this.isAnswered = true;
+                
+                let isCorrect = (selected === correct);
+
+                if (btnElement) {
+                    const choicesContainer = document.getElementById('choices-container');
+                    const buttons = choicesContainer.getElementsByTagName('button');
+                    
+                    if (isCorrect) {
+                        btnElement.classList.remove('bg-slate-950', 'hover:bg-slate-800', 'border-slate-800');
+                        btnElement.classList.add('bg-emerald-950', 'border-emerald-500', 'text-emerald-300');
+                    } else {
+                        btnElement.classList.remove('bg-slate-950', 'hover:bg-slate-800', 'border-slate-800');
+                        btnElement.classList.add('bg-rose-950', 'border-rose-500', 'text-rose-300');
+                        
+                        for (let b of buttons) {
+                            if (b.innerText === correct) {
+                                b.classList.remove('bg-slate-950', 'hover:bg-slate-800', 'border-slate-800');
+                                b.classList.add('bg-emerald-950/50', 'border-emerald-600', 'text-emerald-300');
+                            }
+                        }
+                    }
+                } else {
+                    const display = document.getElementById('user-input-display');
+                    if (isCorrect) {
+                        display.className = "mono-font text-2xl font-extrabold text-center py-2 bg-emerald-950/80 border-2 border-emerald-500 text-emerald-300 rounded-lg h-12 flex items-center justify-center tracking-widest shadow-lg";
+                    } else {
+                        display.className = "mono-font text-2xl font-extrabold text-center py-2 bg-rose-950/80 border-2 border-rose-500 text-rose-300 rounded-lg h-12 flex items-center justify-center tracking-widest shadow-lg";
+                    }
+                }
+
+                if (isCorrect) this.score++;
+                document.getElementById('quiz-score').innerText = `正解数: ${this.score}`;
+
+                const feedback = document.getElementById('feedback-area');
+                if (isCorrect) {
+                    feedback.className = "h-8 mb-3 flex items-center justify-center text-xs sm:text-sm font-bold rounded-lg bg-emerald-950/80 border border-emerald-800 text-emerald-300 animate-fade-in";
+                    feedback.innerText = "🎉 正解です！";
+                } else {
+                    feedback.className = "h-8 mb-3 flex items-center justify-center text-xs sm:text-sm font-bold rounded-lg bg-rose-950/80 border border-rose-800 text-rose-300 animate-fade-in";
+                    feedback.innerText = `❌ 不正解！ 正解: ${correct}`;
+                }
+
+                document.getElementById('next-btn').classList.remove('hidden');
+            }
+
+            nextQuestion() {
+                const display = document.getElementById('user-input-display');
+                display.className = "mono-font text-2xl font-extrabold text-center py-2 bg-slate-950 border border-indigo-500/50 text-amber-300 rounded-lg h-12 flex items-center justify-center tracking-widest shadow-inner";
+                
+                this.currentIndex++;
+                if (this.currentIndex < this.questions.length) {
+                    this.loadQuestion();
+                } else {
+                    this.showResult();
+                }
+            }
+<!-- ... existing code -->
