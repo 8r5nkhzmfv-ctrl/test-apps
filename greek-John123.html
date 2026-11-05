@@ -690,6 +690,12 @@
         .test-msg { color: #c0392b; font-size: 0.88rem; margin-top: 10px; min-height: 1.2em; }
         .btn-danger { background: #c0392b; }
 
+        .en-line { display: none; margin-top: 8px; border-left-color: var(--primary); font-style: italic; }
+        .en-on-body .en-line { display: block; }
+        .en-only { display: none; }
+        .en-on-body .en-only { display: block; }
+        .heb-section { background: #f5f0fa; border: 1px solid #e3d8f0; }
+        .verse-node.pending { opacity: 0.45; cursor: not-allowed; background: #ececec; border-style: dashed; font-size: 0.75rem; }
         @media (max-width: 600px) {
             .greek-display { font-size: 1.25rem; line-height: 2.2; }
             .card-grid { grid-template-columns: 1fr; }
@@ -703,7 +709,7 @@
     <button class="hdr-btn" id="speed-open-btn" aria-label="速度設定">🔈 <span id="speed-btn-val">0.7x</span></button>
     <div class="stats-bar">
         <div class="stat-item">⭐ <span id="user-xp">0</span> XP</div>
-        <button class="hdr-btn" id="stage-open-btn" aria-label="ステージ選択">🚩 <span id="cleared-count">0</span>/114 節</button>
+        <button class="hdr-btn" id="stage-open-btn" aria-label="ステージ選択">🚩 <span id="cleared-count">0</span>/112 節</button>
     </div>
 </header>
 
@@ -718,6 +724,7 @@
             <div class="verse-title" id="current-verse-title">ヨハネ 1:1</div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
                 <button class="btn btn-sm" id="toggle-kana-btn">🔤 発音: ON</button>
+                <button class="btn btn-sm" id="toggle-en-btn">🌐 英語: OFF</button>
                 <button class="btn btn-sm" id="toggle-clause-btn">▦ 塊枠: ON</button>
                 <button class="btn btn-sm" id="toggle-color-btn">🎨 役割ラベル: ON</button>
                 <button class="btn btn-sm btn-accent" id="read-verse-btn">🔊 節全体を朗読</button>
@@ -727,6 +734,7 @@
         <div class="greek-display color-on clause-on kana-on" id="greek-text-container"></div>
 
         <div class="jp-translation" id="jp-translation-text"></div>
+        <div class="jp-translation en-line" id="en-translation-text"></div>
 
     </div>
 
@@ -763,6 +771,25 @@
                 <div class="card-section">
                     <div class="card-section-title">文脈での用法・役割</div>
                     <div id="wc-usage">時・場所の起点を表す</div>
+                </div>
+            </div>
+
+            <div class="card-grid">
+                <div class="card-section en-only">
+                    <div class="card-section-title">English</div>
+                    <div id="wc-en" style="font-weight: bold;"></div>
+                </div>
+                <div class="card-section heb-section">
+                    <div class="card-section-title">LXX対応ヘブル語</div>
+                    <div id="wc-heb" style="font-weight: bold;" dir="auto"></div>
+                </div>
+                <div class="card-section heb-section">
+                    <div class="card-section-title">ヘブル語 語根</div>
+                    <div id="wc-hebroot" dir="auto"></div>
+                </div>
+                <div class="card-section heb-section" id="wc-hebnote-box">
+                    <div class="card-section-title">補足</div>
+                    <div id="wc-hebnote"></div>
                 </div>
             </div>
 
@@ -841,180 +868,22 @@
         <div class="clear-icon">🎉</div>
         <h2>テスト完全クリア！</h2>
         <p style="margin: 10px 0 20px; color: var(--text-sub);" id="modal-msg">+50 XP 獲得！次の節が解放されました。</p>
-        <button class="btn btn-success" id="next-stage-btn">次の節を解読する ➔</button>
+        <button class="btn btn-success" id="next-stage-btn">次の節へ ➔</button>
     </div>
 </div>
 
+<script src="greek-john-data.js"></script>
 <script>
-/**
- * ヨハネ1〜3章 全節データベース構築（文法・文脈役割・発音・3段階クイズ一元化）
- */
-const verseDatabase = [
-    {
-        id: "1:1",
-        chapter: 1,
-        verse: 1,
-        jp: "初めに言（ロゴス）があった。言は神と共にあった。言は神であった。",
-        words: [
-            { clause: 1, text: "Ἐν", kana: "エン", ipa: "/en/", lemma: "ἐν", pos: "前置詞", meaning: "〜の中に、〜に", parse: "与格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "「時間的な起点（初めに）」を示す前置詞句。", exGreek: "ἐν ἀρχῇ", exJp: "初めに" },
-            { clause: 1, text: "ἀρχῇ", kana: "アルケー", ipa: "/ar.kʰɛ̂ː/", lemma: "ἀρχή", pos: "名詞", meaning: "初め、起源", parse: "女性・単数・与格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "前置詞 ἐν の目的語として与格形。", exGreek: "ἡ ἀρχή", exJp: "始まり、起源" },
-            { clause: 1, text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・能動態・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "過去における継続的な存在（ずっとあった）を表す。", exGreek: "ἦν ὁ λόγος", exJp: "言があった" },
-            { clause: 1, text: "ὁ", kana: "ホー", ipa: "/ho/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "特定の名詞 λόγος に付く定冠詞。", exGreek: "ὁ θεός", exJp: "その神" },
-            { clause: 1, text: "λόγος,", kana: "ロゴス", ipa: "/ló.ɡos/", lemma: "λόγος", pos: "名詞", meaning: "言、言葉、論理", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "文の主語。「キリスト」を指す重要語彙。", exGreek: "ὁ λόγος", exJp: "言（ロゴス）は" },
-            { clause: 2, text: "καὶ", kana: "カイ", ipa: "/kaí/", lemma: "καί", pos: "接続詞", meaning: "〜と、そして", parse: "等位接続詞", role: "P", roleName: "接続詞", roleColor: "var(--color-prep)", usage: "文と文を等しく繋ぐ。", exGreek: "καὶ θεὸς ἦν", exJp: "そして神であった" },
-            { clause: 2, text: "ὁ", kana: "ホー", ipa: "/ho/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "主語 λόγος を修飾。", exGreek: "ὁ λόγος", exJp: "その言は" },
-            { clause: 2, text: "λόγος", kana: "ロゴス", ipa: "/ló.ɡos/", lemma: "λόγος", pos: "名詞", meaning: "言、言葉", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "第2節の主語。", exGreek: "ὁ λόγος", exJp: "言は" },
-            { clause: 2, text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在を表す動詞。", exGreek: "ἦν πρὸς τὸν θεόν", exJp: "神と共にあった" },
-            { clause: 2, text: "πρὸς", kana: "プロス", lemma: "πρός", pos: "前置詞", meaning: "〜と共に、〜に向かって", parse: "対格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "親密な面対・交わりを表す前置詞。", exGreek: "πρὸς τὸν θεόν", exJp: "神と共に向き合って" },
-            { clause: 2, text: "τὸν", kana: "トン", ipa: "/ton/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "対格名詞 θεόν に付く冠詞。", exGreek: "τὸν θεόν", exJp: "神を" },
-            { clause: 2, text: "θεόν,", kana: "テオン", ipa: "/tʰe.ón/", lemma: "θεός", pos: "名詞", meaning: "神", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "前置詞 πρὸς の目的語。", exGreek: "ὁ θεός", exJp: "神" },
-            { clause: 3, text: "καὶ", kana: "カイ", ipa: "/kaí/", lemma: "καί", pos: "接続詞", meaning: "そして", parse: "等位接続詞", role: "P", roleName: "接続詞", roleColor: "var(--color-prep)", usage: "展開を繋ぐ。", exGreek: "καὶ", exJp: "そして" },
-            { clause: 3, text: "θεὸς", kana: "テオス", ipa: "/tʰe.ós/", lemma: "θεός", pos: "名詞", meaning: "神（本質・性質）", parse: "男性・単数・主格", role: "C", roleName: "補語 (C)", roleColor: "var(--color-comp)", usage: "冠詞がないため「神としての本質」を表す補語。", exGreek: "θεὸς ἦν", exJp: "神（の性質）であった" },
-            { clause: 3, text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "主語と補語を結ぶ系動詞。", exGreek: "ἦν", exJp: "〜であった" },
-            { clause: 3, text: "ὁ", kana: "ホー", ipa: "/ho/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "文の本当の主語を示す定冠詞。", exGreek: "ὁ λόγος", exJp: "その言は" },
-            { clause: 3, text: "λόγος.", kana: "ロゴス", ipa: "/ló.ɡos/", lemma: "λόγος", pos: "名詞", meaning: "言", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "文の主語。", exGreek: "ὁ λόγος", exJp: "言は" }
-        ],
-        quizSteps: {
-            step1: {
-                question: "【新単語クイズ】「λόγος（ロゴス）」の日本語の意味として最も適切なものは？",
-                options: ["命・生命", "言（言葉）・論理", "光・ともしび", "愛・慈しみ"],
-                answer: 1
-            },
-            step2: {
-                question: "【語順パズル】『初めに言があった』に対応するギリシャ語を順番に並べ替えてください。",
-                correctOrder: ["Ἐν", "ἀρχῇ", "ἦν", "ὁ", "λόγος,"]
-            },
-            step3: {
-                question: "【フレーズ翻訳】「καὶ θεὸς ἦν ὁ λόγος.」の正確な日本語訳はどれ？",
-                options: [
-                    "そして言は神と共にあった。",
-                    "そして神は言をお造りになった。",
-                    "そして言は神であった。",
-                    "初めに神が言を語られた。"
-                ],
-                answer: 2
-            }
-        }
-    },
-    {
-        id: "1:2",
-        chapter: 1,
-        verse: 2,
-        jp: "この言は、初めに神と共にあった。",
-        words: [
-            { clause: 1, text: "οὗτος", kana: "ウートス", ipa: "/hûː.tos/", lemma: "οὗτος", pos: "指示代名詞", meaning: "この者、この言", parse: "男性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "前節の「言（ロゴス）」を指す指示代名詞。", exGreek: "οὗτος ἦν", exJp: "この者は〜であった" },
-            { clause: 1, text: "ἦν", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "〜であった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "過去の継続的存在状態。", exGreek: "ἦν", exJp: "〜であった" },
-            { clause: 1, text: "ἐν", kana: "エン", ipa: "/en/", lemma: "ἐν", pos: "前置詞", meaning: "〜において", parse: "与格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "時を示す前置詞。", exGreek: "ἐν ἀρχῇ", exJp: "初めに" },
-            { clause: 1, text: "ἀρχῇ", kana: "アルケー", ipa: "/ar.kʰɛ̂ː/", lemma: "ἀρχή", pos: "名詞", meaning: "初め", parse: "女性・単数・与格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "ἐν の与格目的語。", exGreek: "ἐν ἀρχῇ", exJp: "初めに" },
-            { clause: 1, text: "πρὸς", kana: "プロス", ipa: "/prós/", lemma: "πρός", pos: "前置詞", meaning: "〜と共に", parse: "対格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "交わり・親密さを表す。", exGreek: "πρὸς τὸν θεόν", exJp: "神と共に" },
-            { clause: 1, text: "τὸν", kana: "トン", ipa: "/ton/", lemma: "ὁ", pos: "冠詞", meaning: "その", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "対格冠詞。", exGreek: "τὸν θεόν", exJp: "神を" },
-            { clause: 1, text: "θεόν.", kana: "テオン", ipa: "/tʰe.ón/", lemma: "θεός", pos: "名詞", meaning: "神", parse: "男性・単数・対格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "πρὸς の対格目的語。", exGreek: "ὁ θεός", exJp: "神" }
-        ],
-        quizSteps: {
-            step1: {
-                question: "【新単語クイズ】「οὗτος（ウートス）」の意味として最も適したものはどれ？",
-                options: ["あの方", "この者（この言）は", "すべてのもの", "誰も〜ない"],
-                answer: 1
-            },
-            step2: {
-                question: "【語順パズル】『この言は神と共にあった』の語順に単語を並べてください。",
-                correctOrder: ["οὗτος", "ἦν", "πρὸς", "τὸν", "θεόν."]
-            },
-            step3: {
-                question: "【フレーズ翻訳】「οὗτος ἦν ἐν ἀρχῇ πρὸς τὸν θεόν.」の訳として正しいものは？",
-                options: [
-                    "言は世にあり、世は言によって成った。",
-                    "この言は、初めに神と共にあった。",
-                    "万物は言によって造られた。",
-                    "神は初めに天と地を創造された。"
-                ],
-                answer: 1
-            }
-        }
-    },
-    {
-        id: "1:3",
-        chapter: 1,
-        verse: 3,
-        jp: "万物は言によって成った。成ったもので、言によらずに成ったものは何一つない。",
-        words: [
-            { clause: 1, text: "πάντα", kana: "パンタ", ipa: "/pán.ta/", lemma: "πᾶς", pos: "形容詞/代名詞", meaning: "すべてのもの、万物", parse: "中性・複数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "万物・あらゆる存在するものを指す主語。", exGreek: "πάντα", exJp: "すべてのものは" },
-            { clause: 1, text: "δι’", kana: "ディ", ipa: "/di/", lemma: "διά", pos: "前置詞", meaning: "〜を通して、〜によって", parse: "属格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "媒介・手段（〜を経て）を表す。", exGreek: "δι’ αὐτοῦ", exJp: "彼を通して" },
-            { clause: 1, text: "αὐτοῦ", kana: "アウトゥー", ipa: "/au̯.tûː/", lemma: "αὐτός", pos: "代名詞", meaning: "彼（言）", parse: "男性・単数・属格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "διά の属格目的語。", exGreek: "αὐτοῦ", exJp: "彼の" },
-            { clause: 1, text: "ἐγένετο,", kana: "エゲネト", ipa: "/e.ɡé.ne.to/", lemma: "γίνομαι", pos: "動詞", meaning: "成った、存在するようになった", parse: "アオリスト・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在の開始（無から有へ）を示す重要動詞。", exGreek: "ἐγένετο", exJp: "成った" },
-            { clause: 2, text: "καὶ", kana: "カイ", ipa: "/kaí/", lemma: "καί", pos: "接続詞", meaning: "そして", parse: "接続詞", role: "P", roleName: "接続詞", roleColor: "var(--color-prep)", usage: "文を繋ぐ。", exGreek: "καὶ", exJp: "そして" },
-            { clause: 2, text: "χωρὶς", kana: "コーリス", ipa: "/kʰɔː.rís/", lemma: "χωρίς", pos: "前置詞", meaning: "〜なしに", parse: "属格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "除外・分離を表す前置詞。", exGreek: "χωρὶς ἐμοῦ", exJp: "わたしを離れては" },
-            { clause: 2, text: "αὐτοῦ", kana: "アウトゥー", ipa: "/au̯.tûː/", lemma: "αὐτός", pos: "代名詞", meaning: "彼", parse: "男性・単数・属格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "χωρὶς の目的語。", exGreek: "αὐτοῦ", exJp: "彼" },
-            { clause: 2, text: "ἐγένετο", kana: "エゲネト", ipa: "/e.ɡé.ne.to/", lemma: "γίνομαι", pos: "動詞", meaning: "成った", parse: "アオリスト・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在の生起。", exGreek: "ἐγένετο", exJp: "生じた" },
-            { clause: 2, text: "οὐδὲ", kana: "ウーデ", ipa: "/oː.dé/", lemma: "οὐδέ", pos: "否定詞", meaning: "〜も〜ない", parse: "否定接続詞", role: "P", roleName: "修飾/否定", roleColor: "var(--color-prep)", usage: "強い否定。", exGreek: "οὐδὲ ἕν", exJp: "一つとして〜ない" },
-            { clause: 2, text: "ἕν.", kana: "ヘン", ipa: "/hen/", lemma: "εἷς", pos: "数詞", meaning: "一つも", parse: "中性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "否定詞と共に「何一つとして〜ない」となる。", exGreek: "ἕν", exJp: "一つ" }
-        ],
-        quizSteps: {
-            step1: {
-                question: "【新単語クイズ】動詞「ἐγένετο（エゲネト）」の正確な意味はどれ？",
-                options: ["言った・語った", "成った・存在するようになった", "見た・目撃した", "信じた"],
-                answer: 1
-            },
-            step2: {
-                question: "【語順パズル】『万物は言（彼）によって成った』の正確なギリシャ語順を選んでください。",
-                correctOrder: ["πάντα", "δι’", "αὐτοῦ", "ἐγένετο,"]
-            },
-            step3: {
-                question: "【フレーズ翻訳】「καὶ χωρὶς αὐτοῦ ἐγένετο οὐδὲ ἕν.」の意味として正しいものは？",
-                options: [
-                    "そして彼なしには何一つとして成ったものはなかった。",
-                    "そしてすべての人が彼によって救われた。",
-                    "彼の中に命があり、命は人の光であった。",
-                    "光は暗闇の中で輝いている。"
-                ],
-                answer: 0
-            }
-        }
-    }
-];
-
-// 1:4〜3:36 までの114節自動生成補填（実用スケルトンデータ）
-for (let c = 1; c <= 3; c++) {
-    const maxV = (c === 1) ? 51 : (c === 2) ? 25 : 36;
-    for (let v = 1; v <= maxV; v++) {
-        const idStr = `${c}:${v}`;
-        if (!verseDatabase.some(item => item.id === idStr)) {
-            verseDatabase.push({
-                id: idStr,
-                chapter: c,
-                verse: v,
-                jp: `【ヨハネ ${c}:${v}】（命は人の光であった。光は暗闇の中で輝いている。）`,
-                words: [
-                    { text: "ἐν", kana: "エン", ipa: "/en/", lemma: "ἐν", pos: "前置詞", meaning: "〜の中に", parse: "与格支配", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "場所・範囲", exGreek: "ἐν αὐτῷ", exJp: "彼の中に" },
-                    { text: "αὐτῷ", kana: "アウトー", ipa: "/au̯.tɔ̂ː/", lemma: "αὐτός", pos: "代名詞", meaning: "彼", parse: "男性・単数・与格", role: "P", roleName: "前置詞句 (P)", roleColor: "var(--color-prep)", usage: "ἐν の目的語", exGreek: "αὐτῷ", exJp: "彼に" },
-                    { text: "ζωὴ", kana: "ゾーエー", ipa: "/zdɔː.ɛ̌ː/", lemma: "ζωή", pos: "名詞", meaning: "命、生命", parse: "女性・単数・主格", role: "S", roleName: "主語 (S)", roleColor: "var(--color-subj)", usage: "神の命を表す重要語", exGreek: "ἡ ζωή", exJp: "命" },
-                    { text: "ἦν.", kana: "エーン", ipa: "/ɛ̂ːn/", lemma: "εἰμί", pos: "動詞", meaning: "あった", parse: "未完了過去・3単", role: "V", roleName: "述語動詞 (V)", roleColor: "var(--color-verb)", usage: "存在を表す", exGreek: "ἦν", exJp: "あった" }
-                ],
-                quizSteps: {
-                    step1: {
-                        question: `【新単語クイズ】「ζωὴ（ゾーエー）」の意味はどれ？`,
-                        options: ["光", "命・生命", "愛", "真理"],
-                        answer: 1
-                    },
-                    step2: {
-                        question: `【語順パズル】『彼の中に命があった』の語順に並べてください。`,
-                        correctOrder: ["ἐν", "αὐτῷ", "ζωὴ", "ἦν."]
-                    },
-                    step3: {
-                        question: `【フレーズ翻訳】「ἐν αὐτῷ ζωὴ ἦν.」の正しい日本語訳はどれ？`,
-                        options: ["彼の中に命があった。", "光は暗闇の中で輝いている。", "神は愛である。", "初めに言があった。"],
-                        answer: 0
-                    }
-                }
-            });
-        }
-    }
-}
+/* 節データは greek-john-data.js（verseDatabase, VERSE_COUNTS）。未登録の節は「準備中」 */
+const TOTAL_VERSES = Object.values(VERSE_COUNTS).reduce((s, n) => s + n, 0);
+const ALL_IDS = [];
+Object.keys(VERSE_COUNTS).forEach(c => { for (let v = 1; v <= VERSE_COUNTS[c]; v++) ALL_IDS.push(`${c}:${v}`); });
+const isReady = id => verseDatabase.some(v => v.id === id);
 
 // ユーザー進捗データ（localStorage対応）
-let userProgress = JSON.parse(localStorage.getItem("johanne_complete_progress")) || {
+let userProgress = (() => { try { return JSON.parse(localStorage.getItem("johanne_complete_progress")); } catch (_) { return null; } })() || {
     xp: 0,
-    clearedVerses: ["1:1"],
+    clearedVerses: [],
     currentVerseId: "1:1"
 };
 
@@ -1032,7 +901,7 @@ const speedVal = document.getElementById("speed-val");
 // 表示・音声の設定（次回起動時に引き継ぐ）
 const SETTINGS_KEY = "johanne_settings";
 const settings = Object.assign(
-    { speed: 0.7, color: true, clause: true, kana: true },
+    { speed: 0.7, color: true, clause: true, kana: true, en: false },
     (() => { try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch (_) { return {}; } })()
 );
 function saveSettings() {
@@ -1041,15 +910,18 @@ function saveSettings() {
 const TOGGLES = [
     { key: "color",  btn: "toggle-color-btn",  cls: "color-on",  label: "🎨 役割ラベル" },
     { key: "clause", btn: "toggle-clause-btn", cls: "clause-on", label: "▦ 塊枠" },
-    { key: "kana",   btn: "toggle-kana-btn",   cls: "kana-on",   label: "🔤 発音" }
+    { key: "kana",   btn: "toggle-kana-btn",   cls: "kana-on",   label: "🔤 発音" },
+    { key: "en",     btn: "toggle-en-btn",     cls: "en-on",     label: "🌐 英語" }
 ];
 function applyToggle(t) {
     const on = Boolean(settings[t.key]);
-    greekTextContainer.classList.toggle(t.cls, on);
+    if (t.key === "en") document.body.classList.toggle("en-on-body", on);
+    else greekTextContainer.classList.toggle(t.cls, on);
     document.getElementById(t.btn).textContent = `${t.label}: ${on ? "ON" : "OFF"}`;
 }
 
 function initApp() {
+    if (!isReady(userProgress.currentVerseId)) userProgress.currentVerseId = "1:1";
     updateHeaderStats();
     renderStageMap();
     loadVerse(userProgress.currentVerseId);
@@ -1099,13 +971,14 @@ function initApp() {
 
     document.getElementById("next-stage-btn").addEventListener("click", () => {
         document.getElementById("clear-modal").classList.remove("active");
-        const currentIndex = verseDatabase.findIndex(v => v.id === userProgress.currentVerseId);
-        if (currentIndex < verseDatabase.length - 1) {
-            const nextVerseId = verseDatabase[currentIndex + 1].id;
-            userProgress.currentVerseId = nextVerseId;
+        const nextId = ALL_IDS[ALL_IDS.indexOf(userProgress.currentVerseId) + 1];
+        if (nextId && isReady(nextId)) {
+            userProgress.currentVerseId = nextId;
             saveProgress();
             renderStageMap();
-            loadVerse(nextVerseId);
+            loadVerse(nextId);
+        } else {
+            showToast(nextId ? "次の節（" + nextId + "）は準備中です" : "全節クリア！");
         }
     });
 }
@@ -1125,31 +998,32 @@ function renderStageMap() {
     [1, 2, 3].forEach(ch => {
         const sec = document.createElement("div");
         sec.id = `stage-ch-${ch}`;
-        const total = verseDatabase.filter(v => v.chapter === ch).length;
-        const done = verseDatabase.filter(v => v.chapter === ch && userProgress.clearedVerses.includes(v.id)).length;
+        const total = VERSE_COUNTS[ch];
+        const done = userProgress.clearedVerses.filter(id => id.startsWith(ch + ":")).length;
         sec.innerHTML = `<div class="stage-ch-title">ヨハネ ${ch}章（${done}/${total}）</div>`;
         const grid = document.createElement("div");
         grid.className = "stage-grid";
 
-        verseDatabase.forEach((v, index) => {
-            if (v.chapter !== ch) return;
-            const isCleared = userProgress.clearedVerses.includes(v.id);
-            const isUnlocked = index === 0 || userProgress.clearedVerses.includes(verseDatabase[index - 1].id);
-            const isCurrent = v.id === userProgress.currentVerseId;
+        ALL_IDS.forEach((id, index) => {
+            if (Number(id.split(":")[0]) !== ch) return;
+            const ready = isReady(id);
+            const isCleared = userProgress.clearedVerses.includes(id);
+            const isUnlocked = ready && (index === 0 || userProgress.clearedVerses.includes(ALL_IDS[index - 1]));
+            const isCurrent = id === userProgress.currentVerseId;
 
             const node = document.createElement("div");
-            node.className = `verse-node ${isCleared ? 'cleared' : ''} ${!isUnlocked ? 'locked' : ''} ${isCurrent ? 'current' : ''}`;
+            node.className = `verse-node ${isCleared ? 'cleared' : ''} ${!isUnlocked ? 'locked' : ''} ${!ready ? 'pending' : ''} ${isCurrent ? 'current' : ''}`;
             node.innerHTML = `
-                <span>${v.id}</span>
-                <span class="badge">${isCleared ? '✓' : isUnlocked ? '解' : '🔒'}</span>
+                <span>${id}</span>
+                <span class="badge">${isCleared ? '✓' : !ready ? '準備中' : isUnlocked ? '解' : '🔒'}</span>
             `;
 
             if (isUnlocked) {
                 node.addEventListener("click", () => {
-                    userProgress.currentVerseId = v.id;
+                    userProgress.currentVerseId = id;
                     saveProgress();
                     renderStageMap();
-                    loadVerse(v.id);
+                    loadVerse(id);
                     closeStageModal();
                 });
             }
@@ -1189,6 +1063,7 @@ const CLAUSE_COLORS = ["#16a085", "#b9770e", "#34495e", "#b03a6b", "#5d6d7e", "#
 function loadVerse(verseId) {
     const verseData = verseDatabase.find(v => v.id === verseId);
     if (!verseData) return;
+    document.getElementById("en-translation-text").textContent = verseData.en || "";
 
     currentVerseTitleEl.textContent = `ヨハネによる福音書 ${verseData.id}`;
     jpTranslationText.textContent = verseData.jp;
@@ -1230,7 +1105,7 @@ function showWordCard(word, element) {
     element.classList.add("selected");
 
     document.getElementById("wc-greek").textContent = word.text;
-    document.getElementById("wc-phonetics").textContent = `カタカナ: ${word.kana} | 発音記号: ${word.ipa}`;
+    document.getElementById("wc-phonetics").textContent = `カタカナ: ${word.kana}${word.ipa ? " | 発音記号: " + word.ipa : ""}`;
     
     const badge = document.getElementById("wc-role-badge");
     badge.textContent = word.roleName;
@@ -1240,6 +1115,10 @@ function showWordCard(word, element) {
     document.getElementById("wc-meaning").textContent = word.meaning;
     document.getElementById("wc-parse").textContent = word.parse;
     document.getElementById("wc-usage").textContent = word.usage;
+    document.getElementById("wc-en").textContent = word.en || "—";
+    document.getElementById("wc-heb").textContent = word.heb || "—";
+    document.getElementById("wc-hebroot").textContent = word.hebRoot || "—";
+    document.getElementById("wc-hebnote").textContent = word.hebNote || "—";
     
     document.getElementById("wc-example-greek").textContent = word.exGreek;
     document.getElementById("wc-example-jp").textContent = word.exJp;
@@ -1539,7 +1418,7 @@ function renderTestQuestion() {
         });
     } else {
         // 並び替えパズル：本文のギリシャ語を、本文と全く同じ順に並べる
-        const correct = verse.words.map(w => w.text);
+        const correct = verse.words.map(w => stripPunct(w.text));
 
         const title = document.createElement("div");
         title.className = "step-title";
@@ -1606,14 +1485,18 @@ function renderTestQuestion() {
 
 function completeVerse() {
     const currentId = userProgress.currentVerseId;
+    let gained = 0;
     if (!userProgress.clearedVerses.includes(currentId)) {
         userProgress.clearedVerses.push(currentId);
         userProgress.xp += 50;
+        gained = 50;
         saveProgress();
         renderStageMap();
     }
 
-    document.getElementById("modal-msg").textContent = `ヨハネ ${currentId} のテストをクリア！ +50 XP を獲得しました。`;
+    document.getElementById("modal-msg").textContent = gained
+        ? `ヨハネ ${currentId} のテストをクリア！ +50 XP を獲得しました。`
+        : `ヨハネ ${currentId} をクリア（クリア済みのためXPなし）。`;
     document.getElementById("clear-modal").classList.add("active");
 }
 
